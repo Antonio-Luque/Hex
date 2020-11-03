@@ -1,0 +1,28 @@
+﻿;
+; Main.z80asm
+; Coded by Antonio Luque
+;
+CLS             equ #0D6B              ; ROM address of CLS command routine
+BORDER          equ #229B              ; ROM address of BORDER+7 command routine
+ATTR_P          equ #5C8D              ; RAM address of permanent attributes system variable
+
+RED_XY          equ #01B0              ; XY RED player input/output screen location
+BLUE_XY         equ #1B20              ; XY BLUE player input/output screen location
+
+CYAN_FLASH0     equ %00101000          ; Attributes: bright 0, flash 0, paper 5, ink 0
+BLUE_TOKEN      equ %00111001          ; Attributes: bright 0, flash 0, paper 7, ink 1
+RED_TOKEN       equ %00111010          ; Attributes: bright 0, flash 0, paper 7, ink 2
+SW_COLOR        equ %00000011          ; BITs to be XORed to swap current player color
+
+;
+; Entry point: set screen colors and draws board frame
+;
+Main
+                ld a,5                  ; set border 5 (cyan)
+                call BORDER             ; call BORDER ROM routine
+
+                ld a,CYAN_FLASH0        ; set screen color: paper 5, ink 0
+                ld (ATTR_P),a           ; stores it in ATTR_P system variable
+                call CLS                ; call CLS ROM routine
+
+                ret
