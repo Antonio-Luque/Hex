@@ -1,0 +1,16 @@
+﻿;
+; Draw.z80asm
+; Coded by Antonio Luque
+;
+WHITE_BLACK         equ %00111000          ; Attributes: bright 0, flash 0, paper 7, ink 0
+
+;
+; Draw_Board: draw an empty 11x11 hexagons board in the screen
+;
+; Input:     -
+; Output:    -
+; Destroys:  A, BC, HL, DE
+;
+Draw_Board:
+
+                    ret

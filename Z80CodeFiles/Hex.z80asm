@@ -7,7 +7,7 @@
             org #8000
             
             #include "Main.z80asm"
-            ;#include "Draw.z80asm"
+            #include "Draw.z80asm"
             ;#include "Output.z80asm"
             ;#include "Input.z80asm"
             ;#include "Brainiac.z80asm"

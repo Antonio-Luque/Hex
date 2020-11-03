@@ -14,6 +14,7 @@
     <Folder Include="TapeFiles\" />
   </ItemGroup>
   <ItemGroup>
+    <Z80Asm Include="Z80CodeFiles\Code.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Main.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Hex.z80asm" />
   </ItemGroup>

@@ -25,4 +25,14 @@ Main
                 ld (ATTR_P),a           ; stores it in ATTR_P system variable
                 call CLS                ; call CLS ROM routine
 
-                ret
+;
+; Game (re)initialization - main loop
+;
+GameInit
+                call Draw_Board         ; draw an empty hexagons board
+
+;
+; Process players moves - game loop
+;
+GameLoop
+                jr GameLoop             ; repeat game loop
