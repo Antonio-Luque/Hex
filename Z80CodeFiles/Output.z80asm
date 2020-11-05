@@ -82,7 +82,7 @@ GetPosXY
 ; Input:    BC - XY screen position to print the string
 ;           HL - pointer to text string (ending with 0)
 ; Output:   -
-; Destroys: HL
+; Destroys: A, HL
 ;
 Print_String:
                 push bc                 ; stores XY current player input/output screen location

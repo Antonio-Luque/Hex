@@ -36,6 +36,9 @@ Main
 ;
 GameInit
                 call Draw_Board         ; draw an empty hexagons board
+                ;call Init_Colors        ; initialize colors vector
+
+                call Input_Options      ; Input game options  
 ;
 ; Process players moves - game loop
 ;
