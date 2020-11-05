@@ -11,11 +11,14 @@
     <DisassAnn Include="Rom\ZxSpectrum48.disann" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="TapeFiles\" />
-  </ItemGroup>
-  <ItemGroup>
+    <Z80Asm Include="Z80CodeFiles\Draw.z80asm" />
+    <Z80Asm Include="Z80CodeFiles\Frame.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Main.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Hex.z80asm" />
+  </ItemGroup>
+  <ItemGroup>
+    <Tzx Include="TapeFiles\hex%24.tzx" />
+    <Tzx Include="TapeFiles\Hex.tzx" />
   </ItemGroup>
   <Import Project="$(CustomProjectExtensionsPath)Spect.Net.CodeDiscover.targets" />
 </Project>
