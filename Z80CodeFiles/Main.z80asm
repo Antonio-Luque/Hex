@@ -24,12 +24,18 @@ Main
                 ld a,CYAN_FLASH0        ; set screen color: paper 5, ink 0
                 ld (ATTR_P),a           ; stores it in ATTR_P system variable
                 call CLS                ; call CLS ROM routine
+
+                ld hl,STR_HEADER        ; HL points to header string
+                ld bc,#0808             ; set string position
+                call Print_String       ; prints string
+
+                call Draw_Frame         ; draws board frame
+                ;call Color_Edges        ; set edges nodes colors
 ;
 ; Game (re)initialization - main loop
 ;
 GameInit
-                call Draw_Frame         ; draws board frame
-
+                call Draw_Board         ; draw an empty hexagons board
 ;
 ; Process players moves - game loop
 ;
@@ -38,3 +44,7 @@ GameLoop
 
 ; Current player color
 PLAYER          defb 0
+
+; Header
+STR_HEADER
+                defm "** HEX **\0"

@@ -15,6 +15,7 @@
     <Z80Asm Include="Z80CodeFiles\Frame.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Main.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Hex.z80asm" />
+    <Z80Asm Include="Z80CodeFiles\Output.z80asm" />
   </ItemGroup>
   <ItemGroup>
     <Tzx Include="TapeFiles\hex%24.tzx" />
