@@ -11,6 +11,8 @@ REDTEXT_XY      equ #0188               ; XY red player name screen location
 LEVEL_XY        equ #10B0               ; XY level text message screen location
 LEVELNUM_XY     equ #16B0               ; XY level number screen location
 
+MAX_CHARS       equ 2                   ; maximum of input chars
+
 ;
 ; Input game options: take game options from keyboard
 ;
@@ -54,7 +56,7 @@ Input_Options:
                 ld bc,BLUETEXT_XY       ; set string position
                 call Print_String       ; prints string
  
-                jr GameLevel            ; continue saving color
+                jr GameLevel            ; continue to game level choice
 
 BlueChosen 
                 ld a,BLUE_TOKEN         ; get BLUE color 
@@ -138,7 +140,7 @@ LimitInput
 ;
 ; ReadKeys_1to4: read a key from keyboard in range 1-4
 ;
-; Input:
+; Input:     -
 ; Output:    A - ASCII char code of chosen option
 ; Destroys: HL, BC, E
 ;
@@ -150,16 +152,18 @@ RangeLoop
                 ld e,4                  ; set loop counter
                 xor a                   ; A = 0
                 in a,(c)                ; read keyboard throught reading port
-                and %00001111           ; mask the first four bytes
+                and %00001111           ; mask the first four bits (1-4)
+
 NextKey
                 srl a                   ; shift A, bit 0 sets carry flag
                 jr nc,KeyPressed        ; a key (1-4) was pressed
 
-                inc hl                  ; HL points to the next key char                  
+                inc hl                  ; HL points to the next key char
                 dec e                   ; decrements loop counter
                 jr nz,NextKey           ; repeat for the next key
 
                 jr RangeLoop            ; repeat until a key (1-4) is pressed
+
 KeyPressed
                 ld a,(hl)               ; return key char
 
@@ -174,180 +178,155 @@ KeyPressed
 ; Destroys: A
 ;
 Input_String:
-            push hl                 ; stores registers 
-            push de
+                push hl                 ; stores registers 
+                push de
             
-            ld bc,(MOVE_POSXY)      ; get current player XY input/output screen location
+                ld bc,(MOVE_POSXY)      ; get current player XY input/output screen location
 
-            xor a
-            ld (CHAR_COUNT),a       ; char counter = 0
-            ld a,2
-            ld (MAX_CHARS),a        ; maximum of input chars = 2
+                xor a
+                ld (CHAR_COUNT),a       ; char counter = 0
 
-InputStart  
-            ld a,CYAN_FLASH1        ; set attributes for cursor (flash)
-            ld (CHAR_ATTR),a
-            ld a,'_'                ; text input cursor
-            call Print_Char         ; prints cursor
-            ld a,CYAN_FLASH0        ; restores attributes (no flash)
-            ld (CHAR_ATTR),a
+InputStart
+                ld a,CYAN_FLASH1        ; set attributes for cursor (flash)
+                ld (CHAR_ATTR),a
+                ld a,'_'                ; text input cursor
+                call Print_Char         ; prints cursor
+                ld a,CYAN_FLASH0        ; restores attributes (no flash)
+                ld (CHAR_ATTR),a
 
-            xor a
-            ld (LAST_K),a           ; clears last key pressed
+                xor a
+                ld (LAST_K),a           ; clears last key pressed
 
-InputLoop   
-            push hl                 ; stores registers
-            push bc
+InputLoop
+                push hl                 ; stores registers
+                push bc
 
-            call KEY_SCAN           ; call KEY_SCAN ROM rutine
+                call KEY_SCAN           ; call KEY_SCAN ROM rutine
 
-            pop bc                  ; restores registers
-            pop hl
+                pop bc                  ; restores registers
+                pop hl
 
-            ld a,(LAST_K)           ; A = ASCII of key pressed
+                ld a,(LAST_K)           ; A = ASCII of key pressed
 
-            cp #0D                  ; is it ENTER?
-            jp z,InputEnd           ; yes, go to the end of rutine
+                cp #0D                  ; is it ENTER?
+                jp z,InputEnd           ; yes, go to the end of rutine
 
-            cp #0C                  ; is it DELETE?
-            jr z,InputDelete        ; yes, perform delete char
+                cp #0C                  ; is it DELETE?
+                jr z,InputDelete        ; yes, perform delete char
 
-            ex af,af'               ; stores ASCII code in A'
+                ex af,af'               ; stores ASCII code in A'
 
-            ld a,(MAX_CHARS)
-            ld d,a                  ; D = max input chars
-            ld a,(CHAR_COUNT)       ; A = number of chars inserted
+                ld a,(CHAR_COUNT)       ; A = number of chars inserted
 
-            cp d                    ; chars limit reached? (A = D)
-            jr z,InputLoop          ; yes, repeat input loop (do not insert char)
+                cp MAX_CHARS            ; chars limit reached?
+                jr z,InputLoop          ; yes, repeat input loop (do not insert char)
 
-            or a                    ; is the first char to be inserted? (A = 0)
-            jr z,FirstLetter        ; yes, perform input of 1st char (column)
+                or a                    ; is the first char to be inserted? (A = 0)
+                jr z,FirstLetter        ; yes, perform input of 1st char (column)
 
-            cp 1                    ; is the secord char to be inserted? (A = 1)
-            jr z,FirstNumber        ; yes, perform input of 2nd char (row)
-                                    ; else, restrict 3rd char to '0' or '1' (A = 2)
-            ex af,af'               ; restores ASCII code
+                cp 1                    ; is the secord char to be inserted? (A = 1)
+                jr z,FirstNumber        ; yes, perform input of 2nd char (row)
 
-            cp '0'                  ; is it < '0'?
-            jr c,InputLoop          ; yes, repeat input loop (char is not allowed)
-
-            cp '2'                  ; is it >= '2'?
-            jr nc,InputLoop         ; yes, repeat input loop (char is not allowed)
+                ;ex af,af'               ; restores ASCII code
 ;
-; char is valid: 'a'-'k' (1st char), '1'-'9' (2nd char) and '0'-'1' (3th char)
+; char is valid: 'a'-'g' (1st char) and '1'-'7' (2nd char)
 ;
-CharOK      
-            ld (hl),a               ; stores char in current string position
-            inc hl                  ; increments string position
-            call Print_Char         ; print char in player input screen location
+CharOK
+                ld (hl),a               ; stores char in current string position
+                inc hl                  ; increments string position
+                call Print_Char         ; print char in player input screen location
 
-            ld a,(CHAR_COUNT)       ; increments char counter
-            inc a
-            ld (CHAR_COUNT),a
+                ld a,(CHAR_COUNT)       ; increments char counter
+                inc a
+                ld (CHAR_COUNT),a
 
-            inc b                   ; increments X position of player input screen location
+                inc b                   ; increments X position of player input screen location
 
-            dec a                   ; is the first char?
-            jr nz,InputStart        ; no, get next char
+                dec a                   ; is the first char?
+                jr nz,InputStart        ; no, get next char
 
-            ld a,'-'                ; yes, print dash
-            call Print_Char
-            inc b                   ; increments X position of player input screen location
+                ld a,'-'                ; yes, print dash
+                call Print_Char
+                inc b                   ; increments X position of player input screen location
 
-            jr InputStart           ; get next char (Do until ENTER is pressed)
+                jr InputStart           ; get next char (Do until ENTER is pressed)
 ;
-; restricts first char to 'a'-'k'
+; restricts first char to 'a'-'g'
 ;
 FirstLetter 
-            ex af,af'               ; restores ASCII code
+                ex af,af'               ; restores ASCII code
 
-            cp 'a'                  ; is it < 'a'
-            jr c,InputLoop          ; yes, repeat input loop (char is not allowed)
+                cp 'a'                  ; is it < 'a'
+                jr c,InputLoop          ; yes, repeat input loop (char is not allowed)
 
-            cp 'l'                  ; is it >= 'l' ('L' lower case, NOT one '1')
-            jr nc,InputLoop         ; yes, repeat input loop (char is not allowed)
+                cp 'h'                  ; is it >= 'h'
+                jr nc,InputLoop         ; yes, repeat input loop (char is not allowed)
 
-            jr CharOK               ; char is valid
+                jr CharOK               ; char is valid
 ;
-; restricts second char to '1'-'9'
+; restricts second char to '1'-'7'
 ;
 FirstNumber 
-            ex af,af'               ; restores ASCII code
+                ex af,af'               ; restores ASCII code
 
-            cp '1'                  ; is it < '1'
-            jr c,InputLoop          ; yes, repeat input loop (char is not allowed)
+                cp '1'                  ; is it < '1'
+                jr c,InputLoop          ; yes, repeat input loop (char is not allowed)
 
-            cp ':'                  ; is it >= ':'
-            jr nc,InputLoop         ; yes, repeat input loop (char is not allowed)
+                cp '8'                  ; is it >= '8'
+                jr nc,InputLoop         ; yes, repeat input loop (char is not allowed)
 
-            cp '1'                  ; is it = '1'
-            jr nz,CharOK            ; no, char is valid
-
-                                    ; else, allow a 2nd number by updating chars limit
-            ex af,af'               ; stores ASCII code
-            ld a,3                  ; maximum of char is 3
-            ld (MAX_CHARS),a   
-            ex af,af'               ; restores ASCII code
-
-            jr CharOK               ; char is valid
+                jr CharOK               ; char is valid
 ;
 ; erases last char, updates player input screen location and string pointer
 ;
 InputDelete
-            ld a,(CHAR_COUNT)       ; get char counter
+                ld a,(CHAR_COUNT)       ; get char counter
 
-            or a                    ; is it 0?
-            jr z,InputLoop          ; yes, repeat input loop (no chars to delete)
+                or a                    ; is it 0?
+                jr z,InputLoop          ; yes, repeat input loop (no chars to delete)
 
-            cp 3                    ; is it 3?
-            jr z,DecCharCnt         ; yes, continue delete
+                cp 2                    ; is it 2?
+                jr nz,DeleteDash        ; no, delete dash
 
-            cp 2                    ; is it 2?
-            jr nz,DeleteDash        ; no, delete dash
-                                    ; else, update chars limit
-            ld a,2                  ; maximum of chars is 2
-            ld (MAX_CHARS),a
-
-            jr DecCharCnt           ; continue delete
+                jr DecCharCnt           ; continue delete
 
 DeleteDash  
-            ld a,' '                ; delete dash
-            call Print_Char
-            dec b                   ; decrement X position of player input screen location
+                ld a,' '                ; delete dash
+                call Print_Char
+                dec b                   ; decrement X position of player input screen location
 
 DecCharCnt 
-            ld a,(CHAR_COUNT)       ; decrements char counter
-            dec a
-            ld (CHAR_COUNT),a
+                ld a,(CHAR_COUNT)       ; decrements char counter
+                dec a
+                ld (CHAR_COUNT),a
 
-            dec hl                  ; decrement string position
+                dec hl                  ; decrement string position
 
-            ld a,' '                ; delete cursor and last char
-            call Print_Char       
-            dec b                   ; decrement X position of player input screen location
+                ld a,' '                ; delete cursor and last char
+                call Print_Char       
+                dec b                   ; decrement X position of player input screen location
 
-            jp InputStart           ; get next char
+                jp InputStart           ; get next char
 ;
 ; player finished move (ENTER pressed)
 ;
 InputEnd
-            ld a,(CHAR_COUNT)       ; check char counter  
+                ld a,(CHAR_COUNT)       ; check char counter  
 
-            cp 2                    ; is it < 2?
-            jp c,InputLoop          ; yes, repeat input loop (move is incomplete)
+                cp 2                    ; is it < 2?
+                jp c,InputLoop          ; yes, repeat input loop (move is incomplete)
 
-            ld a,' '                ; delete cursor
-            call Print_Char
-            xor a                   ; put end of string (0)
-            ld (hl),a
+                ld a,' '                ; delete cursor
+                call Print_Char
+                xor a                   ; put end of string (0)
+                ld (hl),a
 
-            pop de                  ; restores registers
-            pop hl
+                pop de                  ; restores registers
+                pop hl
 
-            ret
+                ret
 ;
-; Strings and variables
+; Strings
 ;
 STR_PLAYERS     defm "One or two players? 1|2\0"
 STR_COLORS      defm "Choose blue or red, b|r\0"
@@ -361,11 +340,12 @@ STR_NOLEVEL     defm "       \0"
 
 KEYS_MAP        defb '1', '2', '3', '4'
 
+;
+; Variables
+;
 NUM_PLAYERS     defb 0
 HUMAN_COLOR     defb 0
+AI_DEPTH        defb 0
 
 HUMAN_MOVE      defb 0, 0, 0, 0
 CHAR_COUNT      defb 0
-MAX_CHARS       defb 0
-
-AI_DEPTH        defb 0                  ; algorithm recursion depth

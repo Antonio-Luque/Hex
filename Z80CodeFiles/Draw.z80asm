@@ -54,7 +54,7 @@ DrawProcess
 
                 ret
 ;
-; GetHEX_Color: return the attribute memory address of an hexagon in the screeen
+; GetHEX_Color: return the attribute memory address of an hexagon/token in the screeen
 ;
 ; Input:    BC - hexagon board indexes: B = column, C = row
 ; Output:   DE - attribute memory address of the hexagon
@@ -84,7 +84,7 @@ GetHEX_Color:
 
                 ret
 ;
-; SetHEX_Color: set the color of an hexagon in the screen
+; SetHEX_Color: set the color of an hexagon/token in the screen
 ; Code from ChibiAkumas lessons: https://www.chibiakumas.com/z80/simplesamples.php#LessonS2
 ;
 ; Input:    DE - attribute memory address of the hexagon
@@ -121,7 +121,7 @@ EndOfLine
 
                 ret
 ;
-; GetHEX_Screen: return the screen memory address of an hexagon
+; GetHEX_Screen: return the screen memory address of an hexagon/token
 ;
 ; Input:    BC - hexagon board indexes: B = column (not used), C = row
 ;           DE - attribute memory address of an hexagon
