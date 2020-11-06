@@ -5,7 +5,7 @@
 WHITE_BLACK     equ %00111000           ; Attributes: bright 0, flash 0, paper 7, ink 0
 
 ;
-; Draw_Board: draw an empty 11x11 hexagons board in the screen
+; Draw_Board: draw an empty 7x7 hexagons board in the screen
 ;
 ; Input:     -
 ; Output:    -

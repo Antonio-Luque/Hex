@@ -5,9 +5,9 @@
 LAST_K          equ #5C08               ; RAM address of last key pressed system variable
 KEY_SCAN        equ #028E               ; ROM address of keyboard scanning routine
 
-MESSAGE_XY      equ #00B8               ; XY question message screen location
+MESSAGE_XY      equ #08B8               ; XY question message screen location
 BLUETEXT_XY     equ #1910               ; XY blue player name screen location
-REDTEXT_XY      equ #0180               ; XY red player name screen location
+REDTEXT_XY      equ #0188               ; XY red player name screen location
 LEVEL_XY        equ #10B0               ; XY level text message screen location
 LEVELNUM_XY     equ #16B0               ; XY level number screen location
 
@@ -74,7 +74,7 @@ GameLevel
                 ld bc,MESSAGE_XY        ; set string position
                 call Print_String       ; prints string
 
-                call ReadKeys_1to4      ; read key from keyboard in range 1-5
+                call ReadKeys_1to4      ; read key from keyboard in range 1-4
 
                 ld bc,LEVELNUM_XY       ; set char (level number) position
 
@@ -349,10 +349,10 @@ InputEnd
 ;
 ; Strings and variables
 ;
-STR_PLAYERS     defm "One or two players? 1 or 2      \0"
-STR_COLORS      defm "Choose blue or red, b or r      \0"
-STR_LEVEL       defm "Select game level, (1-4)        \0"
-STR_CLEAR       defm "                                \0"
+STR_PLAYERS     defm "One or two players? 1|2\0"
+STR_COLORS      defm "Choose blue or red, b|r\0"
+STR_LEVEL       defm "Select game level, 1-4 \0"
+STR_CLEAR       defm "                       \0"
 
 STR_SPECCY      defm "Speccy\0"
 STR_PLAYER      defm "Player\0"

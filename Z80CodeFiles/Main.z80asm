@@ -10,6 +10,7 @@ RED_XY          equ #01B0               ; XY RED player input/output screen loca
 BLUE_XY         equ #1B20               ; XY BLUE player input/output screen location
 
 CYAN_FLASH0     equ %00101000           ; Attributes: bright 0, flash 0, paper 5, ink 0
+CYAN_REVERSE    equ %00000101           ; Attributes: bright 0, flash 0, paper 0, ink 5
 BLUE_TOKEN      equ %00111001           ; Attributes: bright 0, flash 0, paper 7, ink 1
 RED_TOKEN       equ %00111010           ; Attributes: bright 0, flash 0, paper 7, ink 2
 SW_COLOR        equ %00000011           ; BITs to be XORed to swap current player color
@@ -26,8 +27,13 @@ Main
                 call CLS                ; call CLS ROM routine
 
                 ld hl,STR_HEADER        ; HL points to header string
-                ld bc,#0808             ; set string position
+                ld bc,#0A08             ; set string position
+                ld a,CYAN_REVERSE       ; set header attributes
+                ld (CHAR_ATTR),a
                 call Print_String       ; prints string
+
+                ld a,CYAN_FLASH0        ; set clear attributes
+                ld (CHAR_ATTR),a
 
                 call Draw_Frame         ; draws board frame
                 ;call Color_Edges        ; set edges nodes colors
@@ -35,7 +41,7 @@ Main
 ; Game (re)initialization - main loop
 ;
 GameInit
-                call Draw_Board         ; draw an empty hexagons board
+                ;call Draw_Board         ; draw an empty hexagons board
                 ;call Init_Colors        ; initialize colors vector
 
                 call Input_Options      ; Input game options  
@@ -50,4 +56,4 @@ PLAYER          defb 0
 
 ; Header
 STR_HEADER
-                defm "** HEX **\0"
+                defm " HEX \0"
