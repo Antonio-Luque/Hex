@@ -6,10 +6,11 @@ CLS             equ #0D6B               ; ROM address of CLS command routine
 BORDER          equ #229B               ; ROM address of BORDER+7 command routine
 ATTR_P          equ #5C8D               ; RAM address of permanent attributes system variable
 
-RED_XY          equ #01B0               ; XY RED player input/output screen location
-BLUE_XY         equ #1B20               ; XY BLUE player input/output screen location
+RED_XY          equ #02A8               ; XY RED player input/output screen location
+BLUE_XY         equ #1A30               ; XY BLUE player input/output screen location
 
 CYAN_FLASH0     equ %00101000           ; Attributes: bright 0, flash 0, paper 5, ink 0
+CYAN_REVERSE    equ %00000101           ; Attributes: bright 0, flash 0, paper 0, ink 5
 BLUE_TOKEN      equ %00111001           ; Attributes: bright 0, flash 0, paper 7, ink 1
 RED_TOKEN       equ %00111010           ; Attributes: bright 0, flash 0, paper 7, ink 2
 SW_COLOR        equ %00000011           ; BITs to be XORed to swap current player color
@@ -26,28 +27,274 @@ Main
                 call CLS                ; call CLS ROM routine
 
                 ld hl,STR_HEADER        ; HL points to header string
-                ld bc,#0808             ; set string position
+                ld bc,#0A08             ; set string position
+                ld a,CYAN_REVERSE       ; set header attributes
+                ld (CHAR_ATTR),a
                 call Print_String       ; prints string
 
                 call Draw_Frame         ; draws board frame
-                ;call Color_Edges        ; set edges nodes colors
+                call Draw_Board         ; draw an empty hexagons board
 ;
 ; Game (re)initialization - main loop
 ;
 GameInit
-                call Draw_Board         ; draw an empty hexagons board
-                ;call Init_Colors        ; initialize colors vector
+                call Init_Colors        ; initialize colors vector
 
-                call Input_Options      ; Input game options  
+                ld a,CYAN_FLASH0        ; set clear attributes
+                ld (CHAR_ATTR),a
+
+                call Input_Options      ; Input game options
+
+                ld a,BLUE_TOKEN         ; set current player color
+                ld (PLAYER),a           ; saves current player color
 ;
 ; Process players moves - game loop
 ;
 GameLoop
+                push af                 ; stores current player color
+                rra                     ; is RED player turn?
+                jr nc,RedInput          ; yes, set XY RED player input/output screen location
+
+                ld bc,BLUE_XY           ; set XY BLUE player input/output screen location
+                jr StorePosXY           ; continue storing player XY input/output screen location
+
+RedInput
+                ld bc,RED_XY            ; set XY RED player input/output screen location
+
+StorePosXY             
+                ld (MOVE_POSXY),bc      ; stores current player XY input/output screen location
+
+                ; check game options
+
+                ld a,(NUM_PLAYERS)      ; get number of players
+                cp '2'                  ; is it '2'?
+                jr z,HumanMove          ; yes, input human move
+
+                ld hl,HUMAN_COLOR       ; get human color choice
+                pop af                  ; restores current player color
+                cp (hl)                 ; is human color choice = current player color?
+                jr z,HumanMove          ; yes, input human move
+
+                ; Speccy move
+
+                call Print_Wait         ; prints "WAIT" message
+
+                ;call Speccy_Move        ; get Speccy move
+                call Node2_Indexes      ; get XY hexagon board indexes
+
+                push bc                 ; stores XY hexagon board indexes
+
+                call Format_Move        ; format string move
+                ld a,CYAN_FLASH0        ; restores message color
+                ld (CHAR_ATTR),a
+                call Print_Move         ; prints Speccy move
+
+                pop bc                  ; restores XY hexagon board indexes
+
+                jr DrawToken            ; continue drawing token
+
+HumanMove
+                call Clear_Move         ; clear human player last move
+
+                ld hl,HUMAN_MOVE        ; HL points to the string to store the move
+                call Input_String       ; input human player move
+
+                call String2_Indexes    ; get XY hexagon board indexes
+
+                push bc                 ; stores XY hexagon board indexes
+
+                call Format_Move        ; format string move
+                call Print_Move         ; prints Human move
+
+                pop bc                  ; restores XY hexagon board indexes
+
+                ; check human move legality
+
+                call Indexes2_Node      ; get graph's node index
+                call GetNode_Color      ; get graph's node color
+                ld a,WHITE_BLACK        ; set empty node color in A
+                cp (hl)                 ; is node empty?
+                jr nz,HexFilled         ; no, node is filled
+
+                ld a,(PLAYER)           ; update graph's node color with current player color
+                ld (hl),a
+
+DrawToken
+                call Draw_Token         ; draw token (human or speccy) on the screen
+
+                ;ld hl,TOKEN_FX          ; HL points to the sound fx for move
+                ;call SoundFX            ; play sound fx
+
+                ; check winner
+
+                ld a,(PLAYER)           ; get current player color
+                call Path_Finder        ; calculate current player shortest path
+                or a                    ; are # remaining nodes = 0?
+                jr z,PlayerWins         ; yes, there is a winner!
+
+                ; swap player colors from BLUE to RED and vice-versa
+
+                ex af,af'               ; get current player color
+                xor SW_COLOR            ; swap colors
+                ld (PLAYER),a           ; stores new current player color
+
                 jr GameLoop             ; repeat game loop
+;
+; Illegal human move (node is filled)
+;
+HexFilled
+                ld hl,STR_FILLED        ; HL points to "FILLED" string
+                call Print_Alert        ; prints string
+
+                ;ld hl,FILLED_FX         ; HL points to filled hexagon sound fx
+                ;call SoundFX            ; play sound fx
+
+                ld a,80                 ; set delay counter
+
+Delay
+                halt                    ; stops execution
+                dec a                   ; decrement delay counter
+                jr nz,Delay             ; repeat until A = 0
+
+                call Clear_Alert        ; clear alert message
+
+                jr HumanMove            ; repeat human input until move is legal
+;
+; Current player wins the game
+;
+PlayerWins
+                ex af, af'              ; A = current player color
+                call Bright_Path        ; highlights the winner path
+
+                ld hl,STR_WINNER        ; HL points to "WINS!!" string
+                call Print_Alert        ; prints string
+
+                ;ld hl,WINNER_FX         ; HL points to filled node sound fx
+                ;call SoundFX            ; play sound fx
+
+                jp GameInit             ; initialize a new game
+;
+; Format_Move: applies format ("a-nn") to move string
+;
+; Input:    BC - XY hexagon board indexes
+;           STR_MOVE - string to save formated string
+; Output:   STR_MOVE - string with the formated string
+; Destroys: A, DE, IX
+;
+Format_Move:
+                ld ix,STR_MOVE          ; IX points to formatted move string to print
+
+                ld a,b                  ; set column index position
+                xor %01100000           ; add #60 (see charset 'a'-'g')
+                ld (ix+0),a             ; stores it in 1st position of formated string
+                ld a,c                  ; set row index position
+
+                call Int2_String        ; converts row index in a two bytes string (no 0 ended)
+                ld (ix+2),d             ; stores it in 2nd and 3th positions of formated string
+                ld (ix+3),e
+
+                ret
+;
+; Int2_String: convert an integer byte number into an ASCII string 
+; Developed by sromero: https://wiki.speccy.org/cursos/ensamblador/gfx4_fuentes
+;
+; Input:     A - number to be converted
+; Output:   DE - number conversion in two bytes ASCII string
+; Destroys:  A 
+;
+Int2_String:
+                ld d,'0'                ; initializes in char '0'
+                dec d                   ; for later inc
+                ld e,10                 ; base-10
+                and a                   ; set carry flag to 0
+I2SLoop
+                inc d                   ; tens increment
+                sub e                   ; remove a unit of tens  
+                jr nc,I2SLoop           ; if A is not negative, repeat
+
+                add a,e                 ; adjust decrement
+                add a,'0'               ; convert to ASCII char
+                ld e,a                  ; units are in E
+
+                ret
+;
+; String2_Indexes: converts human move into an hexagon's indexes in board
+;
+; Input:    HL - pointer to human move string
+; Output:   BC - XY indexes of the hexagons board
+; Destroys: A
+;
+String2_Indexes:
+                ld a,(hl)               ; get a-g column
+                xor %01100000           ; substract #60 (see charset)
+                ld b,a                  ; set column position
+
+                inc hl                  ; HL points to next char
+                ld a,(hl)               ; get 1st part of 1-7 column
+
+                xor %00110000           ; subtract #30
+                ld c,a                  ; set row position
+
+                ret
+;
+; Node2_Indexes: converts a node index into an hexagon's XY indexes in board
+; Designed by Sonia Ortega
+;
+; Input:     E - node index (0 to 48)
+; Output:   BC - Board indexes of the hexagon (B=column, C=row)
+; Destroys: -
+;
+Node2_Indexes:
+                ld c,1                  ; set board row = 1
+                ld b,e                  ; set board column = hexagon index
+                ld a,b                  ; set board column in A
+                cp 7                    ; is hexagon index < 7?
+                jr c,ExitConv           ; yes, continue to end of rutine
+
+CalcXYLoop  
+                inc c                   ; increment board row
+                sub 7                   ; column = column - 7
+                cp 7                    ; is it < 7?
+                jr nc,CalcXYLoop        ; no, subtract again
+
+                ld b,a                  ; set calculated column index
+ExitConv
+                inc b                   ; increment board column index
+
+                ret
+;
+; Indexes2_Node: converts an hexagon's XY indexes into a node index
+; Designed by Sonia Ortega
+;
+; Input:    BC - board indexes of the hexagon (B=column, C=row)
+; Output:   DE - node index (0 to 120)
+; Destroys: -
+;
+Indexes2_Node:            
+                push bc                 ; stores board indexes
+
+                xor a                   ; node = 0
+                add a,b                 ; node = column index
+                dec a                   ; node = node - 1
+                dec c                   ; row = row - 1
+                ld b,c                  ; set loop counter through row index
+
+LoopNode
+                add a,7                 ; node = node + 7            
+                djnz LoopNode           ; repeat (row - 1) times
+
+                pop bc                  ; restores board indexes
+
+                ld e,a                  ; return node index in DE
+                ld d,0
+
+                ret
+;
+; Strings
+;
+STR_HEADER      defm " HEX \0"
+STR_FILLED      defm "FILLED\0"
+STR_WINNER      defm "WINS!!\0"
 
 ; Current player color
 PLAYER          defb 0
-
-; Header
-STR_HEADER
-                defm "** HEX **\0"
