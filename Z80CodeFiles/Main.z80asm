@@ -121,8 +121,8 @@ HumanMove
 DrawToken
                 call Draw_Token         ; draw token (human or speccy) on the screen
 
-                ;ld hl,TOKEN_FX          ; HL points to the sound fx for move
-                ;call SoundFX            ; play sound fx
+                ld hl,TOKEN_FX          ; HL points to the sound fx for move
+                call SoundFX            ; play sound fx
 
                 ; check winner
 
@@ -145,8 +145,8 @@ HexFilled
                 ld hl,STR_FILLED        ; HL points to "FILLED" string
                 call Print_Alert        ; prints string
 
-                ;ld hl,FILLED_FX         ; HL points to filled hexagon sound fx
-                ;call SoundFX            ; play sound fx
+                ld hl,FILLED_FX         ; HL points to filled hexagon sound fx
+                call SoundFX            ; play sound fx
 
                 ld a,80                 ; set delay counter
 
@@ -168,8 +168,8 @@ PlayerWins
                 ld hl,STR_WINNER        ; HL points to "WINS!!" string
                 call Print_Alert        ; prints string
 
-                ;ld hl,WINNER_FX         ; HL points to filled node sound fx
-                ;call SoundFX            ; play sound fx
+                ld hl,WINNER_FX         ; HL points to filled node sound fx
+                call SoundFX            ; play sound fx
 
                 jp GameInit             ; initialize a new game
 ;

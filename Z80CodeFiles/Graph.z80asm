@@ -213,7 +213,7 @@ NextNode
 
                 ld b,a                  ; set current player color in B
                 ld a,RED_TOKEN          ; calculate index to remaining nodes in A
-                sub b
+                sub b                   ; set index 0 for RED player or index 1 for BLUE player
 
                 ld hl,REMAINING         ; HL points to the remaining nodes (RED/BLUE)
                 ld d,0                  ; set index in DE
@@ -324,7 +324,7 @@ Bright_Path:
                 pop af                  ; restores current player color
                 ld b,a                  ; set current player color in B
                 ld a,RED_TOKEN          ; calculate index to start node in A
-                sub b
+                sub b                   ; set index 0 for RED player or index 1 for BLUE player
 
                 ld hl,PATH_START        ; HL points to the start node of shortest path (RED/BLUE)
                 ld d,0                  ; set index in DE
