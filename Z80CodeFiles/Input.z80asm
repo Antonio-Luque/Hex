@@ -30,9 +30,25 @@ Input_Options:
                 ld bc,#3132             ; set input limits to key '1' (#31) or key '2' (#32)
                 call Read_Key           ; read key from keyboard
 
+                push af
+                call Clear_Alert        ; clear alert message (if any)
+
+                ; clear last players moves
+
+                ld hl,STR_EMPTY4        ; HL points to a 4 blanks string
+                ld bc,BLUE_XY           ; set XY BLUE player input/output screen location
+                call Print_String       ; clear BLUE player last move
+
+                ld hl,STR_EMPTY4        ; HL points to a 4 blanks string
+                ld bc,RED_XY            ; set XY RED player input/output screen location
+                call Print_String       ; clear RED player last move
+
+                pop af                  ; restores key pressed
                 ld (NUM_PLAYERS),a      ; stores # of players choice
                 cp '2'                  ; is it '2'?
                 jr z,TwoPlayers         ; yes, skip rest of choices
+
+                call Draw_Board         ; draw an empty hexagons board
 
                 ; choice of color
 
@@ -94,6 +110,8 @@ GameLevel
                 jr ExitOptions          ; one player options choosen
 
 TwoPlayers
+                call Draw_Board         ; draw an empty hexagons board
+
                 ld hl,STR_PLAYER        ; HL points to "Player" string
                 ld bc,BLUETEXT_XY       ; set blue string position
                 call Print_String       ; prints string

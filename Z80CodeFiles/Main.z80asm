@@ -32,20 +32,18 @@ Main
                 ld (CHAR_ATTR),a
                 call Print_String       ; prints string
 
-                ld a,CYAN_FLASH0        ; set clear attributes
-                ld (CHAR_ATTR),a
-
                 call Draw_Frame         ; draws board frame
                 call Draw_Board         ; draw an empty hexagons board
-                ;call Color_Edges        ; set edges nodes colors
 ;
 ; Game (re)initialization - main loop
 ;
 GameInit
-                ;call Init_Colors        ; initialize colors vector
+                call Init_Colors        ; initialize colors vector
 
-                call Input_Options      ; Input game options  
-                call Draw_Board         ; draw an empty hexagons board
+                ld a,CYAN_FLASH0        ; set clear attributes
+                ld (CHAR_ATTR),a
+
+                call Input_Options      ; Input game options
 
                 ld a,BLUE_TOKEN         ; set current player color
                 ld (PLAYER),a           ; saves current player color
@@ -113,7 +111,7 @@ HumanMove
                 ; check human move legality
 
                 call Indexes2_Node      ; get graph's node index
-                ;call GetNode_Color      ; get graph's node color
+                call GetNode_Color      ; get graph's node color
                 ld a,WHITE_BLACK        ; set empty node color in A
                 cp (hl)                 ; is node empty?
                 jr nz,HexFilled         ; no, node is filled
@@ -130,7 +128,7 @@ DrawToken
                 ; check winner
 
                 ld a,(PLAYER)           ; get current player color
-                ;call Path_Finder        ; calculate current player shortest path
+                call Path_Finder        ; calculate current player shortest path
                 or a                    ; are # remaining nodes = 0?
                 jr z,PlayerWins         ; yes, there is a winner!
 
@@ -165,6 +163,15 @@ Delay
 ; Current player wins the game
 ;
 PlayerWins
+                ex af, af'              ; A = current player color
+                call Bright_Path        ; highlights the winner path
+
+                ld hl,STR_WINNER        ; HL points to "WINS!!" string
+                call Print_Alert        ; prints string
+
+                ;ld hl,WINNER_FX         ; HL points to filled node sound fx
+                ;call SoundFX            ; play sound fx
+
                 jp GameInit             ; initialize a new game
 ;
 ; Format_Move: applies format ("a-nn") to move string

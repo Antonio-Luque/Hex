@@ -190,7 +190,6 @@ FRAME_MAP:
                 defb  4, 148, 37, %00101010
                 defb  3, 156, 38, %00101010
                 defb  4, 156, 39, %00101010
-
 ;
 ; Tiles
 ;
@@ -235,3 +234,7 @@ TILE_SET:
                 defb 224,  56,  12,   6, 130, 194, 226, 226 ; 37 RToken_Up
                 defb  71,  71,  67,  65,  96,  48,  28,   7 ; 38 LToken_Down
                 defb 226, 226, 194, 130,   6,  12,  56, 224 ; 39 RToken_Down
+;
+; Start point of the nodes deque (doble ended queue) circular array
+;
+NODES_DEQ       equ $

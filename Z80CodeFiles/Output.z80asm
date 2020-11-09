@@ -34,9 +34,18 @@ Print_Alert:
 ; Destroys: A, HL, DE 
 ;        
 Clear_Alert:
+                ld hl,STR_EMPTY6        ; HL points to a 6 blanks string
+
                 ld a,CYAN_FLASH0        ; set clear attributes
                 ld (CHAR_ATTR),a
-                ld hl,STR_EMPTY6        ; HL points to a 6 blanks string
+                ld bc,(MOVE_POSXY)      ; get current player input/output screen location
+
+                ; puts string below current move location
+
+                dec b                   ; X = X - 1
+                ld a,c                   
+                add a,8                 ; Y = Y + 8
+                ld c,a
             
                 jr Print_String
 ;

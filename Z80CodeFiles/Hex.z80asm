@@ -11,7 +11,7 @@
                 #include "Output.z80asm"
                 #include "Input.z80asm"
                 ;#include "Brainiac.z80asm"
-                ;#include "Graph.z80asm"
+                #include "Graph.z80asm"
                 ;#include "Sound.z80asm"
                 #include "Frame.z80asm"
 ;
