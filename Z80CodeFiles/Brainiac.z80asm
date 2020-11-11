@@ -1,0 +1,519 @@
+﻿;
+; Brainiac.z80asm
+; Coded by Einar Saukas: https://spectrumcomputing.co.uk/entry/30216/ZX-Spectrum/COMPLICA_DX
+; Slightly adapted by Antonio Luque
+;
+MIN_VALUE       equ 0                  ; alphaBeta pruning minimum value
+MAX_VALUE       equ 255                ; alphaBeta pruning maximum value
+
+;
+; Board_Score: get the heuristic score of a determined board position
+; Coded by Antonio Luque
+;
+; Inspired on Greg Surma article:
+; https://towardsdatascience.com/hex-creating-intelligent-adversaries-part-2-heuristics-dijkstras-algorithm-597e4dcacf93 
+;
+; Input:    AI_PLAYER - Speccy color
+; Output:   A  - ((opponent player path distance) minus (current player path distance)) * (-1)
+;                or MIN_VALUE if any player path distance is 0
+;           B  - player remaing nodes
+;           A' - player color
+; Destroys: C, HL, IX
+;
+Board_Score:
+                ld a,(AI_PLAYER)        ; get current (speccy) player color
+;
+; Check_Paths: entry point to check players' path length (return MIN_VALUE if any of them is 0)
+; Input:    A - player color
+;
+Check_Paths:
+                call Path_Finder        ; calculate current player shortest path
+                ld c,a                  ; set remaining nodes in C
+                or a                    ; is current player shortest path = 0?
+                ret z                   ; yes, return min value
+        
+                ex af,af'               ; get current player color
+                xor SW_COLOR            ; A = opponent player color
+
+                call Path_Finder        ; calculate opponent player shortest path
+                or a                    ; is opponent player shortest path = 0?
+                ret z                   ; yes, return min value 
+
+                ld b,a                  ; set player remaining nodes in B
+
+                sub c                   ; A = (opponent player remaining nodes) - (current player remaining nodes)
+                xor #80                 ; A = A * (-1) inverts sign for easier further comparative
+
+                ret
+;
+; Speccy_Move: return the Speccy best move
+;
+; Input:    PLAYER - current player color
+; Output:   E - graph node selected as best move
+; Destroys: AF, BC, HL, D, IX
+;
+Speccy_Move:
+                ld a,24                 ; set node index as the center node
+                call GetNode_Color      ; get graph's node color
+                ld a,WHITE_BLACK        ; set empty node color in A
+                cp (hl)                 ; is node empty?
+                jr nz,CenterFilled      ; no, center node is filled
+
+                jr GetMoveNumber        ; continue checking move number
+
+CenterFilled
+                ld e,31                 ; set node index as the almost center node
+
+GetMoveNumber
+                ld a,(MOVE_NUMBER)      ; get move number
+                dec a                   ; is it BLUE first move?
+                jr z,FirstMove          ; yes, do move at the center of board
+                dec a                   ; is it RED 1st move?
+                jr z,FirstMove          ; yes, do move at (almost?) the center of board
+
+                ld a,(GAME_LEVEL)       ; get game level
+                ld (AI_DEPTH),a         ; saves recursion depth level
+
+                ld a,(PLAYER)           ; get current (speccy) player color
+                call BRAINIAC_best_move ; return Speccy best move
+
+FirstMove
+                ld a,e                  ; set node in A
+
+                call GetNode_Color      ; get node color address
+                ld a,(PLAYER)           ; get current (speccy) player color
+
+                ld (hl),a               ; update graph's node color with current player color
+
+                ret
+;
+; BRAINIAC_best_move: execute BRAINIAC algorithm to determine best choice for specified player's next move, 
+; according to specified AI difficulty level. This algorithm is implemented as recursive Minimax with
+; alpha-beta pruning, that alternates between tree nodes maximizing player score (player move) and minimizing
+; it (opponent move) depending on recursion depth.
+;
+; Coded by Einar Saukas: https://spectrumcomputing.co.uk/entry/30216/ZX-Spectrum/COMPLICA_DX
+; The complete and original source code in the link above. Adaptations are marked with * in routines comments.
+; 
+; Parameters:
+;   A: current player color* (BLUE_TOKEN or RED_TOKEN)
+;
+; Returns:
+;   E: selected node (0-48)*
+;
+; Uses:
+;   AI_DEPTH:  current recursion depth
+;   AI_PLAYER: current player
+;
+; Destroys:
+;   AF, BC, D, HL, AF'
+;
+BRAINIAC_best_move:
+                ld (AI_PLAYER),a        ; saves current player (speccy) color*
+
+                call Path_Finder        ; calculate current player shortest path*
+                ld b,a                  ; set # remaining nodes in B (BRAINIAC # of columns)
+
+                ex af,af'               ; get current player color
+                call GetPlayer_Nodes    ; fills player nodes vector with the empty nodes from player shortest path*
+
+                ld d,MIN_VALUE          ; D = alphaMax
+                ld e,(hl)               ; E = best player node (initialization)
+
+ABPrunLoop
+                ld a,(hl)               ; get node from player nodes vector*
+                ld c,a                  ; set player node in C
+
+                push hl                 ; stores player nodes vector pointer*
+                push bc                 ; stores path length and player node index
+
+                push de                 ; stores alphaMax and best player node
+                call GetNode_Color      ; get node color address*
+                pop de                  ; restores alphaMax and best player node
+
+                ld a,(AI_PLAYER)        ; get current player color      
+                ld c,a                  ; C = current player color
+                          
+                ld (hl),c               ; update node color with current player color* (BRAINIAC_play)
+
+                push hl                 ; stores address of node color
+                push de                 ; stores alphaMax and best player node
+                push bc                 ; stores path length and current player color
+
+                ld e,MAX_VALUE          ; E = betaMin
+                call AlphaBeta_Min      ; A = alphabeta_min(alphaMax, betaMin)
+
+                pop bc                  ; restores path length and current player color
+                pop de                  ; restores alphaMax and best player node            
+                pop hl                  ; restores address of node color
+
+                ld (hl),WHITE_BLACK     ; restores node color* (BRAINIAC_undo)
+
+                pop bc                  ; restores path length and player node index
+                pop hl                  ; restores player nodes vector pointer
+
+                cp d
+                jr c,ABPrunNext
+                jr z,ABPrunNext         ; if (A <= alphaMax) continue
+
+                ld d,a                  ; alphaMax = A
+                ld e,c                  ; best node = C
+
+ABPrunNext
+                inc hl                  ; HL points to the next player node*
+                djnz ABPrunLoop         ; repeat for each node in player nodes vector
+
+                ret
+;
+; Alphabeta_Min: Process a tree node of the Minimax search tree with alpha-beta pruning, when it requires
+; MINIMIZING player's score (for opponent move).
+;
+; This implementation is different from conventional alpha-beta pruning because it returns the best (lowest) betaMin value
+; obtained so far at this subtree depth (from previous sibling nodes), when it's even lower than the best (lowest) score at
+; this tree node only. In practice that's OK, since the existence of a lower betaMin in a previous sibling node would make
+; parent node discard the node's betaMin value and adopt the even lower betaMin value from a previous sibling node anyway.
+; This change was useful to allow a highly optimized Assembly implementation with a more efficient register allocation.
+; The only drawback was that, whenever a parent node obtains the same best score from 2 child nodes, it must always choose
+; the child node evaluated first, since the other child node node may not really have the same score and could be just
+; reproducing the best score from its sibling.
+;
+; Coded by Einar Saukas: https://spectrumcomputing.co.uk/entry/30216/ZX-Spectrum/COMPLICA_DX
+; The complete and original source code in the link above. Adaptations are marked with * in routines comments.
+;
+; Parameters:
+;   C: current player color* (BLUE_TOKEN or RED_TOKEN)
+;   D: alphaMax
+;   E: betaMin
+;
+; Returns:
+;   A: "improved" betaMin
+;   C: opponent (1 or 2)
+;   D: alphaMax
+;   E: "improved" betaMin
+;
+; Uses:
+;   ai_depth: current recursion depth
+;   ai_player: current player
+;
+; Destroys:
+;   F, B, HL, AF'
+;
+Alphabeta_Min:
+                ld a,c                  ; set current player color in A
+                call Check_Paths        ; checks players' path length and get number of opponent player remaining nodes
+                or a                    ; is it 0?
+                ret z                   ; yes, return min value
+
+                ex af,af'               ; get opponent player color
+                ld c,a                  ; set opponent player color in C
+
+                ld hl,AI_DEPTH
+                dec (hl)                ; depth--
+
+                jr z,Heuristic_Min      ; if (depth == 0) return heuristic_min
+
+                call GetPlayer_Nodes    ; fills opponent nodes vector with the empty nodes from opponent shortest path
+
+ABMinLoop
+                ld a,(hl)               ; get node from opponent nodes vector
+
+                push hl                 ; stores opponent nodes pointer
+
+                push de                 ; stores alphaMax and betaMin
+                call GetNode_Color      ; get node color address
+                pop de                  ; restores alphaMax and betaMin
+                                       
+                ld (hl),c               ; update node color with opponent player color (BRAINIAC_play)
+
+                push hl                 ; stores address of node color
+                push de                 ; stores alphaMax and betaMin
+                push bc                 ; stores path length and opponent color
+
+                call Alphabeta_Max      ; A = alphabeta_max(alphaMax, betaMin)
+
+                pop bc                  ; restores path length and opponent color
+                pop de                  ; restores alphaMax and betaMin            
+                pop hl                  ; restores address of node color
+
+                ld (hl),WHITE_BLACK     ; restores node color (BRAINIAC_undo)           
+
+                pop hl                  ; restores opponent nodes pointer
+
+                cp e
+                jr nc,ABMinNext         ; if (A >= betaMin) continue
+
+                cp d
+                jr c,ABMinExit
+                jr z,ABMinExit          ; if (A <= alphaMax) { depth++; return A }
+
+                ld e,a                  ; betaMin = A
+
+ABMinNext
+                inc hl                  ; HL points to the next node
+                djnz ABMinLoop          ; repeat for each node in opponent nodes vector
+
+                ld a,e                  ; return betaMin
+
+ABMinExit
+                ld hl,AI_DEPTH
+                inc (hl)                ; depth++
+
+                ret
+;
+; Heuristic_Min: Specialized routine to process the lowest tree node (depth zero) of the Minimax search tree
+; with alpha-beta pruning, when it requires MINIMIZING player's score (for opponent move).
+;
+; Technically "heuristic_min" works exactly like "alphabeta_min_loop", except it directly evaluates board for each child node
+; instead of calling "alphabeta_max" recursively. Although it would be easier to just let it invoke "alphabeta_max" again to
+; obtain the evaluated board, this extra level of recursion would represent an overhead of another 108 T-states per leaf node.
+; In level 1 for instance, it would mean a negligible overhead of 4*108 = 432 T-states only. But in level 7, it could provide
+; an overhead of (4^7)*108 = 1769472 T-states. Condering BRAINIAC only has about 20K T-states available per frame (multicolor
+; rendering consumes most CPU resources), this simple optimization is responsible for making BRAINIAC almost 2 seconds faster.
+;
+; Coded by Einar Saukas: https://spectrumcomputing.co.uk/entry/30216/ZX-Spectrum/COMPLICA_DX
+; The complete and original source code in the link above. Adaptations are marked with * in routines comments.
+;
+; Parameters:
+;   B : opponent player remaining nodes*
+;   C : player (BLUE_TOKEN or RED_TOKEN)
+;   D : alphaMax
+;   E : betaMin
+;
+; Returns:
+;   A: "improved" betaMin
+;   D: alphaMax
+;   E: "improved" betaMin
+;   A': opponent (1 or 2)
+;
+; Uses:
+;   DEPTH: current recursion depth*
+;   HEX_COLOR: current player color*
+;
+; Destroys:
+;   F, B, HL, F'
+;
+Heuristic_Min:
+                call GetPlayer_Nodes    ; fills opponent nodes vector with the empty nodes from opponent shortest path
+
+HeurMinLoop
+                ld a,(hl)               ; get node from opponent nodes vector
+
+                push hl                 ; stores opponent nodes pointer
+
+                push de                 ; stores alphaMax and betaMin
+                call GetNode_Color      ; get node color address
+                pop de                  ; restores alphaMax and betaMin
+                                       
+                ld (hl),c               ; update node color with opponent player color (BRANIAC_play)
+
+                exx                     ; stores address of node color, alphaMax and betaMin,
+                                        ; and path length and opponent color
+
+                call Board_Score        ; A = board score
+
+                exx                     ; restores address of node color, alphaMax and betaMin,
+                                        ; and path length and opponent color
+
+                ld (hl),WHITE_BLACK     ; restores node color (BRAINIAC_undo)
+
+                pop hl                  ; restores candidates nodes pointer
+
+                cp e
+                jr nc,HeurMinNext       ; if (A >= betaMin) continue
+
+                cp d
+                jr c,HeurMinExit
+                jr z,HeurMinExit        ; if (A <= alphaMax) { depth++; return A }
+
+                ld e,a                  ; betaMin = A
+
+HeurMinNext
+                inc hl                  ; HL points to the next node
+                djnz HeurMinLoop        ; repeat for each node in candidates vector
+
+                ld a,e                  ; return betaMin
+
+HeurMinExit
+                ld hl,AI_DEPTH
+                inc (hl)                ; depth++
+
+                ret
+;
+; Alphabeta_Max: Process a tree node of the Minimax search tree with alpha-beta pruning, when it requires
+; MAXIMIZING player's score (for player move).
+;
+; This implementation is different from conventional alpha-beta pruning because it returns the best (highest) alphaMax value
+; obtained so far at this subtree depth (from previous sibling nodes), when it's even higher than the best (highest) score at
+; this tree node only. In practice that's OK, since the existence of a higher alphaMax in a previous sibling node would make
+; parent node discard the node's alphaMax value and adopt the even higher alphaMax value from a previous sibling node anyway.
+; This change was useful to allow a highly optimized Assembly implementation with a more efficient register allocation. 
+; The only drawback was that, whenever a parent node obtains the same best score from 2 child nodes, it must always choose
+; the child node evaluated first, since the other child node node may not really have the same score and could be just
+; reproducing the best score from its sibling.
+;
+; Coded by Einar Saukas: https://spectrumcomputing.co.uk/entry/30216/ZX-Spectrum/COMPLICA_DX
+; The complete and original source code in the link above. Adaptations are marked with * in routines comments.
+;
+; Parameters:
+;   C: opponent player color* (BLUE_TOKEN or RED_TOKEN)
+;   D: alphaMax
+;   E: betaMin
+;
+; Returns:
+;   A: "improved" alphaMax
+;   C: player (1 or 2)
+;   D: "improved" alphaMax
+;   E: betaMin
+;
+; Uses:
+;   ai_depth: current recursion depth
+;   ai_player: current player
+;
+; Destroys:
+;   F, B, HL, AF'
+;
+Alphabeta_Max:
+                ld a,c                  ; set opponent player color in A
+                call Check_Paths        ; checks players' path length and get number of opponent player remaining nodes
+                or a                    ; is it 0?
+                ret z                   ; yes, return min value
+
+                ex af,af'               ; get current player color
+                ld c,a                  ; set current player color in C
+
+                ld hl,AI_DEPTH
+                dec (hl)                ; depth--
+
+                jr z,Heuristic_Max      ; if (depth == 0) return heuristic_max
+
+                call GetPlayer_Nodes    ; fills opponent nodes vector with the empty nodes from opponent shortest path
+
+ABMaxLoop
+                ld a,(hl)
+
+                push hl                 ; stores player nodes pointer
+
+                push de                 ; stores alphaMax and betaMin
+                call GetNode_Color      ; get node color address
+                pop de                  ; restores alphaMax and betaMin
+                                       
+                ld (hl),c               ; update node color with current player color (BRANIAC_play)
+
+                push hl                 ; stores address of node color
+                push de                 ; stores alphaMax and betaMin
+                push bc                 ; stores path length and player color
+
+                call Alphabeta_Min      ; A = alphabeta_min(alphaMax, betaMin)
+
+                pop bc                  ; restores path length and player color
+                pop de                  ; restores alphaMax and betaMin            
+                pop hl                  ; restores address of node color
+
+                ld (hl),WHITE_BLACK     ; restores node color (BRAINIAC_undo)
+
+                pop hl                  ; restores player nodes pointer
+
+                cp d
+                jr c,ABMaxNext
+                jr z,ABMaxNext          ; if (A <= alphaMax) continue
+
+                cp e
+                jr nc,ABMaxExit         ; if (A >= betaMin) { depth++; return A }
+
+                ld d,a                  ; alphaMax = A
+
+ABMaxNext
+                inc hl                  ; HL points to the next node
+                djnz ABMaxLoop          ; repeat for each node in player nodes vector
+
+                ld a,d                  ; return alphaMax
+
+ABMaxExit
+                ld hl,AI_DEPTH
+                inc (hl)                ; depth++
+
+                ret
+;
+; Heuristic_Max: Specialized routine to process the lowest tree node (depth zero) of the Minimax search tree
+; with alpha-beta pruning, when it requires MAXIMIZING player's score (for player move).
+;
+; Technically "heuristic_max" works exactly like "alphabeta_max_loop", except it directly evaluates board for each child node
+; instead of calling "alphabeta_min" recursively. Although it would be easier to just let it invoke "alphabeta_min" again to
+; obtain the evaluated board, this extra level of recursion would represent an overhead of another 108 T-states per leaf node.
+; In level 1 for instance, it would mean a negligible overhead of 4*108 = 432 T-states only. But in level 7, it could provide
+; an overhead of (4^7)*108 = 1769472 T-states. Condering BRAINIAC only has about 20K T-states available per frame (multicolor
+; rendering consumes most CPU resources), this simple optimization is responsible for making BRAINIAC almost 2 seconds faster.
+;
+; Coded by Einar Saukas: https://spectrumcomputing.co.uk/entry/30216/ZX-Spectrum/COMPLICA_DX
+; The complete and original source code in the link above. Adaptations are marked with * in routines comments.
+;
+; Parameters:
+;   B : current player remaining nodes*
+;   C : player (BLUE_TOKEN or RED_TOKEN)
+;   D : alphaMax
+;   E : betaMin
+;
+; Returns:
+;   A: "improved" alphaMax
+;   D: "improved" alphaMax
+;   E: betaMin
+;   A': opponent (1 or 2)
+;
+; Uses:
+;   ai_depth: current recursion depth
+;   ai_player: current player
+;
+; Destroys:
+;   F, B, HL, F'
+;
+Heuristic_Max:
+                call GetPlayer_Nodes    ; fills player nodes vector with the empty nodes from player shortest path
+
+HeurMaxLoop            
+                ld a,(hl)               ; set node in A
+
+                push hl                 ; stores candidates nodes pointer
+
+                push de                 ; stores alphaMax and betaMin
+                call GetNode_Color      ; get node color address
+                pop de                  ; restores alphaMax and betaMin
+
+                ld (hl),c               ; update node color with current player color (BRANIAC_play)
+
+                exx                     ; stores address of node color, alphaMax and betaMin,
+                                        ; and path length and opponent color
+
+                call Board_Score        ; A = board score
+
+                exx                     ; restores address of node color, alphaMax and betaMin,
+                                        ; and path length and current player color
+
+                ld (hl),WHITE_BLACK     ; restores node color (BRAINIAC_undo)
+
+                pop hl                  ; restores candidates nodes pointer
+
+                cp d
+                jr c,HeurMaxNext
+                jr z,HeurMaxNext        ; if (A <= alphaMax) continue
+
+                cp e
+                jr nc,HeurMaxExit       ; if (A >= betaMin) { depth++; return A }
+
+                ld d,a                  ; alphaMax = A
+
+HeurMaxNext
+                inc hl                  ; HL points to the next node
+                djnz HeurMaxLoop        ; repeat for each node in candidates vector
+
+                ld a,d                  ; return alphaMax
+
+HeurMaxExit
+                ld hl,AI_DEPTH
+                inc (hl)                ; depth++
+
+                ret
+;
+; Variables
+;
+AI_PLAYER       defb 0                  ; current player
+AI_DEPTH        defb 0                  ; recursion depth level
