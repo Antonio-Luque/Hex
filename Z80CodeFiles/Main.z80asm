@@ -44,6 +44,9 @@ GameInit
 
                 call Input_Options      ; Input game options
 
+                ld a,1
+                ld (MOVE_NUMBER),a      ; set move number to 1
+
                 ld a,BLUE_TOKEN         ; set current player color
                 ld (PLAYER),a           ; saves current player color
 ;
@@ -78,7 +81,7 @@ StorePosXY
 
                 call Print_Wait         ; prints "WAIT" message
 
-                ;call Speccy_Move        ; get Speccy move
+                call Speccy_Move        ; get Speccy move
                 call Node2_Indexes      ; get XY hexagon board indexes
 
                 push bc                 ; stores XY hexagon board indexes
@@ -123,6 +126,9 @@ DrawToken
 
                 ld hl,TOKEN_FX          ; HL points to the sound fx for move
                 call SoundFX            ; play sound fx
+
+                ld hl,MOVE_NUMBER       ; increments move number
+                inc (hl)
 
                 ; check winner
 
@@ -297,3 +303,4 @@ STR_WINNER      defm "WINS!!\0"
 
 ; Current player color
 PLAYER          defb 0
+MOVE_NUMBER     defb 0

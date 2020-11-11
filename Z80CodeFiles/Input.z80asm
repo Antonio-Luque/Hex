@@ -43,6 +43,12 @@ Input_Options:
                 ld bc,RED_XY            ; set XY RED player input/output screen location
                 call Print_String       ; clear RED player last move
 
+                ; clear level
+
+                ld hl,STR_NOLEVEL       ; HL points to a 7 blanks string
+                ld bc,LEVEL_XY          ; set string position
+                call Print_String       ; prints string
+
                 pop af                  ; restores key pressed
                 ld (NUM_PLAYERS),a      ; stores # of players choice
                 cp '2'                  ; is it '2'?
@@ -101,7 +107,7 @@ GameLevel
 
                 pop af                  ; restores level number (char)
                 sub #30                 ; converts to number
-                ld (AI_DEPTH),a         ; saves game level (depth)
+                ld (GAME_LEVEL),a       ; saves game level
 
                 ld hl,STR_LEVELTEXT     ; HL points to "Level" string
                 ld bc,LEVEL_XY          ; set string position
@@ -118,10 +124,6 @@ TwoPlayers
 
                 ld hl,STR_PLAYER        ; HL points to "Player" string
                 ld bc,REDTEXT_XY        ; set red string position
-                call Print_String       ; prints string
-
-                ld hl,STR_NOLEVEL       ; HL points to a 7 blanks string
-                ld bc,LEVEL_XY          ; set string position
                 call Print_String       ; prints string
 
 ExitOptions
@@ -363,7 +365,7 @@ KEYS_MAP        defb '1', '2', '3', '4'
 ;
 NUM_PLAYERS     defb 0
 HUMAN_COLOR     defb 0
-AI_DEPTH        defb 0
+GAME_LEVEL      defb 0
 
 HUMAN_MOVE      defb 0, 0, 0, 0
 CHAR_COUNT      defb 0
