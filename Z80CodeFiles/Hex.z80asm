@@ -4,7 +4,7 @@
 ;
 ; Build file
 ;
-                org #8000
+                org #6000
             
                 #include "Main.z80asm"
                 #include "Draw.z80asm"
