@@ -273,20 +273,12 @@ GetPlayer_Nodes:
                 ld e,a
                 add hl,de               ; HL points to current player's start node of shortest path
 
-                ld a,c                  ; set current player color in A
-                and %00000011           ; converts player color into an index: 1 - blue player, 2 - red player
-                                
-                rra                     ; calculates low-byte destination address of player nodes
-                rra                     
-                rra
-                and %10111111           ; low-byte is #00 for blue player or #80 for red player
-
-                ld e,a                  ; set low-byte address in E
-
-                ld a,(AI_DEPTH)         ; calculates high-byte destination address of player nodes
-                add a,#E0               ; hi-byte is #E0 + AI_DEPTH (recursion depth level)
-
-                ld d,a                  ; set high-byte address in D
+                ld d,#71                ; set high address of nodes vector pointer in D
+                ld a,(AI_DEPTH)         ; get recursion depth level
+                rla                     ; calculates low address of nodes vector pointer
+                rla
+                rla                     ; A = AI_DEPTH * 8
+                ld e,a                  ; set low address of nodes vector pointer in E
 
                 push de                 ; stores nodes vector pointer in DE
 
