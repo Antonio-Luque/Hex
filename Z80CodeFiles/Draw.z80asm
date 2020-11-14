@@ -204,8 +204,8 @@ GetXY_ATTR:
                 and %11000000           ; YY------
                 rlca
                 rlca                    ; ------YY
-                add a,#58
-                ld d,a                  ; #5800 start of attr memory address
+                add a,$58
+                ld d,a                  ; $5800 start of attr memory address
                 ld a,c
                 and %00111000           ; --YYY---
                 rlca
@@ -241,8 +241,8 @@ GetXY_Screen:
                 rrca
                 rrca                    ; ---YY---
                 or d                    ; add Ypos (Y2-Y0)
-                or  #40
-                ld d,a                  ; #4000 start of screen memory address 
+                or  $40
+                ld d,a                  ; $4000 start of screen memory address 
 
                 ret
 ;
@@ -254,22 +254,22 @@ GetXY_Screen:
 ; Rest of bytes are the Lo-Byte attr/screen memory addresses
 ;
 BOARD_MAP:
-                defb #00, #40, #40, #48, #48, #48, #48, #50
-                defb #58, #A6, #A8, #AA, #AC, #AE, #B0, #B2
-                defb #58, #E7, #E9, #EB, #ED, #EF, #F1, #F3
-                defb #59, #28, #2A, #2C, #2E, #30, #32, #34
-                defb #59, #69, #6B, #6D, #6F, #71, #73, #75
-                defb #59, #AA, #AC, #AE, #B0, #B2, #B4, #B6
-                defb #59, #EB, #ED, #EF, #F1, #F3, #F5, #F7
-                defb #5A, #2C, #2E, #30, #32, #34, #36, #38
+                defb $00, $40, $40, $48, $48, $48, $48, $50
+                defb $58, $A6, $A8, $AA, $AC, $AE, $B0, $B2
+                defb $58, $E7, $E9, $EB, $ED, $EF, $F1, $F3
+                defb $59, $28, $2A, $2C, $2E, $30, $32, $34
+                defb $59, $69, $6B, $6D, $6F, $71, $73, $75
+                defb $59, $AA, $AC, $AE, $B0, $B2, $B4, $B6
+                defb $59, $EB, $ED, $EF, $F1, $F3, $F5, $F7
+                defb $5A, $2C, $2E, $30, $32, $34, $36, $38
 ;
 ; Graphics
 ;
 TOKEN:
-                defb   7, 224,  28,  56,  48,  12,  96,   6
-                defb  65, 130,  67, 194,  71, 226,  71, 226
-                defb  71, 226,  71, 226,  67, 194,  65, 130
-                defb  96,   6,  48,  12,  28,  56,   7, 224
+                defb   7, 224,  31, 248,  56,  28, 115, 206
+                defb 103, 230, 111, 118, 111, 182, 111, 182
+                defb 111, 246, 111, 246, 111, 246, 103, 230
+                defb 115, 206,  56,  28,  31, 248,   7, 224
 HEXAGON:
                 defb   7, 224,  28,  56,  48,  12,  96,   6
                 defb  64,   2,  64,   2,  64,   2,  64,   2

@@ -2,12 +2,12 @@
 ; Main.z80asm
 ; Coded by Antonio Luque
 ;
-CLS             equ #0D6B               ; ROM address of CLS command routine
-BORDER          equ #229B               ; ROM address of BORDER+7 command routine
-ATTR_P          equ #5C8D               ; RAM address of permanent attributes system variable
+CLS             equ $0D6B               ; ROM address of CLS command routine
+BORDER          equ $229B               ; ROM address of BORDER+7 command routine
+ATTR_P          equ $5C8D               ; RAM address of permanent attributes system variable
 
-RED_XY          equ #02A8               ; XY RED player input/output screen location
-BLUE_XY         equ #1A30               ; XY BLUE player input/output screen location
+RED_XY          equ $02A8               ; XY RED player input/output screen location
+BLUE_XY         equ $1A30               ; XY BLUE player input/output screen location
 
 CYAN_FLASH0     equ %00101000           ; Attributes: bright 0, flash 0, paper 5, ink 0
 CYAN_REVERSE    equ %00000101           ; Attributes: bright 0, flash 0, paper 0, ink 5
@@ -16,7 +16,7 @@ RED_TOKEN       equ %00111010           ; Attributes: bright 0, flash 0, paper 7
 SW_COLOR        equ %00000011           ; BITs to be XORed to swap current player color
 
 ;
-; Entry point: set screen colors and draws board frame
+; Entry point: set screen colors and draws board frame and empty hex board
 ;
                 ld a,5                  ; set border 5 (cyan)
                 call BORDER             ; call BORDER ROM routine
@@ -26,7 +26,7 @@ SW_COLOR        equ %00000011           ; BITs to be XORed to swap current playe
                 call CLS                ; call CLS ROM routine
 
                 ld hl,STR_HEADER        ; HL points to header string
-                ld bc,#0A08             ; set string position
+                ld bc,$0A08             ; set string position
                 ld a,CYAN_REVERSE       ; set header attributes
                 ld (CHAR_ATTR),a
                 call Print_String       ; prints string
@@ -190,7 +190,7 @@ Format_Move:
                 ld ix,STR_MOVE          ; IX points to formatted move string to print
 
                 ld a,b                  ; set column index position
-                xor %01100000           ; add #60 (see charset 'a'-'g')
+                xor %01100000           ; add $60 (see charset 'a'-'g')
                 ld (ix+0),a             ; stores it in 1st position of formated string
                 ld a,c                  ; set row index position
 
@@ -231,13 +231,13 @@ I2SLoop
 ;
 String2_Indexes:
                 ld a,(hl)               ; get a-g column
-                xor %01100000           ; substract #60 (see charset)
+                xor %01100000           ; substract $60 (see charset)
                 ld b,a                  ; set column position
 
                 inc hl                  ; HL points to next char
-                ld a,(hl)               ; get 1st part of 1-7 column
+                ld a,(hl)               ; get char of 1-7 column
 
-                xor %00110000           ; subtract #30
+                xor %00110000           ; subtract $30
                 ld c,a                  ; set row position
 
                 ret

@@ -2,7 +2,7 @@
 ; Sound.z80asm
 ; Coded with BeepFX player tool by Shiru: https://opengameart.org/content/zx-spectrum-beeper-sound-effects
 ;
-BORDCR          equ #5C48              ; RAM address of border colour system variable
+BORDCR          equ $5C48              ; RAM address of border colour system variable
 
 ;
 ; SoundFX: play a sound effect

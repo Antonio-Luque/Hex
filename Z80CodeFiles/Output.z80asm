@@ -2,8 +2,8 @@
 ; Output.z80asm
 ; Coded by Antonio Luque
 ;
-CHARS           equ #3C00              ; ROM address of charset data
-CYAN_FLASH1     equ %10101000          ; Attributes: flash 1, paper 5, ink 0
+CHARS           equ FONT-256            ; Address of charset data
+CYAN_FLASH1     equ %10101000           ; Attributes: flash 1, paper 5, ink 0
 
 ;
 ; Print_Alert: prints an alert message below the current player input/output screen location

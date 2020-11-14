@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <Z80Asm Include="Z80CodeFiles\Brainiac.z80asm" />
+    <Z80Asm Include="Z80CodeFiles\Font.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Draw.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Frame.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Graph.z80asm" />
@@ -24,6 +25,9 @@
   <ItemGroup>
     <Tzx Include="TapeFiles\hex%24.tzx" />
     <Tzx Include="TapeFiles\Hex.tzx" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Z80CodeFiles\King+.bin" />
   </ItemGroup>
   <Import Project="$(CustomProjectExtensionsPath)Spect.Net.CodeDiscover.targets" />
 </Project>
