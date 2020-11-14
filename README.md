@@ -7,7 +7,7 @@ I use [SpectNet IDE](https://dotneteer.github.io/spectnetide/) for developing, b
 
 ## Credits and acknowledgements
 
-- Einar Saukas and his amazing [BRAINIAC](https://spectrumcomputing.co.uk/entry/30216/ZX-Spectrum/COMPLICA_DX), loading screen and fonts.
+- Einar Saukas and his amazing [BRAINIAC](https://spectrumcomputing.co.uk/entry/30216/ZX-Spectrum/COMPLICA_DX), loading screen, King+ font and TOKEN graphics.
 - ChibiAkumas [lessons](https://www.chibiakumas.com/z80/simplesamples.php#LessonS2)
 - Santiago Romero [assembler course](https://wiki.speccy.org/cursos/ensamblador/gfx4_fuentes)
  
