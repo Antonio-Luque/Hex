@@ -117,9 +117,9 @@ Path_Finder:
 
                 ld hl,PARENT            ; HL points to parent vector
                 ld de,PARENT+1          ; DE points to the next byte
-                ld (hl),#FF             ; initialize value to parent and distance nodes vectors  
+                ld (hl),$FF             ; initialize value to parent and distance nodes vectors  
                 ld bc,105               ; parent and distance nodes vectors length
-                ldir                    ; copy 106 bytes with #FF from HL to DE
+                ldir                    ; copy 106 bytes with $FF from HL to DE
 
                 ld hl,NODES_DEQ         ; initialize deque (doble-ended queue) pointers
                 ld (DEQ_TAIL),hl
@@ -137,7 +137,7 @@ Path_Finder:
                 add hl,de               ; HL points to start node distance
                 ld (hl),0               ; set start node distance as 0
 
-                call Push_Tail          ; push start node at head of nodes deque
+                call Push_Tail          ; push start node at tail of nodes deque
 
 DequeLoop
                 call Pop_Head           ; get current node from head of nodes deque
@@ -273,7 +273,7 @@ GetPlayer_Nodes:
                 ld e,a
                 add hl,de               ; HL points to current player's start node of shortest path
 
-                ld d,#71                ; set high address of nodes vector pointer in D
+                ld d,$7A                ; set high address of nodes vector pointer in D
                 ld a,(AI_DEPTH)         ; get recursion depth level
                 rla                     ; calculates low address of nodes vector pointer
                 rla
@@ -452,9 +452,7 @@ node47          defb  5, 48, 52, 46, 40, 41
 node48          defb  4, 51, 52, 47, 41
 ; edge nodes
 node49          defb  7,  0,  1,  2,  3,  4,  5,  6 ; up
-;node49          defb  7,  3,  4,  2,  5,  1,  6,  0 ; up
 node50          defb  7,  0,  7, 14, 21, 28, 35, 42 ; left
-;node50          defb  7, 21, 28, 14, 35,  7, 42,  0 ; left
 node51          defb  7,  6, 13, 20, 27, 34, 41, 48 ; right
 node52          defb  7, 42, 43, 44, 45, 46, 47, 48 ; bottom
 ;

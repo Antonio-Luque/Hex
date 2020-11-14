@@ -2,14 +2,14 @@
 ; Input.z80asm
 ; Coded by Antonio Luque
 ;
-LAST_K          equ #5C08               ; RAM address of last key pressed system variable
-KEY_SCAN        equ #028E               ; ROM address of keyboard scanning routine
+LAST_K          equ $5C08               ; RAM address of last key pressed system variable
+KEY_SCAN        equ $028E               ; ROM address of keyboard scanning routine
 
-MESSAGE_XY      equ #08B8               ; XY question message screen location
-BLUETEXT_XY     equ #1910               ; XY blue player name screen location
-REDTEXT_XY      equ #0188               ; XY red player name screen location
-LEVEL_XY        equ #10B0               ; XY level text message screen location
-LEVELNUM_XY     equ #16B0               ; XY level number screen location
+MESSAGE_XY      equ $08B8               ; XY question message screen location
+BLUETEXT_XY     equ $1910               ; XY blue player name screen location
+REDTEXT_XY      equ $0188               ; XY red player name screen location
+LEVEL_XY        equ $10B0               ; XY level text message screen location
+LEVELNUM_XY     equ $16B0               ; XY level number screen location
 
 MAX_CHARS       equ 2                   ; maximum of input chars
 
@@ -27,7 +27,7 @@ Input_Options:
                 ld bc,MESSAGE_XY        ; set string position
                 call Print_String       ; prints string
            
-                ld bc,#3132             ; set input limits to key '1' (#31) or key '2' (#32)
+                ld bc,$3132             ; set input limits to key '1' ($31) or key '2' ($32)
                 call Read_Key           ; read key from keyboard
 
                 push af
@@ -62,7 +62,7 @@ Input_Options:
                 ld bc,MESSAGE_XY        ; set string position
                 call Print_String       ; prints string
           
-                ld bc,#6272             ; set input limits to key 'b' (#62) or key 'r' (#72)
+                ld bc,$6272             ; set input limits to key 'b' ($62) or key 'r' ($72)
                 call Read_Key           ; read key from keyboard
 
                 cp 'b'                  ; is it 'B'?
@@ -106,7 +106,7 @@ GameLevel
                 call Print_Char         ; prints level number
 
                 pop af                  ; restores level number (char)
-                sub #30                 ; converts to number
+                sub $30                 ; converts to number
                 ld (GAME_LEVEL),a       ; saves game level
 
                 ld hl,STR_LEVELTEXT     ; HL points to "Level" string
@@ -141,7 +141,7 @@ ExitOptions
 ;
 Read_Key:
                 xor a                   ; A = 0
-                in a,(#FE)              ; read keyboard throught reading port
+                in a,($FE)              ; read keyboard throught reading port
                 cpl                     ; invert read data (0->1, 1->0)
                 and %00011111           ; are keys released?
                 jr nz,Read_Key          ; no, read keyboard again
@@ -165,7 +165,7 @@ LimitInput
 ; Destroys: HL, BC, E
 ;
 ReadKeys_1to4:
-                ld bc,#F7FE             ; set input range for port (keys 1 to 5)
+                ld bc,$F7FE             ; set input range for port (keys 1 to 5)
 
 RangeLoop
                 ld hl,KEYS_MAP          ; HL points to keys chars "1" to "4"
@@ -228,10 +228,10 @@ InputLoop
 
                 ld a,(LAST_K)           ; A = ASCII of key pressed
 
-                cp #0D                  ; is it ENTER?
+                cp $0D                  ; is it ENTER?
                 jp z,InputEnd           ; yes, go to the end of rutine
 
-                cp #0C                  ; is it DELETE?
+                cp $0C                  ; is it DELETE?
                 jr z,InputDelete        ; yes, perform delete char
 
                 ex af,af'               ; stores ASCII code in A'
@@ -348,8 +348,8 @@ InputEnd
 ;
 ; Strings
 ;
-STR_PLAYERS     defm "One or two players? 1|2\0"
-STR_COLORS      defm "Choose blue or red, b|r\0"
+STR_PLAYERS     defm "One or two players? 1/2\0"
+STR_COLORS      defm "Choose blue or red, b/r\0"
 STR_LEVEL       defm "Select game level, 1-4 \0"
 STR_CLEAR       defm "                       \0"
 

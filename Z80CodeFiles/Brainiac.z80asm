@@ -42,7 +42,7 @@ Check_Paths:
                 ld b,a                  ; set player remaining nodes in B
 
                 sub c                   ; A = (opponent player remaining nodes) - (current player remaining nodes)
-                xor #80                 ; A = A * (-1) inverts sign for easier further comparative
+                xor $80                 ; A = A * (-1) inverts sign for easier further comparative
 
                 ret
 ;

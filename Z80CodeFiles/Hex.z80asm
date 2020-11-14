@@ -4,8 +4,8 @@
 ;
 ; Build file
 ;
-                org #6000
-            
+                org $6000
+
                 #include "Main.z80asm"
                 #include "Draw.z80asm"
                 #include "Output.z80asm"
@@ -13,11 +13,14 @@
                 #include "Brainiac.z80asm"
                 #include "Graph.z80asm"
                 #include "Sound.z80asm"
+                #include "Font.z80asm"
                 #include "Frame.z80asm"
 ;
 ; Credits and acknowledgements:
 ;
-; - Einar Saukas and his amazing BRAINIAC: https://spectrumcomputing.co.uk/entry/30216/ZX-Spectrum/COMPLICA_DX
+; - Einar Saukas and his amazing BRAINIAC: https://spectrumcomputing.co.uk/entry/30216/ZX-Spectrum/COMPLICA_DX, 
+;   loading screen, "King+" font and TOKEN graphics
+;
 ; - Greg Surma article: https://towardsdatascience.com/hex-creating-intelligent-adversaries-part-2-heuristics-dijkstras-algorithm-597e4dcacf93 
 ; - ChibiAkumas lessons: https://www.chibiakumas.com/z80/simplesamples.php#LessonS2
 ; - Santiago Romero assembler course: https://wiki.speccy.org/cursos/ensamblador/gfx4_fuentes
