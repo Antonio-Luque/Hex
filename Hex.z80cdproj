@@ -29,5 +29,8 @@
   <ItemGroup>
     <None Include="Z80CodeFiles\King+.bin" />
   </ItemGroup>
+  <ItemGroup>
+    <Tap Include="TapeFiles\Hex.tap" />
+  </ItemGroup>
   <Import Project="$(CustomProjectExtensionsPath)Spect.Net.CodeDiscover.targets" />
 </Project>

@@ -141,7 +141,7 @@ ABPrunLoop
                 push bc                 ; stores path length and current player color
 
                 ld e,MAX_VALUE          ; E = betaMin
-                call AlphaBeta_Min      ; A = alphabeta_min(alphaMax, betaMin)
+                call Alphabeta_Min      ; A = alphabeta_min(alphaMax, betaMin)
 
                 pop bc                  ; restores path length and current player color
                 pop de                  ; restores alphaMax and best player node            

@@ -108,7 +108,7 @@ DEQ_TAIL        defw 0
 ;
 Path_Finder:
                 push bc                 ; stores BC register
-                push de                 ; setores DE register
+                push de                 ; stores DE register
                 push af                 ; stores current player color
 
                 ld ixl,a                ; set current player color in IXl

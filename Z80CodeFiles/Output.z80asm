@@ -122,7 +122,7 @@ Print_Char:
                 push hl                 ; stores registers 
                 push bc
 
-                ld de,CHARS             ; CHARS system variable points to font address
+                ld de,CHARS             ; DE points to font address
 
                 ld h,0                  ; set character index
                 ld l,a                  
