@@ -46,47 +46,6 @@ Check_Paths:
 
                 ret
 ;
-; Speccy_Move: return the Speccy best move
-;
-; Input:    PLAYER - current player color
-; Output:   E - graph node selected as best move
-; Destroys: AF, BC, HL, D, IX
-;
-Speccy_Move:
-                ld a,24                 ; set node index as the center node
-                call GetNode_Color      ; get graph's node color
-                ld a,WHITE_BLACK        ; set empty node color in A
-                cp (hl)                 ; is node empty?
-                jr nz,CenterFilled      ; no, center node is filled
-
-                jr GetMoveNumber        ; continue checking move number
-
-CenterFilled
-                ld e,31                 ; set node index as the almost center node
-
-GetMoveNumber
-                ld a,(MOVE_NUMBER)      ; get move number
-                dec a                   ; is it BLUE first move?
-                jr z,FirstMove          ; yes, do move at the center of board
-                dec a                   ; is it RED 1st move?
-                jr z,FirstMove          ; yes, do move at (almost?) the center of board
-
-                ld a,(GAME_LEVEL)       ; get game level
-                ld (AI_DEPTH),a         ; saves recursion depth level
-
-                ld a,(PLAYER)           ; get current (speccy) player color
-                call BRAINIAC_best_move ; return Speccy best move
-
-FirstMove
-                ld a,e                  ; set node in A
-
-                call GetNode_Color      ; get node color address
-                ld a,(PLAYER)           ; get current (speccy) player color
-
-                ld (hl),a               ; update graph's node color with current player color
-
-                ret
-;
 ; BRAINIAC_best_move: execute BRAINIAC algorithm to determine best choice for specified player's next move, 
 ; according to specified AI difficulty level. This algorithm is implemented as recursive Minimax with
 ; alpha-beta pruning, that alternates between tree nodes maximizing player score (player move) and minimizing
@@ -160,7 +119,7 @@ ABPrunLoop
                 ld e,c                  ; best node = C
 
 ABPrunNext
-                inc hl                  ; HL points to the next player node*
+                dec hl                  ; HL points to the next player node*
                 djnz ABPrunLoop         ; repeat for each node in player nodes vector
 
                 ret
@@ -249,7 +208,7 @@ ABMinLoop
                 ld e,a                  ; betaMin = A
 
 ABMinNext
-                inc hl                  ; HL points to the next node
+                dec hl                  ; HL points to the next node
                 djnz ABMinLoop          ; repeat for each node in opponent nodes vector
 
                 ld a,e                  ; return betaMin
@@ -328,7 +287,7 @@ HeurMinLoop
                 ld e,a                  ; betaMin = A
 
 HeurMinNext
-                inc hl                  ; HL points to the next node
+                dec hl                  ; HL points to the next node
                 djnz HeurMinLoop        ; repeat for each node in candidates vector
 
                 ld a,e                  ; return betaMin
@@ -423,7 +382,7 @@ ABMaxLoop
                 ld d,a                  ; alphaMax = A
 
 ABMaxNext
-                inc hl                  ; HL points to the next node
+                dec hl                  ; HL points to the next node
                 djnz ABMaxLoop          ; repeat for each node in player nodes vector
 
                 ld a,d                  ; return alphaMax
@@ -502,7 +461,7 @@ HeurMaxLoop
                 ld d,a                  ; alphaMax = A
 
 HeurMaxNext
-                inc hl                  ; HL points to the next node
+                dec hl                  ; HL points to the next node
                 djnz HeurMaxLoop        ; repeat for each node in candidates vector
 
                 ld a,d                  ; return alphaMax

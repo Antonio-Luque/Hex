@@ -1,0 +1,110 @@
+﻿;
+; Play.z80asm
+; Coded by Antonio Luque
+;
+
+;
+; Speccy_Move: return the Speccy best move
+;
+; Input:    PLAYER - current player color
+; Output:   E - graph node selected as best move
+; Destroys: AF, BC, HL, DE, IX
+;
+Speccy_Move:
+                ; check for the firsts moves
+
+                ld a,(MOVE_NUMBER)      ; get move number
+                dec a                   ; is it BLUE first move?
+                jr z,FirstBlue_Move     ; yes, do first move as BLUE player
+                dec a                   ; is it RED 1st move?
+                jr z,FirstRed_Move      ; yes, do first move as RED player
+
+                ; initialize BRAINIAC input
+
+                ld a,(GAME_LEVEL)       ; get game level
+                ld (AI_DEPTH),a         ; saves recursion depth level
+
+                ld a,(PLAYER)           ; get current (speccy) player color
+                call BRAINIAC_best_move ; return Speccy best move
+
+                jr SetMove              ; set move on the board
+
+FirstRed_Move
+                call OpeningBook        ; check if first red move is in the "opening book"
+                jr SetMove              ; set move on the board
+
+FirstBlue_Move
+                ld a,r                  ; get a pseudo-random number [0-127] in A
+                and %00000011           ; set range as [0-3]
+                cp 3                    ; is random number = 3?
+                jr z,FirstBlue_Move     ; yes, repeat until random number < 3
+
+                ; choose a random first BLUE move among first BLUE moves in "opening book"
+
+                ld de,OPENINGS          ; DE points to opening book address
+                ld h,0                  ; set index in HL
+                ld l,a
+                add hl,hl               ; best blue moves are 4 bytes long
+                add hl,hl
+                add hl,de               ; HL points to first blue move (node)
+
+                ld e,(hl)               ; get node in E
+
+SetMove
+                ld a,e                  ; set node in A
+
+                call GetNode_Color      ; get node color address
+                ld a,(PLAYER)           ; get current (speccy) player color
+
+                ld (hl),a               ; update graph's node color with current player color
+
+                ret
+;
+; OpeningBook: check for moves in the "opening book" in response against 1st blue move
+;
+; Input:        -
+; Output:       E - response move in the opening book or 24 (center node) if there are not responses
+; Destroys:     A, HL, BC, DE
+;
+OpeningBook:
+                xor a                   ; A = 0
+
+                ld hl,OPENINGS          ; HL points to openings address
+                ld b,0                  ; set index in BC
+                ld c,a
+                add hl,bc               ; HL points to the 1st opening move
+
+                ld b,5                  ; lenght of the "opening book"
+
+OpeningsLoop
+                ld a,(hl)               ; get first opening move (blue move)
+
+                push hl                 ; stores opening book address
+
+                call GetNode_Color      ; get node color address
+                ld a,BLUE_TOKEN         ; set blue color in A
+                cp (hl)                 ; has blue player done this move?
+                pop hl                  ; restores opening book address
+                inc hl                  ; HL points to the red move response
+                jr z,ReturnMove         ; blue player done this move
+
+                inc hl                  ; HL points to the next blue move
+
+                djnz OpeningsLoop       ; repeat until ends of opening book
+
+ReturnMove
+                ld e,(hl)               ; returns red move from opening book
+
+                ret
+;
+; Definition of a small "Opening Book" for players first moves
+;   1st byte - first blue move
+;   2nd byte - response red move
+;
+OPENINGS:
+                defb 18, 31
+                defb 23, 30
+                defb 24, 37
+                defb 25, 18
+                defb 30, 17
+                defb     24             ; red player default response (center node)

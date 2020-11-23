@@ -299,9 +299,10 @@ LoopNode
 ;
 STR_HEADER      defm " HEX \0"
 STR_FILLED      defm "FILLED\0"
-STR_WINNER      defm "WINS!!\0"
+STR_WINNER      defm " WINS \0"
 
-; Current player color
-PLAYER          defb 0
-; Current number of moves
-MOVE_NUMBER     defb 0
+;
+; Variables
+;
+PLAYER          defb 0                  ; Current player color
+MOVE_NUMBER     defb 0                  ; Current number of moves

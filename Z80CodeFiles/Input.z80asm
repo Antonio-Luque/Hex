@@ -246,8 +246,6 @@ InputLoop
 
                 cp 1                    ; is the secord char to be inserted? (A = 1)
                 jr z,FirstNumber        ; yes, perform input of 2nd char (row)
-
-                ;ex af,af'               ; restores ASCII code
 ;
 ; char is valid: 'a'-'g' (1st char) and '1'-'7' (2nd char)
 ;
