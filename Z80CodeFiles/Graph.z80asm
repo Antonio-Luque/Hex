@@ -74,7 +74,7 @@ GetRemaining_Nodes:
                 ld hl,REMAINING         ; ; HL points to the remaining nodes (RED/BLUE)
 
 PathRemaining
-                push af
+                push af                 ; stores current player color
 
                 ld d,a                  ; set current player color in D
                 ld a,RED_TOKEN          ; calculate index to start node in A
@@ -84,7 +84,7 @@ PathRemaining
                 ld e,a
                 add hl,de               ; HL points to current player's start node/remaining nodes of shortest path
 
-                pop af
+                pop af                  ; restores current player color
 
                 ret
 ;
@@ -278,12 +278,12 @@ NextNode
 
                 ret
 ;
-; GetPlayer_Nodes: fills player nodes vector with the empty nodes from player shortest path
+; GetPlayer_Nodes: fills player's nodes vector with the empty nodes from player shortest path
 ;
 ; Input:    A - current player color
 ;           B - # remaining nodes to complete shortest path
 ;           AI_DEPTH - alphaBeta prunning algorithm recursion depth
-; Output:   -
+; Output:   HL - pointer at head of player's nodes vector
 ; Destroys: A, HL
 ;
 GetPlayer_Nodes:
@@ -379,7 +379,7 @@ AdjacentLoop
                 jr ExitAdjacentNode     ; no more search needed
 
 NextAdjacentNode
-                pop hl                  ; restores pointer to neighbors nodes 
+                pop hl                  ; restores pointer to neighbors nodes
 
                 djnz AdjacentLoop       ; repeat for each neighbors nodes
 

@@ -5,7 +5,6 @@
 
 ;
 ; Speccy_Move: return the Speccy best move
-; Coded by Antonio Luque
 ;
 ; Input:    PLAYER - current player color
 ; Output:   E - graph node selected as best move
@@ -62,7 +61,6 @@ SetMove
                 ret
 ;
 ; OpeningBook: check for moves in the "opening book" in response against 1st blue move
-; Coded by Antonio Luque
 ;
 ; Input:        -
 ; Output:       E - response move in the opening book or 24 (center node) if there are not responses
