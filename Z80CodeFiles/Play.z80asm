@@ -67,12 +67,7 @@ SetMove
 ; Destroys:     A, HL, BC, DE
 ;
 OpeningBook:
-                xor a                   ; A = 0
-
                 ld hl,OPENINGS          ; HL points to openings address
-                ld b,0                  ; set index in BC
-                ld c,a
-                add hl,bc               ; HL points to the 1st opening move
 
                 ld b,5                  ; lenght of the "opening book"
 

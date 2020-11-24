@@ -68,10 +68,10 @@ GetPathStart_Node:
                 ld hl,PATH_START        ; HL points to the start node of shortest path (RED/BLUE)
                 jr PathRemaining
 ;
-; GetRemaining_Nodes: entry point to return a pointer to current player remaining nodes to complete shortest path
+; GetRemaining_Nodes: entry point to return player's remaining nodes to complete shortest path
 ;
 GetRemaining_Nodes:
-                ld hl,REMAINING         ; ; HL points to the remaining nodes (RED/BLUE)
+                ld hl,REMAINING         ; HL points to the remaining nodes (RED/BLUE)
 
 PathRemaining
                 push af                 ; stores current player color
