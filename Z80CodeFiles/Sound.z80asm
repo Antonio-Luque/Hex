@@ -12,9 +12,9 @@ BORDCR          equ $5C48              ; RAM address of border colour system var
 ; Destroys: A, BC, HL, DE
 ;
 SoundFX:
-                push bc                 ; stores BC register
-
                 di                      ; disable interrupts
+
+                push bc                 ; stores BC register
 
                 push ix                 ; store registers
                 push iy
@@ -87,9 +87,9 @@ ToneBorder
                 pop iy                  ; restores registers
                 pop ix
 
-                ei                      ; enable interrupts
-
                 pop bc                  ; restores BC register
+
+                ei                      ; enable interrupts
 
                 ret
 ;

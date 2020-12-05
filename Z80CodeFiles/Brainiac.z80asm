@@ -13,35 +13,35 @@ MAX_VALUE       equ 255                ; alphaBeta pruning maximum value
 ; Inspired on Greg Surma article:
 ; https://towardsdatascience.com/hex-creating-intelligent-adversaries-part-2-heuristics-dijkstras-algorithm-597e4dcacf93 
 ;
-; Input:    AI_PLAYER - Speccy color
+; Input:    AI_PLAYER - speccy color
 ; Output:   A  - ((opponent player path distance) minus (current player path distance)) * (-1)
-;                or MIN_VALUE if any player path distance is 0
-;           B  - player remaing nodes
-;           A' - player color
-; Destroys: C, HL, IX
+;                or 0 if any player is the winner
+;           B  - current player remaining nodes
+;           C  - opponent player remaining nodes
+;           A' - opponent player color
+; Destroys: HL, IX
 ;
 Board_Score:
                 ld a,(AI_PLAYER)        ; get current (speccy) player color
 ;
-; Check_Paths: entry point to check players' path length (return MIN_VALUE if any of them is 0)
+; Check_Paths: entry point to check players' path length
 ; Input:    A - player color
 ;
 Check_Paths:
                 call Path_Finder        ; calculate current player shortest path
-                ld c,a                  ; set remaining nodes in C
+                ld b,a                  ; set remaining nodes in C
                 or a                    ; is current player shortest path = 0?
-                ret z                   ; yes, return min value
-        
+                ret z                   ; yes, return 0
+
                 ex af,af'               ; get current player color
                 xor SW_COLOR            ; A = opponent player color
 
                 call Path_Finder        ; calculate opponent player shortest path
+                ld c,a                  ; set player remaining nodes in B
                 or a                    ; is opponent player shortest path = 0?
-                ret z                   ; yes, return min value 
+                ret z                   ; yes, return 0
 
-                ld b,a                  ; set player remaining nodes in B
-
-                sub c                   ; A = (opponent player remaining nodes) - (current player remaining nodes)
+                sub b                   ; A = (opponent player remaining nodes) - (current player remaining nodes)
                 xor $80                 ; A = A * (-1) inverts sign for easier further comparative
 
                 ret
@@ -71,15 +71,16 @@ BRAINIAC_best_move:
                 ld (AI_PLAYER),a        ; saves current player (speccy) color*
 
                 call Path_Finder        ; calculate current player shortest path*
-                ld b,a                  ; set # remaining nodes in B (BRAINIAC # of columns)
 
                 ex af,af'               ; get current player color
-                call GetPlayer_Nodes    ; fills player nodes vector with the empty nodes from player shortest path*
+                call GetPlayer_Nodes    ; get player nodes vector*
+
+                ld b,a                  ; set # of player nodes in B (BRAINIAC # of columns)*
 
                 ld d,MIN_VALUE          ; D = alphaMax
                 ld e,(hl)               ; E = best player node (initialization)
 
-ABPrunLoop
+AIMainLoop
                 ld a,(hl)               ; get node from player nodes vector*
                 ld c,a                  ; set player node in C
 
@@ -90,20 +91,20 @@ ABPrunLoop
                 call GetNode_Color      ; get node color address*
                 pop de                  ; restores alphaMax and best player node
 
-                ld a,(AI_PLAYER)        ; get current player color      
+                ld a,(AI_PLAYER)        ; get current player color
                 ld c,a                  ; C = current player color
                           
                 ld (hl),c               ; update node color with current player color* (BRAINIAC_play)
 
                 push hl                 ; stores address of node color
                 push de                 ; stores alphaMax and best player node
-                push bc                 ; stores path length and current player color
+                push bc                 ; stores # of player nodes and current player color
 
                 ld e,MAX_VALUE          ; E = betaMin
                 call Alphabeta_Min      ; A = alphabeta_min(alphaMax, betaMin)
 
                 pop bc                  ; restores path length and current player color
-                pop de                  ; restores alphaMax and best player node            
+                pop de                  ; restores alphaMax and best player node
                 pop hl                  ; restores address of node color
 
                 ld (hl),WHITE_BLACK     ; restores node color* (BRAINIAC_undo)
@@ -112,15 +113,18 @@ ABPrunLoop
                 pop hl                  ; restores player nodes vector pointer
 
                 cp d
-                jr c,ABPrunNext
-                jr z,ABPrunNext         ; if (A <= alphaMax) continue
+                jr c,AIMainNext
+                jr z,AIMainNext         ; if (A <= alphaMax) continue
 
                 ld d,a                  ; alphaMax = A
                 ld e,c                  ; best node = C
 
-ABPrunNext
+                inc a                   ; is A = MAX_VALUE ?*
+                ret z                   ; yes, return best move*
+
+AIMainNext
                 dec hl                  ; HL points to the next player node*
-                djnz ABPrunLoop         ; repeat for each node in player nodes vector
+                djnz AIMainLoop         ; repeat for each node in player nodes vector
 
                 ret
 ;
@@ -140,7 +144,7 @@ ABPrunNext
 ; The complete and original source code in the link above. Adaptations are marked with * in routines comments.
 ;
 ; Parameters:
-;   C: current player color* (BLUE_TOKEN or RED_TOKEN)
+;   C: current player color*
 ;   D: alphaMax
 ;   E: betaMin
 ;
@@ -159,9 +163,11 @@ ABPrunNext
 ;
 Alphabeta_Min:
                 ld a,c                  ; set current player color in A
-                call Check_Paths        ; checks players' path length and get number of opponent player remaining nodes
-                or a                    ; is it 0?
-                ret z                   ; yes, return min value
+                call Check_Paths        ; check players' paths length
+
+                ld a,b                  ; set current player path length in A
+                dec a                   ; is current player path length = 0 ?
+                ret m                   ; yes, return MAX value
 
                 ex af,af'               ; get opponent player color
                 ld c,a                  ; set opponent player color in C
@@ -171,12 +177,13 @@ Alphabeta_Min:
 
                 jr z,Heuristic_Min      ; if (depth == 0) return heuristic_min
 
-                call GetPlayer_Nodes    ; fills opponent nodes vector with the empty nodes from opponent shortest path
+                call GetPlayer_Nodes    ; get opponent player vector's nodes
+                ld b,a                  ; set # of player nodes in B (BRAINIAC # of columns)
 
-ABMinLoop
-                ld a,(hl)               ; get node from opponent nodes vector
+AlphabetaMinLoop
+                ld a,(hl)               ; get node from opponent player vector's nodes
 
-                push hl                 ; stores opponent nodes pointer
+                push hl                 ; stores opponent player vector's nodes pointer
 
                 push de                 ; stores alphaMax and betaMin
                 call GetNode_Color      ; get node color address
@@ -191,29 +198,29 @@ ABMinLoop
                 call Alphabeta_Max      ; A = alphabeta_max(alphaMax, betaMin)
 
                 pop bc                  ; restores path length and opponent color
-                pop de                  ; restores alphaMax and betaMin            
+                pop de                  ; restores alphaMax and betaMin
                 pop hl                  ; restores address of node color
 
-                ld (hl),WHITE_BLACK     ; restores node color (BRAINIAC_undo)           
+                ld (hl),WHITE_BLACK     ; restores node color (BRAINIAC_undo)
 
-                pop hl                  ; restores opponent nodes pointer
+                pop hl                  ; restores opponent player vector's nodes pointer
 
                 cp e
-                jr nc,ABMinNext         ; if (A >= betaMin) continue
+                jr nc,AlphabetaMinNext  ; if (A >= betaMin) continue
 
                 cp d
-                jr c,ABMinExit
-                jr z,ABMinExit          ; if (A <= alphaMax) { depth++; return A }
+                jr c,AlphabetaMinExit
+                jr z,AlphabetaMinExit   ; if (A <= alphaMax) { depth++; return A }
 
                 ld e,a                  ; betaMin = A
 
-ABMinNext
+AlphabetaMinNext
                 dec hl                  ; HL points to the next node
-                djnz ABMinLoop          ; repeat for each node in opponent nodes vector
+                djnz AlphabetaMinLoop   ; repeat for each node in opponent vector's nodes
 
                 ld a,e                  ; return betaMin
 
-ABMinExit
+AlphabetaMinExit
                 ld hl,AI_DEPTH
                 inc (hl)                ; depth++
 
@@ -233,7 +240,6 @@ ABMinExit
 ; The complete and original source code in the link above. Adaptations are marked with * in routines comments.
 ;
 ; Parameters:
-;   B : opponent player remaining nodes*
 ;   C : player (BLUE_TOKEN or RED_TOKEN)
 ;   D : alphaMax
 ;   E : betaMin
@@ -252,12 +258,15 @@ ABMinExit
 ;   F, B, HL, F'
 ;
 Heuristic_Min:
-                call GetPlayer_Nodes    ; fills opponent nodes vector with the empty nodes from opponent shortest path
+                ld a,c
+                call GetPlayer_Nodes    ; get opponent player vector's nodes
 
-HeurMinLoop
-                ld a,(hl)               ; get node from opponent nodes vector
+                ld b,a                  ; set # of player nodes in B (BRAINIAC # of columns)
 
-                push hl                 ; stores opponent nodes pointer
+HeuristicMinLoop
+                ld a,(hl)               ; get node from opponent player vector's nodes
+
+                push hl                 ; stores opponent player vector's nodes pointer
 
                 push de                 ; stores alphaMax and betaMin
                 call GetNode_Color      ; get node color address
@@ -275,24 +284,24 @@ HeurMinLoop
 
                 ld (hl),WHITE_BLACK     ; restores node color (BRAINIAC_undo)
 
-                pop hl                  ; restores candidates nodes pointer
+                pop hl                  ; restores opponent player vector's nodes pointer
 
                 cp e
-                jr nc,HeurMinNext       ; if (A >= betaMin) continue
+                jr nc,HeuristicMinNext  ; if (A >= betaMin) continue
 
                 cp d
-                jr c,HeurMinExit
-                jr z,HeurMinExit        ; if (A <= alphaMax) { depth++; return A }
+                jr c,HeuristicMinExit
+                jr z,HeuristicMinExit   ; if (A <= alphaMax) { depth++; return A }
 
                 ld e,a                  ; betaMin = A
 
-HeurMinNext
+HeuristicMinNext
                 dec hl                  ; HL points to the next node
-                djnz HeurMinLoop        ; repeat for each node in candidates vector
+                djnz HeuristicMinLoop   ; repeat for each node in opponent vector's nodes
 
                 ld a,e                  ; return betaMin
 
-HeurMinExit
+HeuristicMinExit
                 ld hl,AI_DEPTH
                 inc (hl)                ; depth++
 
@@ -314,7 +323,7 @@ HeurMinExit
 ; The complete and original source code in the link above. Adaptations are marked with * in routines comments.
 ;
 ; Parameters:
-;   C: opponent player color* (BLUE_TOKEN or RED_TOKEN)
+;   C: opponent player color*
 ;   D: alphaMax
 ;   E: betaMin
 ;
@@ -333,9 +342,11 @@ HeurMinExit
 ;
 Alphabeta_Max:
                 ld a,c                  ; set opponent player color in A
-                call Check_Paths        ; checks players' path length and get number of opponent player remaining nodes
-                or a                    ; is it 0?
-                ret z                   ; yes, return min value
+                call Check_Paths        ; check players' paths length
+
+                ld a,b                  ; set opponent player path length in A
+                or a                    ; is opponent path length = 0 ?
+                ret z                   ; yes, return MIN value
 
                 ex af,af'               ; get current player color
                 ld c,a                  ; set current player color in C
@@ -345,12 +356,13 @@ Alphabeta_Max:
 
                 jr z,Heuristic_Max      ; if (depth == 0) return heuristic_max
 
-                call GetPlayer_Nodes    ; fills opponent nodes vector with the empty nodes from opponent shortest path
+                call GetPlayer_Nodes    ; get current player vector's nodes
+                ld b,a                  ; set # of player nodes in B (BRAINIAC # of columns)
 
-ABMaxLoop
-                ld a,(hl)
+AlphabetaMaxLoop
+                ld a,(hl)               ; get node from current player vector's nodes
 
-                push hl                 ; stores player nodes pointer
+                push hl                 ; stores current player vector's nodes pointer
 
                 push de                 ; stores alphaMax and betaMin
                 call GetNode_Color      ; get node color address
@@ -365,29 +377,29 @@ ABMaxLoop
                 call Alphabeta_Min      ; A = alphabeta_min(alphaMax, betaMin)
 
                 pop bc                  ; restores path length and player color
-                pop de                  ; restores alphaMax and betaMin            
+                pop de                  ; restores alphaMax and betaMin
                 pop hl                  ; restores address of node color
 
                 ld (hl),WHITE_BLACK     ; restores node color (BRAINIAC_undo)
 
-                pop hl                  ; restores player nodes pointer
+                pop hl                  ; restores current player vector's nodes pointer
 
                 cp d
-                jr c,ABMaxNext
-                jr z,ABMaxNext          ; if (A <= alphaMax) continue
+                jr c,AlphabetaMaxNext
+                jr z,AlphabetaMaxNext   ; if (A <= alphaMax) continue
 
                 cp e
-                jr nc,ABMaxExit         ; if (A >= betaMin) { depth++; return A }
+                jr nc,AlphabetaMaxExit  ; if (A >= betaMin) { depth++; return A }
 
                 ld d,a                  ; alphaMax = A
 
-ABMaxNext
+AlphabetaMaxNext
                 dec hl                  ; HL points to the next node
-                djnz ABMaxLoop          ; repeat for each node in player nodes vector
+                djnz AlphabetaMaxLoop   ; repeat for each node in current player vector's nodes
 
                 ld a,d                  ; return alphaMax
 
-ABMaxExit
+AlphabetaMaxExit
                 ld hl,AI_DEPTH
                 inc (hl)                ; depth++
 
@@ -407,7 +419,6 @@ ABMaxExit
 ; The complete and original source code in the link above. Adaptations are marked with * in routines comments.
 ;
 ; Parameters:
-;   B : current player remaining nodes*
 ;   C : player (BLUE_TOKEN or RED_TOKEN)
 ;   D : alphaMax
 ;   E : betaMin
@@ -426,12 +437,15 @@ ABMaxExit
 ;   F, B, HL, F'
 ;
 Heuristic_Max:
-                call GetPlayer_Nodes    ; fills player nodes vector with the empty nodes from player shortest path
+                ld a,c
+                call GetPlayer_Nodes    ; get current player vector's nodes
 
-HeurMaxLoop            
-                ld a,(hl)               ; set node in A
+                ld b,a                  ; set # of player nodes in B (BRAINIAC # of columns)
 
-                push hl                 ; stores candidates nodes pointer
+HeuristicMaxLoop
+                ld a,(hl)               ; get node from current player vector's nodes
+
+                push hl                 ; stores current player vector's nodes pointer
 
                 push de                 ; stores alphaMax and betaMin
                 call GetNode_Color      ; get node color address
@@ -449,24 +463,24 @@ HeurMaxLoop
 
                 ld (hl),WHITE_BLACK     ; restores node color (BRAINIAC_undo)
 
-                pop hl                  ; restores candidates nodes pointer
+                pop hl                  ; restores current player vector's nodes pointer
 
                 cp d
-                jr c,HeurMaxNext
-                jr z,HeurMaxNext        ; if (A <= alphaMax) continue
+                jr c,HeuristicMaxNext
+                jr z,HeuristicMaxNext   ; if (A <= alphaMax) continue
 
                 cp e
-                jr nc,HeurMaxExit       ; if (A >= betaMin) { depth++; return A }
+                jr nc,HeuristicMaxExit  ; if (A >= betaMin) { depth++; return A }
 
                 ld d,a                  ; alphaMax = A
 
-HeurMaxNext
+HeuristicMaxNext
                 dec hl                  ; HL points to the next node
-                djnz HeurMaxLoop        ; repeat for each node in candidates vector
+                djnz HeuristicMaxLoop   ; repeat for each node in current player vector's nodes
 
                 ld a,d                  ; return alphaMax
 
-HeurMaxExit
+HeuristicMaxExit
                 ld hl,AI_DEPTH
                 inc (hl)                ; depth++
 

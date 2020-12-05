@@ -16,7 +16,11 @@ RED_TOKEN       equ %00111010           ; Attributes: bright 0, flash 0, paper 7
 SW_COLOR        equ %00000011           ; BITs to be XORed to swap current player color
 
 ;
-; Entry point: set screen colors and draws board frame and empty hex board
+; Entry point of the program
+;
+                xent $
+;
+; Set screen colors and draws board frame and empty hex board
 ;
                 ld a,5                  ; set border 5 (cyan)
                 call BORDER             ; call BORDER ROM routine
