@@ -29,7 +29,7 @@ Board_Score:
 ;
 Check_Paths:
                 call Path_Finder        ; calculate current player shortest path
-                ld b,a                  ; set remaining nodes in C
+                ld b,a                  ; set remaining nodes in B
                 or a                    ; is current player shortest path = 0?
                 ret z                   ; yes, return 0
 
@@ -37,7 +37,7 @@ Check_Paths:
                 xor SW_COLOR            ; A = opponent player color
 
                 call Path_Finder        ; calculate opponent player shortest path
-                ld c,a                  ; set player remaining nodes in B
+                ld c,a                  ; set player remaining nodes in C
                 or a                    ; is opponent player shortest path = 0?
                 ret z                   ; yes, return 0
 
@@ -112,15 +112,20 @@ AIMainLoop
                 pop bc                  ; restores path length and player node index
                 pop hl                  ; restores player nodes vector pointer
 
+                or a                    ; is A = MIN_VALUE ?*
+                jr nz,AIMainCheck       ; no, check alphaMax value*
+
+                ld e,c                  ; yes, return best move*
+
+                ret
+
+AIMainCheck
                 cp d
                 jr c,AIMainNext
                 jr z,AIMainNext         ; if (A <= alphaMax) continue
 
                 ld d,a                  ; alphaMax = A
                 ld e,c                  ; best node = C
-
-                inc a                   ; is A = MAX_VALUE ?*
-                ret z                   ; yes, return best move*
 
 AIMainNext
                 dec hl                  ; HL points to the next player node*
@@ -164,10 +169,8 @@ AIMainNext
 Alphabeta_Min:
                 ld a,c                  ; set current player color in A
                 call Check_Paths        ; check players' paths length
-
-                ld a,b                  ; set current player path length in A
-                dec a                   ; is current player path length = 0 ?
-                ret m                   ; yes, return MAX value
+                or a                    ; is current player path length = 0 ?
+                ret z                   ; yes, return A
 
                 ex af,af'               ; get opponent player color
                 ld c,a                  ; set opponent player color in C
@@ -205,6 +208,13 @@ AlphabetaMinLoop
 
                 pop hl                  ; restores opponent player vector's nodes pointer
 
+                or a                    ; is A = MIN_VALUE ?*
+                jr nz,AlphabetaMinCheck ; no, check betaMin value*
+
+                ld e,a                  ; yes, betaMin = MIN_VALUE*
+                jr AlphabetaMinExit     ; depth++; return A*
+
+AlphabetaMinCheck
                 cp e
                 jr nc,AlphabetaMinNext  ; if (A >= betaMin) continue
 
@@ -286,6 +296,13 @@ HeuristicMinLoop
 
                 pop hl                  ; restores opponent player vector's nodes pointer
 
+                or a                    ; is opponent path length = 0?*
+                jr nz,HeuristicMinCheck ; no, check betaMin value*
+
+                ld e,a                  ; yes, betaMin = MIN_VALUE*
+                jr HeuristicMinExit     ; depth++; return A*
+
+HeuristicMinCheck
                 cp e
                 jr nc,HeuristicMinNext  ; if (A >= betaMin) continue
 
@@ -343,10 +360,8 @@ HeuristicMinExit
 Alphabeta_Max:
                 ld a,c                  ; set opponent player color in A
                 call Check_Paths        ; check players' paths length
-
-                ld a,b                  ; set opponent player path length in A
                 or a                    ; is opponent path length = 0 ?
-                ret z                   ; yes, return MIN value
+                ret z                   ; yes, return A
 
                 ex af,af'               ; get current player color
                 ld c,a                  ; set current player color in C
@@ -384,6 +399,14 @@ AlphabetaMaxLoop
 
                 pop hl                  ; restores current player vector's nodes pointer
 
+                or a                    ; is A = MIN_VALUE ?*
+                jr nz,AlphabetaMaxCheck ; no, check alphaMax value*
+
+                dec a                   ; yes, A = MAX_VALUE*
+                ld d,a                  ; alphaMax = A
+                jr AlphabetaMaxExit     ; depth++; return A
+
+AlphabetaMaxCheck
                 cp d
                 jr c,AlphabetaMaxNext
                 jr z,AlphabetaMaxNext   ; if (A <= alphaMax) continue
@@ -458,6 +481,7 @@ HeuristicMaxLoop
 
                 call Board_Score        ; A = board score
 
+
                 exx                     ; restores address of node color, alphaMax and betaMin,
                                         ; and path length and current player color
 
@@ -465,6 +489,14 @@ HeuristicMaxLoop
 
                 pop hl                  ; restores current player vector's nodes pointer
 
+                or a                    ; is current player length = 0 ?*
+                jr nz,HeuristicMaxCheck ; no, check alphaMax value*
+
+                dec a                   ; yes, A = MAX_VALUE*
+                ld d,a                  ; alphaMax = A*
+                jr HeuristicMaxExit     ; depth++; return A*
+
+HeuristicMaxCheck
                 cp d
                 jr c,HeuristicMaxNext
                 jr z,HeuristicMaxNext   ; if (A <= alphaMax) continue
