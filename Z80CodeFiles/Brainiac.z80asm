@@ -170,7 +170,7 @@ Alphabeta_Min:
                 ld a,c                  ; set current player color in A
                 call Check_Paths        ; check players' paths length
                 or a                    ; is current player path length = 0 ?
-                ret z                   ; yes, return A
+                ret z                   ; yes, return MIN_VALUE
 
                 ex af,af'               ; get opponent player color
                 ld c,a                  ; set opponent player color in C
@@ -296,7 +296,7 @@ HeuristicMinLoop
 
                 pop hl                  ; restores opponent player vector's nodes pointer
 
-                or a                    ; is opponent path length = 0?*
+                or a                    ; is opponent player path length = 0?*
                 jr nz,HeuristicMinCheck ; no, check betaMin value*
 
                 ld e,a                  ; yes, betaMin = MIN_VALUE*
@@ -361,7 +361,7 @@ Alphabeta_Max:
                 ld a,c                  ; set opponent player color in A
                 call Check_Paths        ; check players' paths length
                 or a                    ; is opponent path length = 0 ?
-                ret z                   ; yes, return A
+                ret z                   ; yes, return MIN_VALUE
 
                 ex af,af'               ; get current player color
                 ld c,a                  ; set current player color in C
@@ -489,7 +489,7 @@ HeuristicMaxLoop
 
                 pop hl                  ; restores current player vector's nodes pointer
 
-                or a                    ; is current player length = 0 ?*
+                or a                    ; is current player path length = 0 ?*
                 jr nz,HeuristicMaxCheck ; no, check alphaMax value*
 
                 dec a                   ; yes, A = MAX_VALUE*
