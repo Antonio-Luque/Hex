@@ -15,31 +15,23 @@ MAX_VALUE       equ 255                ; alphaBeta pruning maximum value
 ;
 ; Input:    AI_PLAYER - speccy color
 ; Output:   A  - ((opponent player path distance) minus (current player path distance)) * (-1)
-;                or 0 if any player is the winner
-;           B  - current player remaining nodes
-;           C  - opponent player remaining nodes
-;           A' - opponent player color
-; Destroys: HL, IX
+;                or MAX_VALUE if speccy is the winner
+;                or MIN_VALUE if player is the winner
+; Destroys: A', B, HL, IX
 ;
 Board_Score:
-                ld a,(AI_PLAYER)        ; get current (speccy) player color
-;
-; Check_Paths: entry point to check players' path length
-; Input:    A - player color
-;
-Check_Paths:
+                ld a,(AI_PLAYER)
+
                 call Path_Finder        ; calculate current player shortest path
-                ld b,a                  ; set remaining nodes in B
+                ld b,a                  ; set current player remaining nodes in B
                 or a                    ; is current player shortest path = 0?
-                ret z                   ; yes, return 0
+                cpl                     ; inverts all bits of A
+                ret z                   ; yes, return MAX_VALUE
 
-                ex af,af'               ; get current player color
-                xor SW_COLOR            ; A = opponent player color
-
+                ex af,af'               ; get opponent player color
                 call Path_Finder        ; calculate opponent player shortest path
-                ld c,a                  ; set player remaining nodes in C
                 or a                    ; is opponent player shortest path = 0?
-                ret z                   ; yes, return 0
+                ret z                   ; yes, return MIN_VALUE
 
                 sub b                   ; A = (opponent player remaining nodes) - (current player remaining nodes)
                 xor $80                 ; A = A * (-1) inverts sign for easier further comparative
@@ -55,14 +47,14 @@ Check_Paths:
 ; The complete and original source code in the link above. Adaptations are marked with * in routines comments.
 ; 
 ; Parameters:
-;   A: current player color* (BLUE_TOKEN or RED_TOKEN)
+;   A: current player (speccy) color* (BLUE_TOKEN or RED_TOKEN)
 ;
 ; Returns:
 ;   E: selected node (0-48)*
 ;
 ; Uses:
 ;   AI_DEPTH:  current recursion depth
-;   AI_PLAYER: current player
+;   AI_PLAYER: current player (speccy) color* (BLUE_TOKEN or RED_TOKEN)
 ;
 ; Destroys:
 ;   AF, BC, D, HL, AF'
@@ -71,10 +63,10 @@ BRAINIAC_best_move:
                 ld (AI_PLAYER),a        ; saves current player (speccy) color*
 
                 call Path_Finder        ; calculate current player shortest path*
+                ex af,af'               ; get opponent player color
+                xor SW_COLOR            ; A = current player color
 
-                ex af,af'               ; get current player color
                 call GetPlayer_Nodes    ; get player nodes vector*
-
                 ld b,a                  ; set # of player nodes in B (BRAINIAC # of columns)*
 
                 ld d,MIN_VALUE          ; D = alphaMax
@@ -112,20 +104,15 @@ AIMainLoop
                 pop bc                  ; restores path length and player node index
                 pop hl                  ; restores player nodes vector pointer
 
-                or a                    ; is A = MIN_VALUE ?*
-                jr nz,AIMainCheck       ; no, check alphaMax value*
-
-                ld e,c                  ; yes, return best move*
-
-                ret
-
-AIMainCheck
                 cp d
                 jr c,AIMainNext
                 jr z,AIMainNext         ; if (A <= alphaMax) continue
 
                 ld d,a                  ; alphaMax = A
                 ld e,c                  ; best node = C
+
+                inc a                   ; if alphaMax = MAX_VALUE return best move*
+                ret z
 
 AIMainNext
                 dec hl                  ; HL points to the next player node*
@@ -149,37 +136,39 @@ AIMainNext
 ; The complete and original source code in the link above. Adaptations are marked with * in routines comments.
 ;
 ; Parameters:
-;   C: current player color*
 ;   D: alphaMax
 ;   E: betaMin
 ;
 ; Returns:
 ;   A: "improved" betaMin
-;   C: opponent (1 or 2)
+;   C: opponent player (BLUE_TOKEN or RED_TOKEN)
 ;   D: alphaMax
 ;   E: "improved" betaMin
 ;
 ; Uses:
-;   ai_depth: current recursion depth
-;   ai_player: current player
+;   AI_DEPTH:  current recursion depth
+;   AI_PLAYER: current player (speccy) color* (BLUE_TOKEN or RED_TOKEN)
 ;
 ; Destroys:
 ;   F, B, HL, AF'
 ;
 Alphabeta_Min:
                 ld a,c                  ; set current player color in A
-                call Check_Paths        ; check players' paths length
-                or a                    ; is current player path length = 0 ?
-                ret z                   ; yes, return MIN_VALUE
+                call Path_Finder        ; calculate current player shortest path
+                or a                    ; is current player shortest path = 0?
+                cpl                     ; inverts all bits of A
+                ret z                   ; yes, return MAX_VALUE
 
                 ex af,af'               ; get opponent player color
                 ld c,a                  ; set opponent player color in C
 
+                call Path_Finder        ; calculate opponent player shortest path
+
                 ld hl,AI_DEPTH
                 dec (hl)                ; depth--
-
                 jr z,Heuristic_Min      ; if (depth == 0) return heuristic_min
 
+                ld a,c                  ; set opponent player color in A
                 call GetPlayer_Nodes    ; get opponent player vector's nodes
                 ld b,a                  ; set # of player nodes in B (BRAINIAC # of columns)
 
@@ -208,13 +197,6 @@ AlphabetaMinLoop
 
                 pop hl                  ; restores opponent player vector's nodes pointer
 
-                or a                    ; is A = MIN_VALUE ?*
-                jr nz,AlphabetaMinCheck ; no, check betaMin value*
-
-                ld e,a                  ; yes, betaMin = MIN_VALUE*
-                jr AlphabetaMinExit     ; depth++; return A*
-
-AlphabetaMinCheck
                 cp e
                 jr nc,AlphabetaMinNext  ; if (A >= betaMin) continue
 
@@ -250,7 +232,6 @@ AlphabetaMinExit
 ; The complete and original source code in the link above. Adaptations are marked with * in routines comments.
 ;
 ; Parameters:
-;   C : player (BLUE_TOKEN or RED_TOKEN)
 ;   D : alphaMax
 ;   E : betaMin
 ;
@@ -258,17 +239,17 @@ AlphabetaMinExit
 ;   A: "improved" betaMin
 ;   D: alphaMax
 ;   E: "improved" betaMin
-;   A': opponent (1 or 2)
+;   A': current player* (BLUE_TOKEN or RED_TOKEN)
 ;
 ; Uses:
-;   DEPTH: current recursion depth*
-;   HEX_COLOR: current player color*
+;   AI_DEPTH:  current recursion depth
+;   AI_PLAYER: current player* (BLUE_TOKEN or RED_TOKEN)
 ;
 ; Destroys:
 ;   F, B, HL, F'
 ;
 Heuristic_Min:
-                ld a,c
+                ld a,c                  ; set opponent player color in A
                 call GetPlayer_Nodes    ; get opponent player vector's nodes
 
                 ld b,a                  ; set # of player nodes in B (BRAINIAC # of columns)
@@ -296,13 +277,6 @@ HeuristicMinLoop
 
                 pop hl                  ; restores opponent player vector's nodes pointer
 
-                or a                    ; is opponent player path length = 0?*
-                jr nz,HeuristicMinCheck ; no, check betaMin value*
-
-                ld e,a                  ; yes, betaMin = MIN_VALUE*
-                jr HeuristicMinExit     ; depth++; return A*
-
-HeuristicMinCheck
                 cp e
                 jr nc,HeuristicMinNext  ; if (A >= betaMin) continue
 
@@ -340,37 +314,38 @@ HeuristicMinExit
 ; The complete and original source code in the link above. Adaptations are marked with * in routines comments.
 ;
 ; Parameters:
-;   C: opponent player color*
 ;   D: alphaMax
 ;   E: betaMin
 ;
 ; Returns:
 ;   A: "improved" alphaMax
-;   C: player (1 or 2)
+;   C: current player (speccy) color* (BLUE_TOKEN or RED_TOKEN)
 ;   D: "improved" alphaMax
 ;   E: betaMin
 ;
 ; Uses:
-;   ai_depth: current recursion depth
-;   ai_player: current player
+;   AI_DEPTH:  current recursion depth
+;   AI_PLAYER: current player* (BLUE_TOKEN or RED_TOKEN)
 ;
 ; Destroys:
 ;   F, B, HL, AF'
 ;
 Alphabeta_Max:
                 ld a,c                  ; set opponent player color in A
-                call Check_Paths        ; check players' paths length
-                or a                    ; is opponent path length = 0 ?
+                call Path_Finder        ; calculate opponent player shortest path
+                or a                    ; is opponent player shortest path = 0?
                 ret z                   ; yes, return MIN_VALUE
 
                 ex af,af'               ; get current player color
                 ld c,a                  ; set current player color in C
 
+                call Path_Finder        ; calculate current player shortest path
+
                 ld hl,AI_DEPTH
                 dec (hl)                ; depth--
-
                 jr z,Heuristic_Max      ; if (depth == 0) return heuristic_max
 
+                ld a,c                  ; set current player color in A
                 call GetPlayer_Nodes    ; get current player vector's nodes
                 ld b,a                  ; set # of player nodes in B (BRAINIAC # of columns)
 
@@ -399,14 +374,6 @@ AlphabetaMaxLoop
 
                 pop hl                  ; restores current player vector's nodes pointer
 
-                or a                    ; is A = MIN_VALUE ?*
-                jr nz,AlphabetaMaxCheck ; no, check alphaMax value*
-
-                dec a                   ; yes, A = MAX_VALUE*
-                ld d,a                  ; alphaMax = A
-                jr AlphabetaMaxExit     ; depth++; return A
-
-AlphabetaMaxCheck
                 cp d
                 jr c,AlphabetaMaxNext
                 jr z,AlphabetaMaxNext   ; if (A <= alphaMax) continue
@@ -442,7 +409,6 @@ AlphabetaMaxExit
 ; The complete and original source code in the link above. Adaptations are marked with * in routines comments.
 ;
 ; Parameters:
-;   C : player (BLUE_TOKEN or RED_TOKEN)
 ;   D : alphaMax
 ;   E : betaMin
 ;
@@ -453,14 +419,14 @@ AlphabetaMaxExit
 ;   A': opponent (1 or 2)
 ;
 ; Uses:
-;   ai_depth: current recursion depth
-;   ai_player: current player
+;   AI_DEPTH:  current recursion depth
+;   AI_PLAYER: current player* (BLUE_TOKEN or RED_TOKEN)
 ;
 ; Destroys:
 ;   F, B, HL, F'
 ;
 Heuristic_Max:
-                ld a,c
+                ld a,c                  ; set current player color in A
                 call GetPlayer_Nodes    ; get current player vector's nodes
 
                 ld b,a                  ; set # of player nodes in B (BRAINIAC # of columns)
@@ -481,7 +447,6 @@ HeuristicMaxLoop
 
                 call Board_Score        ; A = board score
 
-
                 exx                     ; restores address of node color, alphaMax and betaMin,
                                         ; and path length and current player color
 
@@ -489,14 +454,6 @@ HeuristicMaxLoop
 
                 pop hl                  ; restores current player vector's nodes pointer
 
-                or a                    ; is current player path length = 0 ?*
-                jr nz,HeuristicMaxCheck ; no, check alphaMax value*
-
-                dec a                   ; yes, A = MAX_VALUE*
-                ld d,a                  ; alphaMax = A*
-                jr HeuristicMaxExit     ; depth++; return A*
-
-HeuristicMaxCheck
                 cp d
                 jr c,HeuristicMaxNext
                 jr z,HeuristicMaxNext   ; if (A <= alphaMax) continue
@@ -520,5 +477,5 @@ HeuristicMaxExit
 ;
 ; Variables
 ;
-AI_PLAYER       defb 0                  ; current player
+AI_PLAYER       defb 0                  ; current player (speccy) color
 AI_DEPTH        defb 0                  ; recursion depth level

@@ -167,8 +167,40 @@ Path_Finder:
                 ld hl,PARENT            ; HL points to parent vector
                 ld de,PARENT+1          ; DE points to the next byte
                 ld (hl),$FF             ; initialize value to parent and distance nodes vectors  
-                ld bc,105               ; parent and distance nodes vectors length
-                ldir                    ; copy 106 bytes with $FF from HL to DE
+                ;ld bc,105               ; parent and distance nodes vectors length
+                ;ldir                    ; copy 106 bytes with $FF from HL to DE
+
+                ; unrolling LDIR: http://map.grauw.nl/articles/fast_loops.php#unrollingldir
+                ld bc,96
+
+ParentLoop
+                ldi                     ; 16x LDI
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                jp pe,ParentLoop
+
+                ldi                     ; 9x LDI
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
 
                 ld hl,NODES_DEQ         ; initialize deque (doble-ended queue) pointers
                 ld (DEQ_TAIL),hl
@@ -270,7 +302,8 @@ NextNode
                 pop af                  ; restores current player color
                 call GetRemaining_Nodes ; get remaining nodes to complete shortest path
 
-                ex af,af'               ; A' = current player color
+                xor SW_COLOR            ; A = opponent player color
+                ex af,af'               ; A' = opponent player color
                 ld a,(hl)               ; A  = # remaining nodes to complete shortest path
 
                 pop de                  ; restores DE register
@@ -300,9 +333,30 @@ GetPlayer_Nodes:
 
                 ld hl,INCLUDED          ; HL points to included nodes vector
                 ld de,INCLUDED+1        ; DE points to the next byte
+                ld (hl),0               ; initialize value to included nodes vector
                 ld bc,48                ; included nodes vector length
-                ld (hl),0               ; copy 49 bytes with 0 from HL to DE
-                ldir
+                ;ldir                    ; copy 49 bytes with 0 from HL to DE
+
+                ; unrolling LDIR: http://map.grauw.nl/articles/fast_loops.php#unrollingldir
+
+IncludedLoop
+                ldi                     ; 16x LDI
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                jp pe,IncludedLoop
 
                 push af                 ; stores current player color
 
@@ -324,7 +378,7 @@ GetPlayer_Nodes:
 
                 pop af                  ; restores current player color
 
-                ld ixh,a                ; set current player color in A
+                ld ixh,a                ; set current player color in IXl
 
                 call GetPathStart_Node  ; get player's start node of shortest path 
                 ld a,(hl)               ; set start node in A
@@ -373,7 +427,7 @@ AdjacentLoop
 
 NextAdjacentNode
                 pop hl                  ; restores pointer to neighbor nodes
-                
+
                 djnz AdjacentLoop       ; repeat for each neighbor node
 
 AddParentNode
@@ -635,7 +689,7 @@ REMAINING
                 defb 0                      ; remaining RED nodes to complete shortest path
                 defb 0                      ; remaining BLUE nodes to complete shortest path
 ;
-; Visited nodes vector
+; Included nodes vector
 ;
 INCLUDED:
                 defb 0, 0, 0, 0, 0, 0, 0

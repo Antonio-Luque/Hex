@@ -143,8 +143,7 @@ DrawToken
 
                 ; swap player colors from BLUE to RED and vice-versa
 
-                ex af,af'               ; get current player color
-                xor SW_COLOR            ; swap colors
+                ex af,af'               ; get opponent player color
                 ld (PLAYER),a           ; stores new current player color
 
                 jr GameLoop             ; repeat game loop
@@ -172,7 +171,8 @@ Delay
 ; Current player wins the game
 ;
 PlayerWins
-                ex af, af'              ; A = current player color
+                ex af,af'               ; A = opponent player color
+                xor SW_COLOR            ; A = current player color
                 call Bright_Path        ; highlights the winner path
 
                 ld hl,STR_WINNER        ; HL points to "WINS!!" string
