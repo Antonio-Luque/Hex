@@ -62,9 +62,9 @@ Board_Score:
 BRAINIAC_best_move:
                 ld (AI_PLAYER),a        ; saves current player (speccy) color*
 
+                push af                 ; stores current player color
                 call Path_Finder        ; calculate current player shortest path*
-                ex af,af'               ; get opponent player color
-                xor SW_COLOR            ; A = current player color
+                pop af                  ; restores current player color
 
                 call GetPlayer_Nodes    ; get player nodes vector*
                 ld b,a                  ; set # of player nodes in B (BRAINIAC # of columns)*
@@ -251,7 +251,6 @@ AlphabetaMinExit
 Heuristic_Min:
                 ld a,c                  ; set opponent player color in A
                 call GetPlayer_Nodes    ; get opponent player vector's nodes
-
                 ld b,a                  ; set # of player nodes in B (BRAINIAC # of columns)
 
 HeuristicMinLoop
@@ -428,7 +427,6 @@ AlphabetaMaxExit
 Heuristic_Max:
                 ld a,c                  ; set current player color in A
                 call GetPlayer_Nodes    ; get current player vector's nodes
-
                 ld b,a                  ; set # of player nodes in B (BRAINIAC # of columns)
 
 HeuristicMaxLoop

@@ -325,7 +325,7 @@ NextNode
 ;           AI_DEPTH  - alphaBeta prunning algorithm recursion depth
 ; Output:   A  - number of player nodes
 ;           HL - pointer to player vector's nodes
-; Destroys: IXl
+; Destroys: IX
 ;
 GetPlayer_Nodes:
                 push bc                 ; stores BC register
@@ -378,7 +378,7 @@ IncludedLoop
 
                 pop af                  ; restores current player color
 
-                ld ixh,a                ; set current player color in IXl
+                ld ixh,a                ; set current player color in IXh
 
                 call GetPathStart_Node  ; get player's start node of shortest path 
                 ld a,(hl)               ; set start node in A
