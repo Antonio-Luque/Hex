@@ -234,9 +234,3 @@ TILE_SET:
                 defb 224, 248,  28, 206, 230, 118, 182, 182 ; 37 RToken_Up
                 defb 111, 111, 111, 103, 115,  56,  31,   7 ; 38 LToken_Down
                 defb 246, 246, 246, 230, 206,  28, 248, 224 ; 39 RToken_Down
-
-                defb   0,   0,   0,   0,   0,   0,   0,   0 ; reserved for NODES_DEQ
-;
-; Start point address of the nodes deque (doble ended queue) circular array
-;
-NODES_DEQ       equ $

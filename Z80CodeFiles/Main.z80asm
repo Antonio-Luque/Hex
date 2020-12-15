@@ -171,8 +171,6 @@ Delay
 ; Current player wins the game
 ;
 PlayerWins
-                ex af,af'               ; A = opponent player color
-                xor SW_COLOR            ; A = current player color
                 call Bright_Path        ; highlights the winner path
 
                 ld hl,STR_WINNER        ; HL points to "WINS!!" string

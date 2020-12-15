@@ -20,7 +20,7 @@ MAX_VALUE       equ 255                ; alphaBeta pruning maximum value
 ; Destroys: A', B, HL, IX
 ;
 Board_Score:
-                ld a,(AI_PLAYER)
+                ld a,(AI_PLAYER)        ; set current player (speccy) color in A
 
                 call Path_Finder        ; calculate current player shortest path
                 ld b,a                  ; set current player remaining nodes in B
@@ -62,12 +62,8 @@ Board_Score:
 BRAINIAC_best_move:
                 ld (AI_PLAYER),a        ; saves current player (speccy) color*
 
-                push af                 ; stores current player color
                 call Path_Finder        ; calculate current player shortest path*
-                pop af                  ; restores current player color
-
                 call GetPlayer_Nodes    ; get player nodes vector*
-                ld b,a                  ; set # of player nodes in B (BRAINIAC # of columns)*
 
                 ld d,MIN_VALUE          ; D = alphaMax
                 ld e,(hl)               ; E = best player node (initialization)
@@ -83,8 +79,8 @@ AIMainLoop
                 call GetNode_Color      ; get node color address*
                 pop de                  ; restores alphaMax and best player node
 
-                ld a,(AI_PLAYER)        ; get current player color
-                ld c,a                  ; C = current player color
+                ld a,(AI_PLAYER)        ; get current player (speccy) color
+                ld c,a                  ; C = current player (speccy) color
                           
                 ld (hl),c               ; update node color with current player color* (BRAINIAC_play)
 
@@ -160,17 +156,13 @@ Alphabeta_Min:
                 ret z                   ; yes, return MAX_VALUE
 
                 ex af,af'               ; get opponent player color
-                ld c,a                  ; set opponent player color in C
-
                 call Path_Finder        ; calculate opponent player shortest path
 
                 ld hl,AI_DEPTH
                 dec (hl)                ; depth--
                 jr z,Heuristic_Min      ; if (depth == 0) return heuristic_min
 
-                ld a,c                  ; set opponent player color in A
                 call GetPlayer_Nodes    ; get opponent player vector's nodes
-                ld b,a                  ; set # of player nodes in B (BRAINIAC # of columns)
 
 AlphabetaMinLoop
                 ld a,(hl)               ; get node from opponent player vector's nodes
@@ -249,9 +241,7 @@ AlphabetaMinExit
 ;   F, B, HL, F'
 ;
 Heuristic_Min:
-                ld a,c                  ; set opponent player color in A
                 call GetPlayer_Nodes    ; get opponent player vector's nodes
-                ld b,a                  ; set # of player nodes in B (BRAINIAC # of columns)
 
 HeuristicMinLoop
                 ld a,(hl)               ; get node from opponent player vector's nodes
@@ -336,17 +326,13 @@ Alphabeta_Max:
                 ret z                   ; yes, return MIN_VALUE
 
                 ex af,af'               ; get current player color
-                ld c,a                  ; set current player color in C
-
                 call Path_Finder        ; calculate current player shortest path
 
                 ld hl,AI_DEPTH
                 dec (hl)                ; depth--
                 jr z,Heuristic_Max      ; if (depth == 0) return heuristic_max
 
-                ld a,c                  ; set current player color in A
                 call GetPlayer_Nodes    ; get current player vector's nodes
-                ld b,a                  ; set # of player nodes in B (BRAINIAC # of columns)
 
 AlphabetaMaxLoop
                 ld a,(hl)               ; get node from current player vector's nodes
@@ -425,9 +411,7 @@ AlphabetaMaxExit
 ;   F, B, HL, F'
 ;
 Heuristic_Max:
-                ld a,c                  ; set current player color in A
                 call GetPlayer_Nodes    ; get current player vector's nodes
-                ld b,a                  ; set # of player nodes in B (BRAINIAC # of columns)
 
 HeuristicMaxLoop
                 ld a,(hl)               ; get node from current player vector's nodes
