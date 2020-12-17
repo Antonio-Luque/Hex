@@ -27,10 +27,10 @@
     <None Include="Z80CodeFiles\King+.bin" />
   </ItemGroup>
   <ItemGroup>
-    <Tap Include="TapeFiles\Hex.tap" />
+    <Tzx Include="TapeFiles\Hex.tzx" />
   </ItemGroup>
   <ItemGroup>
-    <Tzx Include="TapeFiles\Hex.tzx" />
+    <Tap Include="TapeFiles\Hex.tap" />
   </ItemGroup>
   <Import Project="$(CustomProjectExtensionsPath)Spect.Net.CodeDiscover.targets" />
 </Project>
