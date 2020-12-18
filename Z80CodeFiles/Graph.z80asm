@@ -15,12 +15,11 @@
 ; Destroys: A, BC, HL, DE
 ;
 Init_Colors:
-                ld a,WHITE_BLACK        ; set empty hexagon color in A
                 ld hl,COLORS            ; HL points to colors vector
                 ld de,COLORS+1          ; DE points to the next byte
+                ld (hl),WHITE_BLACK     ; initialize value to colors vector
                 ld bc,48                ; colors nodes vector length (without edge nodes)
-                ld (hl),a               ; copy 49 bytes with WHITE_BLACK from HL to DE
-                ldir
+                ldir                    ; copy 49 bytes with WHITE_BLACK from HL to DE
 
                 ret
 ; 
@@ -58,37 +57,7 @@ GetNode_Definition:
 
                 ret
 ;
-; GetPathStart_Node: return player's start node of shortest path 
-;
-; Input:     A - current player color
-; Output:   HL - pointer to current player's start node of shortest path
-; Destroys: DE
-;
-GetPathStart_Node:
-                ld hl,PATH_START        ; HL points to the start node of shortest path (RED/BLUE)
-                jr PathRemaining
-;
-; GetRemaining_Nodes: entry point to return player's remaining nodes to complete shortest path
-;
-GetRemaining_Nodes:
-                ld hl,REMAINING         ; HL points to the remaining nodes (RED/BLUE)
-
-PathRemaining
-                push af                 ; stores current player color
-
-                ld d,a                  ; set current player color in D
-                ld a,RED_TOKEN          ; calculate index to start node in A
-                sub d                   ; set index 0 for RED player or index 1 for BLUE player
-
-                ld d,0                  ; set index in DE
-                ld e,a
-                add hl,de               ; HL points to current player's start node/remaining nodes of shortest path
-
-                pop af                  ; restores current player color
-
-                ret
-;
-; Implementation of a deque (Double Ended Queue) using a circular array. It is used by "Path_Finder" and "Adjacent_Nodes" routines.
+; Implementation of a deque (Double-Ended Queue) using a circular array. It is used by "Path_Finder" and "GetPlayer_Nodes" routines.
 ; Adapted from: https://www.geeksforgeeks.org/implementation-deque-using-circular-array/
 ;
 
@@ -101,7 +70,7 @@ PathRemaining
 ; Destroys: HL
 ;
 Push_Head:
-                ld hl,(DEQ_HEAD)        ; get pointer to head of dequeue
+                ld hl,(DEQ_HEAD)        ; get pointer to head of deque
                 dec hl                  ; decrements head pointer
                 ld (hl),e               ; set node index at head of dequeue
                 ld (DEQ_HEAD),hl        ; update head pointer
@@ -116,7 +85,7 @@ Push_Head:
 ; Destroys: HL
 ;
 Pop_Head:
-                ld hl,(DEQ_HEAD)        ; get pointer to head of dequeue
+                ld hl,(DEQ_HEAD)        ; get pointer to head of deque
                 ld e,(hl)               ; get node index from head in DE
                 ld d,0
                 inc hl                  ; increments head pointer
@@ -127,22 +96,20 @@ Pop_Head:
 ; Push_Tail: insert a node at tail of deque
 ;
 ; Input:    E - node to insert at tail of the deque
-;           DEQ_HEAD - pointer to tail of deque
-; Output:   DEQ_HEAD - new pointer to tail of deque
+; Output:   -
 ; Destroys: HL
 ;
 Push_Tail:
-                ld hl,(DEQ_TAIL)        ; get pointer to tail of deque
+                ld hl,$7D00             ; get pointer to tail of deque
                 ld (hl),e               ; set node index at tail of deque
                 inc hl                  ; increments tail pointer
-                ld (DEQ_TAIL),hl        ; update tail pointer
+                ld (Push_Tail+1),hl     ; update tail pointer
 
                 ret
 ;
-; Nodes deque pointers
+; Head deque pointer
 ;
 DEQ_HEAD        defw 0
-DEQ_TAIL        defw 0
 
 ;
 ; Path_Finder: calculate the shortest path of unbroken chains of same color hexagons between the opposing board sides.
@@ -150,15 +117,15 @@ DEQ_TAIL        defw 0
 ; https://towardsdatascience.com/hex-creating-intelligent-adversaries-part-2-heuristics-dijkstras-algorithm-597e4dcacf93 
 ; Code adapted from: https://www.geeksforgeeks.org/0-1-bfs-shortest-path-binary-graph/
 ;
-; Input:    A  - current player color
-; Output:   A  - number of remaining nodes to complete shortest path
-;           A' - current player color 
-; Destroys: HL, IX
+; Input:    A   - current player color
+; Output:   A   - number of remaining nodes to complete shortest path
+;           A'  - opponent player color
+;           IXl - current player color
+; Destroys: HL, IXh
 ;
 Path_Finder:
                 push bc                 ; stores BC register
                 push de                 ; stores DE register
-                push af                 ; stores current player color
 
                 ld ixl,a                ; set current player color in IXl
 
@@ -168,15 +135,45 @@ Path_Finder:
                 ld de,PARENT+1          ; DE points to the next byte
                 ld (hl),$FF             ; initialize value to parent and distance nodes vectors  
                 ld bc,105               ; parent and distance nodes vectors length
-                ldir                    ; copy 106 bytes with $FF from HL to DE
 
-                ld hl,NODES_DEQ         ; initialize deque (doble-ended queue) pointers
-                ld (DEQ_TAIL),hl
+                ; unrolling LDIR: http://map.grauw.nl/articles/fast_loops.php#unrollingldir
+                ; copy 106 bytes with $FF from HL to DE
+
+                ldi                     ; 9x LDI
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+
+ParentLDILoop
+                ldi                     ; 16x LDI
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                jp pe,ParentLDILoop
+
+                ld hl,$7D00             ; initialize deque (doble-ended queue) pointers
                 ld (DEQ_HEAD),hl
+                ld (Push_Tail+1),hl
 
                 ; 0-1 BFS (Breadth First Search) algorithm
 
-                ld a,ixl                ; get player color: %0011101 = blue, %00111010 = red
                 and %11110111           ; converts player color to start node index:
                                         ; %00110001 = Up-Edge = 49, %00110010 = Left-Edge = 50
 
@@ -250,7 +247,7 @@ AddWeight
                 or a                    ; is it 0?
                 call z,Push_Head        ; yes, push neighbor node at head of nodes deque
                 call nz,Push_Tail       ; no, push neighbor node at tail of nodes deque
-           
+
 NextNode
                 pop hl                  ; restores pointer to neighbors nodes
                 pop bc                  ; restores loop counter and distance of current node 
@@ -259,134 +256,250 @@ NextNode
 
                 ; check if deque is empty
 
-                ld hl,(DEQ_TAIL)        ; get current deque pointers
-                ld de,(DEQ_HEAD)
-                and a                   ; resets carry flag
-                sbc hl,de               ; is the nodes deque empty?
+                ld hl,(DEQ_HEAD)        ; get current deque pointers
+                ld a,(Push_Tail+1)
+                cp l                    ; is deque empty?
                 jr nz,DequeLoop         ; no, repeat until nodes deque is empty
 
-                ; return number of remaining nodes to complete shortest path
+                ; get number of remaining nodes to complete shortest path
 
-                pop af                  ; restores current player color
-                call GetRemaining_Nodes ; get remaining nodes to complete shortest path
+                ld hl,REMAINING         ; HL points to the remaining nodes (RED/BLUE)
+                ld a,RED_TOKEN          ; calculate index to remaining nodes
+                sub ixl                 ; index 0 for RED player or index 1 for BLUE player
+                add a,l                 ; calculates remaining nodes position
+                ld l,a                  ; HL points to current player's remaining nodes of shortest path
 
-                ex af,af'               ; A' = current player color
-                ld a,(hl)               ; A  = # remaining nodes to complete shortest path
+                ld a,ixl                ; set current player color in A
+                xor SW_COLOR            ; swap current player color (get opponent color)
+                ex af,af'               ; set opponent player color in A'
+
+                ld a,(hl)               ; return player's remaining nodes in A
 
                 pop de                  ; restores DE register
                 pop bc                  ; restores BC register
 
                 ret
 ;
-; GetPlayer_Nodes: fills player's nodes vector with the empty nodes from player shortest path
+; GetPlayer_Nodes: return player vector's nodes.
 ;
-; Input:    A - current player color
-;           B - # remaining nodes to complete shortest path
-;           AI_DEPTH - alphaBeta prunning algorithm recursion depth
-; Output:   HL - pointer at head of player's nodes vector
-; Destroys: A, HL
+; To support the heuristics, this routine calculates the possible movements of the player, according to the following rules:
+; - If in the shortest path there is an empty node adjacent to other node of the current player, that node is included in the
+;   player vector's nodes.
+; - If in the shortest path there is an empty node adjacent to any opponent node, that node and its (legal) adjacent nodes are
+;   included in the player vector's nodes (only once).
+; - All other nodes are discarded, unless there are no nodes in the player vector's nodes. In this case, the last empty node
+;   of the shortest path is included in the player vector's nodes.
+;
+; Input:    IXl - current player color
+;           AI_DEPTH  - alphaBeta prunning algorithm recursion depth
+; Output:   B  - number of player nodes
+;           C  - current player color
+;           HL - pointer to player vector's nodes
+; Destroys: IXh
 ;
 GetPlayer_Nodes:
-                push bc                 ; stores BC register
                 push de                 ; stores DE register
 
-                push af                 ; stores current player color
+                ld hl,INCLUDED          ; HL points to included nodes vector
+                ld de,INCLUDED+1        ; DE points to the next byte
+                ld (hl),0               ; initialize value to included nodes vector
+                ld bc,48                ; included nodes vector length
 
+                ; unrolling LDIR: http://map.grauw.nl/articles/fast_loops.php#unrollingldir
+                ; copy 49 bytes with 0 from HL to DE
+
+IncludedLDILoop
+                ldi                     ; 16x LDI
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                jp pe,IncludedLDILoop
+
+                ld a,ixl                ; set current player color in A
                 and %11110111           ; converts player color into a path goal node index
                                         ; %01111001 = Up-Edge = 49, %01111010 = Left-Edge = 50
                 ld c,a                  ; set goal node in C
 
-                ld d,$7A                ; set high address of nodes vector pointer in D
+                ld h,$7A                ; set high address of nodes vector pointer in D
                 ld a,(AI_DEPTH)         ; get recursion depth level
                 rla                     ; calculates low address of nodes vector pointer
                 rla
-                rla                     ; A = AI_DEPTH * 8
-                ld e,a                  ; set low address of nodes vector pointer in E
+                rla
+                rla                     ; A = AI_DEPTH * 16
+                ld l,a                  ; set low address of nodes vector pointer in E
 
-                pop af                  ; restores current player color
+                ld (Push_Tail+1),hl     ; initialize deque pointer (only use tail)
 
-                ld (DEQ_TAIL),de        ; saves player nodes vector tail pointer
-                ex de,hl                ; HL points at tail of player nodes vector pointer
-                ld d,0
-                ld e,b                  ; adds # remaining nodes to complete shortest path
-                add hl,de               ; HL points at head of player nodes vector pointer
-                ld (DEQ_HEAD),hl        ; saves player nodes vector head pointer
+                push hl                 ; stores player vector's nodes
 
-                dec hl                  ; adjust nodes vector pointer
-                push hl                 ; stores nodes vector pointer
+                ld hl,PATH_START        ; HL points to the start node of shortest path (RED/BLUE)
+                ld a,RED_TOKEN          ; calculate index to the start node
+                sub ixl                 ; index 0 for RED player or index 1 for BLUE player
+                add a,l                 ; calculates start node position
+                ld l,a                  ; HL points to current player's start node of shortest path
 
-                call GetPathStart_Node  ; get player's start node of shortest path 
                 ld a,(hl)               ; set start node in A
+
+                ld hl,NeighborsColor    ; initizalize jump address to get adjacent nodes
+                ld (AdjacentJump+1),hl
 
 EmptyLoop
                 call GetNode_Color      ; get node color
                 ld a,WHITE_BLACK        ; set empty node color in A
-                cp (hl)                 ; is node empty? 
-                jr nz,EmptyNext         ; no, skip it  
-            
-                call Adjacent_Nodes      ; search for colored adjacent nodes and fills player nodes vector
+                cp (hl)                 ; is node empty?
+                jr nz,EmptyNext         ; no, skip it
+
+                ld ixh,e                ; set the last empty node in IXh
+
+                call Neighbors_Nodes    ; search for colored neighbors nodes
+
+                cp WHITE_BLACK          ; are there colored adjacent nodes?
+                jr z,EmptyNext          ; no, skip it
+
+                push de                 ; stores parent node index
+
+AdjacentJump
+                jp NeighborsColor       ; self-modifying jump
+
+                ; from "NeighborsColors" to "AddParentNode" this part of code only need to be executed once
+
+NeighborsColor
+                ld b,a                  ; set neighbors color code in B
+                ld a,ixl                ; set current player color in A
+                cp b                    ; are there neighbors of the same color?
+                jr z,AddParentNode      ; yes, add parent node to player vector's nodes
+
+                ld b,(hl)               ; set # of neighbors in B (loop counter)
+
+AdjacentLoop
+                inc hl                  ; HL points to the next neighbor node
+                push hl                 ; stores pointer to neighbor nodes
+
+                ld a,(hl)               ; get neighbor node
+
+                call GetNode_Color      ; get neighbor color
+                ld a,WHITE_BLACK        ; set empty node in A
+                cp (hl)                 ; is neighbor node empty?
+                jr nz,NextAdjacentNode  ; no, skip it
+
+                ld hl,INCLUDED          ; HL points to included nodes vector
+                add hl,de               ; HL points to included node index
+                ld a,(hl)               ; set node index in A
+                dec a                   ; is node yet included?
+                jr z,NextAdjacentNode   ; yes, skip it
+
+                ld (hl),1               ; set node index as included
+                call Push_Tail          ; add node index to player vector's nodes
+
+NextAdjacentNode
+                pop hl                  ; restores pointer to neighbor nodes
+
+                djnz AdjacentLoop       ; repeat for each neighbor node
+
+                ld hl,AddParentNode     ; set jump address for the next time
+                ld (AdjacentJump+1),hl  ; to avoid this code to be executed again
+
+AddParentNode
+                pop de                  ; restores parent node index
+
+                ld hl,INCLUDED          ; HL points to included nodes vector
+                add hl,de               ; HL points to included node index
+                ld a,(hl)               ; set node index in A
+                dec a                   ; is node yet included?
+                jr z,EmptyNext          ; yes, skip it
+
+                ld (hl),1               ; set node index as included
+                call Push_Tail          ; add node index to player vector's nodes
 
 EmptyNext
                 ld hl,PARENT            ; HL points to parent nodes vector
                 add hl,de               ; HL points to parent node index
                 ld a,(hl)               ; get next parent node
-
                 cp c                    ; is parent node = goal node?
                 jr nz,EmptyLoop         ; no, repeat until reach goal node
 
-                pop hl                  ; restores nodes vector pointer
-            
+                pop hl                  ; restores player vector's nodes
+
+                ld a,(Push_Tail+1)      ; get current deque tail low address
+                ld c,a                  ; set current deque tail low address in C
+                sub l                   ; calculates number of nodes in vector
+                or a                    ; is number of nodes = 0?
+                jr z,AddLastEmptyNode   ; yes, add last empty node to player vector's nodes
+
+                ld l,c                  ; set current deque tail low address in L
+                dec l                   ; HL points to tail of player vector's nodes
+
+                ld b,a                  ; set number of player nodes in B
+                ld c,ixl                ; set current player color in C
+
                 pop de                  ; restores DE register
-                pop bc                  ; restores BC register
+
+                ret
+
+AddLastEmptyNode
+                ld e,ixh                ; set the last empty node in E
+                ld (hl),e               ; insert node index in player vector's nodes
+
+                ld b,1                  ; set number of player nodes = 1
+                ld c,ixl                ; set current player color in C
+
+                pop de                  ; restores DE register
 
                 ret
 ;
-; Adjacent_Nodes: search for colored adjacent nodes to the node provided and fills player nodes vector
+; Neighbors_Nodes: search for colored adjacent nodes to the node provided
 ;
-; Input:    E - input node index
-; Output:   -
-; Destroys: A, HL
+; Input:     E - input node index
+; Output:    A - BLUE_TOKEN if there are only blue neighbors, RED_TOKEN if there are only red neighbors, 
+;                BLUE_TOKEN + RED_TOKEN if there are neighbors blue and red,
+;                WHITE_BLACK if there are not colored neighbors
+;           HL - neighbor nodes pointer
+; Destroys:  -
 ;
-Adjacent_Nodes:
+Neighbors_Nodes:
                 push bc                 ; stores BC register
                 push de                 ; stores DE register
 
-                ld c,e                  ; saves input node index in C
-
                 ld h,0                  ; set index in HL
-                ld l,c
+                ld l,e
                 call GetNode_Definition ; look for input node definition
 
-AdjacentLoop
+                push hl                 ; stores neighbor nodes pointer
+                ld c,0                  ; reset neighbors color code
+
+NeighborsLoop
                 inc hl                  ; HL points to the next neighbor node
                 push hl                 ; stores pointer to neighbors nodes
 
                 ld a,(hl)               ; set neighbor node index in A
-
                 cp 49                   ; is it an edge node? (>=49)
-                jr nc,NextAdjacentNode  ; yes, skip it
+                jr nc,NextNeighborsNode ; yes, skip it
 
                 call GetNode_Color      ; get neighbor node color
-                ld a,WHITE_BLACK        ; set empty node color in A
-                cp (hl)                 ; is neighbor node empty?
-                jr z,NextAdjacentNode   ; yes, skip it
+                ld a,(hl)               ; set node color in A
+                or c                    ; calculate neighbor color code
+                ld c,a                  ; set neighbors color code in C
 
+NextNeighborsNode
                 pop hl                  ; restores pointer to neighbors nodes
 
-                ld e,c                  ; set node index in E
-                call Push_Head          ; puts node at head of player vector nodes
+                djnz NeighborsLoop      ; repeat for each neighbor node
 
-                jr ExitAdjacentNode     ; no more search needed
+                ld a,c                  ; return neighbors color code
+                pop hl                  ; return neighbors nodes pointer
 
-NextAdjacentNode
-                pop hl                  ; restores pointer to neighbors nodes
-
-                djnz AdjacentLoop       ; repeat for each neighbors nodes
-
-                ld e,c                  ; set node index in E
-                call Push_Tail          ; puts node at tail of player vector nodes
-
-ExitAdjacentNode
                 pop de                  ; restores DE register
                 pop bc                  ; restores BC register
 
@@ -394,17 +507,23 @@ ExitAdjacentNode
 ;
 ; Bright_Path: highlight the hexagons included in shortest path when game ends
 ;
-; Input:    A - current player color
+; Input:    IXl - current player color
 ; Output:   -
 ; Destroys: A, DE, BC
 ;
 Bright_Path:
-                call GetPathStart_Node  ; get player's start node of shortest path
-
+                ld a,ixl                ; set current player color in A
                 and %11110111           ; converts player color into a path goal node index
                                         ; %01111001 = Up-Edge = 49, %01111010 = Left-Edge = 50
 
                 ld d,a                  ; set path goal node index in D
+
+                ld hl,PATH_START        ; HL points to the start node of shortest path (RED/BLUE)
+                ld a,RED_TOKEN          ; calculate index to the start node
+                sub ixl                 ; index 0 for RED player or index 1 for BLUE player
+                add a,l                 ; calculates remaining nodes position
+                ld l,a                  ; HL points to current player's remaining nodes of shortest path
+
                 ld a,(hl)               ; set path start node index in A
 
 BrightLoop 
@@ -423,8 +542,8 @@ BrightLoop
                 pop de                  ; restores goal and current path nodes
 
                 ld hl,PARENT            ; HL points to parent nodes vector
-                ld b,0                  ; set node index in BC
-                ld c,e
+                ld c,e                  ; set node index in BC
+                ld b,0
                 add hl,bc               ; HL points to parent node
                 ld a,(hl)               ; get next path node index
 
@@ -560,3 +679,14 @@ DISTANCE:
 REMAINING
                 defb 0                      ; remaining RED nodes to complete shortest path
                 defb 0                      ; remaining BLUE nodes to complete shortest path
+;
+; Included nodes vector
+;
+INCLUDED:
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0

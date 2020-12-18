@@ -12,9 +12,9 @@ BORDCR          equ $5C48              ; RAM address of border colour system var
 ; Destroys: A, BC, HL, DE
 ;
 SoundFX:
-                push bc                 ; stores BC register
-
                 di                      ; disable interrupts
+
+                push bc                 ; stores BC register
 
                 push ix                 ; store registers
                 push iy
@@ -27,7 +27,7 @@ SoundFX:
                 rra
                 rra
                 and 7
-                ld (ToneBorder+1),a     ; self-modifing code: puts A as OR parameter
+                ld (ToneBorder+1),a     ; self-modifying code: puts A as OR parameter
 
                 ld c,(ix+0)             ; frames
                 ld b,(ix+1)
@@ -42,7 +42,7 @@ Tone
                 ld e,(ix+4)             ; pitch
                 ld d,(ix+5)
                 ld a,(ix+8)             ; duty 
-                ld (ToneDuty+1),a       ; self-modifing code: puts A as CP parameter
+                ld (ToneDuty+1),a       ; self-modifying: puts A as CP parameter
                 ld hl,0                 ; reset HL
 
 RT0
@@ -55,12 +55,12 @@ RT1
                 ld a,h                  ; set high-byte in A
 
 ToneDuty
-                cp 0                    ; self modified: CP parameter was changed above and below
+                cp 0                    ; self-modifying: CP parameter was changed above and below
                 sbc a,a
                 and 16
 
 ToneBorder
-                or 0                    ; self modified by Tone: OR parameter was changed above
+                or 0                    ; self-modifying by Tone: OR parameter was changed above
                 out (254),a             ; play sound
 
                 dec bc                  ; decrement frame length
@@ -87,9 +87,9 @@ ToneBorder
                 pop iy                  ; restores registers
                 pop ix
 
-                ei                      ; enable interrupts
-
                 pop bc                  ; restores BC register
+
+                ei                      ; enable interrupts
 
                 ret
 ;
