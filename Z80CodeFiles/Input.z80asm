@@ -78,7 +78,7 @@ Input_Options:
                 ld bc,BLUETEXT_XY       ; set string position
                 call Print_String       ; prints string
  
-                jr GameLevel            ; continue to game level choice
+                jp GameLevel            ; continue to game level choice
 
 BlueChosen 
                 ld a,BLUE_TOKEN         ; get BLUE color 
@@ -113,7 +113,7 @@ GameLevel
                 ld bc,LEVEL_XY          ; set string position
                 call Print_String       ; prints string
 
-                jr ExitOptions          ; one player options choosen
+                jp ExitOptions          ; one player options choosen
 
 TwoPlayers
                 call Draw_Board         ; draw an empty hexagons board
@@ -182,7 +182,7 @@ NextKey
                 dec e                   ; decrements loop counter
                 jr nz,NextKey           ; repeat for the next key
 
-                jr RangeLoop            ; repeat until a key (1-4) is pressed
+                jp RangeLoop            ; repeat until a key (1-4) is pressed
 
 KeyPressed
                 ld a,(hl)               ; return key char
@@ -267,7 +267,7 @@ CharOK
                 call Print_Char
                 inc b                   ; increments X position of player input screen location
 
-                jr InputStart           ; get next char (Do until ENTER is pressed)
+                jp InputStart           ; get next char (Do until ENTER is pressed)
 ;
 ; restricts first char to 'a'-'g'
 ;
@@ -280,7 +280,7 @@ FirstLetter
                 cp 'h'                  ; is it >= 'h'
                 jr nc,InputLoop         ; yes, repeat input loop (char is not allowed)
 
-                jr CharOK               ; char is valid
+                jp CharOK               ; char is valid
 ;
 ; restricts second char to '1'-'7'
 ;
@@ -293,7 +293,7 @@ FirstNumber
                 cp '8'                  ; is it >= '8'
                 jr nc,InputLoop         ; yes, repeat input loop (char is not allowed)
 
-                jr CharOK               ; char is valid
+                jp CharOK               ; char is valid
 ;
 ; erases last char, updates player input screen location and string pointer
 ;
@@ -306,7 +306,7 @@ InputDelete
                 cp 2                    ; is it 2?
                 jr nz,DeleteDash        ; no, delete dash
 
-                jr DecCharCnt           ; continue delete
+                jp DecCharCnt           ; continue delete
 
 DeleteDash  
                 ld a,' '                ; delete dash

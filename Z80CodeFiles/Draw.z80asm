@@ -35,7 +35,7 @@ NextRow
 ;
 Draw_Hexagon:
                 ld hl,HEXAGON           ; HL points to the hexagon address
-                jr DrawProcess          ; continue to draw process
+                jp DrawProcess          ; continue to draw process
 ;
 ; Draw_Token: entry point to draw a token instead of an hexagon
 ;

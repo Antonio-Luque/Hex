@@ -7,6 +7,64 @@
 ;
 
 ;
+; Colors vector
+;
+COLORS:
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb BLUE_TOKEN             ; up
+                defb RED_TOKEN              ; left
+                defb RED_TOKEN              ; right
+                defb BLUE_TOKEN             ; bottom
+;
+; Parent nodes vector
+;
+PARENT:
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0                      ; up
+                defb 0                      ; left
+PATH_START
+                defb 0                      ; start node for RED shortest path
+                defb 0                      ; start node for BLUE shortest path
+;
+; Distance nodes vector
+;
+DISTANCE:
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0                      ; up
+                defb 0                      ; left
+REMAINING
+                defb 0                      ; remaining RED nodes to complete shortest path
+                defb 0                      ; remaining BLUE nodes to complete shortest path
+;
+; Included nodes vector
+;
+INCLUDED:
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+                defb 0, 0, 0, 0, 0, 0, 0
+;
 ; Init_Colors: initialize color nodes vector.
 ; Colors nodes vector stores the players moves in the board.
 ;
@@ -332,13 +390,13 @@ IncludedLDILoop
                                         ; %01111001 = Up-Edge = 49, %01111010 = Left-Edge = 50
                 ld c,a                  ; set goal node in C
 
-                ld h,$7A                ; set high address of nodes vector pointer in D
+                ld h,$7A                ; set high address of nodes vector pointer in H
                 ld a,(AI_DEPTH)         ; get recursion depth level
                 rla                     ; calculates low address of nodes vector pointer
                 rla
                 rla
                 rla                     ; A = AI_DEPTH * 16
-                ld l,a                  ; set low address of nodes vector pointer in E
+                ld l,a                  ; set low address of nodes vector pointer in L
 
                 ld (Push_Tail+1),hl     ; initialize deque pointer (only use tail)
 
@@ -632,61 +690,3 @@ node49          defb  7,  0,  1,  2,  3,  4,  5,  6 ; up
 node50          defb  7,  0,  7, 14, 21, 28, 35, 42 ; left
 node51          defb  7,  6, 13, 20, 27, 34, 41, 48 ; right
 node52          defb  7, 42, 43, 44, 45, 46, 47, 48 ; bottom
-;
-; Colors vector
-;
-COLORS:
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb BLUE_TOKEN             ; up
-                defb RED_TOKEN              ; left
-                defb RED_TOKEN              ; right
-                defb BLUE_TOKEN             ; bottom
-;
-; Parent nodes vector
-;
-PARENT:
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0                      ; up
-                defb 0                      ; left
-PATH_START
-                defb 0                      ; start node for RED shortest path
-                defb 0                      ; start node for BLUE shortest path
-;
-; Distance nodes vector
-;
-DISTANCE:
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0                      ; up
-                defb 0                      ; left
-REMAINING
-                defb 0                      ; remaining RED nodes to complete shortest path
-                defb 0                      ; remaining BLUE nodes to complete shortest path
-;
-; Included nodes vector
-;
-INCLUDED:
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0
-                defb 0, 0, 0, 0, 0, 0, 0

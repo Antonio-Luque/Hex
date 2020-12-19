@@ -18,6 +18,7 @@ SW_COLOR        equ %00000011           ; BITs to be XORed to swap current playe
 ;
 ; Entry point of the program
 ;
+                ent $
                 xent $
 ;
 ; Set screen colors and draws board frame and empty hex board
@@ -62,7 +63,7 @@ GameLoop
                 jr nc,RedInput          ; yes, set XY RED player input/output screen location
 
                 ld bc,BLUE_XY           ; set XY BLUE player input/output screen location
-                jr StorePosXY           ; continue storing player XY input/output screen location
+                jp StorePosXY           ; continue storing player XY input/output screen location
 
 RedInput
                 ld bc,RED_XY            ; set XY RED player input/output screen location
@@ -97,7 +98,7 @@ StorePosXY
 
                 pop bc                  ; restores XY hexagon board indexes
 
-                jr DrawToken            ; continue drawing token
+                jp DrawToken            ; continue drawing token
 
 HumanMove
                 call Clear_Move         ; clear human player last move
@@ -146,7 +147,7 @@ DrawToken
                 ex af,af'               ; get opponent player color
                 ld (PLAYER),a           ; stores new current player color
 
-                jr GameLoop             ; repeat game loop
+                jp GameLoop             ; repeat game loop
 ;
 ; Illegal human move (node is filled)
 ;
@@ -166,7 +167,7 @@ Delay
 
                 call Clear_Alert        ; clear alert message
 
-                jr HumanMove            ; repeat human input until move is legal
+                jp HumanMove            ; repeat human input until move is legal
 ;
 ; Current player wins the game
 ;

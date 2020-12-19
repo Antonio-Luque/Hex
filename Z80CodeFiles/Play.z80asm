@@ -27,11 +27,11 @@ Speccy_Move:
                 ld a,(PLAYER)           ; get current (speccy) player color
                 call BRAINIAC_best_move ; return Speccy best move
 
-                jr SetMove              ; set move on the board
+                jp SetMove              ; set move on the board
 
 FirstRed_Move
                 call OpeningBook        ; check if first red move is in the "opening book"
-                jr SetMove              ; set move on the board
+                jp SetMove              ; set move on the board
 
 FirstBlue_Move
                 ld a,r                  ; get a pseudo-random number [0-127] in A

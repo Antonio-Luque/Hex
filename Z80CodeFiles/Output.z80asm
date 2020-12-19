@@ -25,7 +25,7 @@ Print_Alert:
                 add a,8                 ; Y = Y + 8
                 ld c,a
 
-                jr Print_String
+                jp Print_String
 ;
 ; Clear_Alert: clears an alert message
 ;
@@ -47,7 +47,7 @@ Clear_Alert:
                 add a,8                 ; Y = Y + 8
                 ld c,a
             
-                jr Print_String
+                jp Print_String
 ;
 ; Print_Wait: prints "WAIT" message at current player input/output screen location 
 ;
@@ -60,7 +60,7 @@ Print_Wait:
                 ld (CHAR_ATTR),a
                 ld hl,STR_WAIT          ; HL points to "WAIT" string
 
-                jr GetPosXY
+                jp GetPosXY
 ;
 ; Clear_Move: clears a printed player move at current player input/output screen location 
 ;
@@ -71,7 +71,7 @@ Print_Wait:
 Clear_Move:
                 ld hl,STR_EMPTY4        ; HL points to a 4 blanks string        
 
-                jr GetPosXY
+                jp GetPosXY
 ;
 ; Print_Move: prints a formatted move at current player input/output screen location 
 ;
@@ -104,7 +104,7 @@ GetChar         ld a,(hl)               ; get string char
                 call Print_Char         ; prints char
 
                 inc b                   ; increments X (column)
-                jr GetChar              ; repeat until end of string
+                jp GetChar              ; repeat until end of string
 
 ExitPrint       pop bc                  ; restores XY current player input/output screen location
 
