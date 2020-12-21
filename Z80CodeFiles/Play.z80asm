@@ -53,9 +53,9 @@ FirstBlue_Move
 SetMove
                 ld a,e                  ; set node in A
 
-                call GetNode_Color      ; get node color address
+                ld h,COLORS_H           ; HL points to node color
+                ld l,a
                 ld a,(PLAYER)           ; get current (speccy) player color
-
                 ld (hl),a               ; update graph's node color with current player color
 
                 ret
@@ -76,12 +76,13 @@ OpeningsLoop
 
                 push hl                 ; stores opening book address
 
-                call GetNode_Color      ; get node color address
+                ld h,COLORS_H           ; HL points to node color
+                ld l,a
                 ld a,BLUE_TOKEN         ; set blue color in A
                 cp (hl)                 ; has blue player done this move?
                 pop hl                  ; restores opening book address
                 inc hl                  ; HL points to the red move response
-                jr z,ReturnMove         ; blue player done this move
+                jr z,ReturnMove         ; yes, blue player done this move
 
                 inc hl                  ; HL points to the next blue move
 

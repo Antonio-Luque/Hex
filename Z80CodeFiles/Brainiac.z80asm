@@ -75,13 +75,12 @@ AIMainLoop
                 push hl                 ; stores player nodes vector pointer*
                 push bc                 ; stores path length and player node index
 
-                push de                 ; stores alphaMax and best player node
-                call GetNode_Color      ; get node color address*
-                pop de                  ; restores alphaMax and best player node
+                ld h,COLORS_H           ; HL to points to node color
+                ld l,a
 
                 ld a,(AI_PLAYER)        ; get current player (speccy) color
                 ld c,a                  ; C = current player (speccy) color
-                          
+
                 ld (hl),c               ; update node color with current player color* (BRAINIAC_play)
 
                 push hl                 ; stores address of node color
@@ -169,10 +168,8 @@ AlphabetaMinLoop
 
                 push hl                 ; stores opponent player vector's nodes pointer
 
-                push de                 ; stores alphaMax and betaMin
-                call GetNode_Color      ; get node color address
-                pop de                  ; restores alphaMax and betaMin
-                                       
+                ld h,COLORS_H           ; HL to points to node color
+                ld l,a
                 ld (hl),c               ; update node color with opponent player color (BRAINIAC_play)
 
                 push hl                 ; stores address of node color
@@ -248,10 +245,8 @@ HeuristicMinLoop
 
                 push hl                 ; stores opponent player vector's nodes pointer
 
-                push de                 ; stores alphaMax and betaMin
-                call GetNode_Color      ; get node color address
-                pop de                  ; restores alphaMax and betaMin
-                                       
+                ld h,COLORS_H           ; HL to points to node color
+                ld l,a
                 ld (hl),c               ; update node color with opponent player color (BRANIAC_play)
 
                 exx                     ; stores address of node color, alphaMax and betaMin,
@@ -339,10 +334,8 @@ AlphabetaMaxLoop
 
                 push hl                 ; stores current player vector's nodes pointer
 
-                push de                 ; stores alphaMax and betaMin
-                call GetNode_Color      ; get node color address
-                pop de                  ; restores alphaMax and betaMin
-                                       
+                ld h,COLORS_H           ; HL to points to node color
+                ld l,a
                 ld (hl),c               ; update node color with current player color (BRANIAC_play)
 
                 push hl                 ; stores address of node color
@@ -418,10 +411,8 @@ HeuristicMaxLoop
 
                 push hl                 ; stores current player vector's nodes pointer
 
-                push de                 ; stores alphaMax and betaMin
-                call GetNode_Color      ; get node color address
-                pop de                  ; restores alphaMax and betaMin
-
+                ld h,COLORS_H           ; HL to points to node color
+                ld l,a
                 ld (hl),c               ; update node color with current player color (BRANIAC_play)
 
                 exx                     ; stores address of node color, alphaMax and betaMin,

@@ -16,12 +16,7 @@ RED_TOKEN       equ %00111010           ; Attributes: bright 0, flash 0, paper 7
 SW_COLOR        equ %00000011           ; BITs to be XORed to swap current player color
 
 ;
-; Entry point of the program
-;
-                ent $
-                xent $
-;
-; Set screen colors and draws board frame and empty hex board
+; Set screen colors, draws board frame and empty hex board
 ;
                 ld a,5                  ; set border 5 (cyan)
                 call BORDER             ; call BORDER ROM routine
@@ -38,6 +33,12 @@ SW_COLOR        equ %00000011           ; BITs to be XORed to swap current playe
 
                 call Draw_Frame         ; draws board frame
                 call Draw_Board         ; draw an empty hexagons board
+
+                ld ix,EDGES             ; IX points to colors vector edges
+                ld (ix+0),BLUE_TOKEN    ; initialize colors vector edges
+                ld (ix+1),RED_TOKEN
+                ld (ix+2),RED_TOKEN
+                ld (ix+3),BLUE_TOKEN
 ;
 ; Game (re)initialization - main loop
 ;
@@ -118,7 +119,8 @@ HumanMove
                 ; check human move legality
 
                 call Indexes2_Node      ; get graph's node index
-                call GetNode_Color      ; get graph's node color
+                ld h,COLORS_H           ; HL to points to node color
+                ld l,a
                 ld a,WHITE_BLACK        ; set empty node color in A
                 cp (hl)                 ; is node empty?
                 jr nz,HexFilled         ; no, node is filled
