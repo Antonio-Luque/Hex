@@ -5,17 +5,17 @@
 ; Inspired on Greg Surma article:
 ; https://towardsdatascience.com/hex-creating-intelligent-adversaries-part-2-heuristics-dijkstras-algorithm-597e4dcacf93 
 ;
-PARENT_H        equ $5E
-PARENT_HL       equ $5E00
-PATH_START      equ $5E33
-DISTANCE_H      equ $5F
-DISTANCE_HL     equ $5F00
-REMAINING       equ $5F33
-INCLUDED_H      equ $60
-INCLUDED_HL     equ $6000
-COLORS_H        equ $61
-COLORS_HL       equ $6100
-EDGES           equ $6131
+PARENT_H        equ $5E                 ; Hi-byte address of parent nodes vector
+PARENT_HL       equ $5E00               ; Address of parent vector nodes
+PATH_START      equ $5E33               ; Address of start node of shortest path
+DISTANCE_H      equ $5F                 ; Hi-byte address of distance nodes vector
+DISTANCE_HL     equ $5F00               ; Address of distance nodes vector
+REMAINING       equ $5F33               ; Address of remaining nodes (RED/BLUE) of shortest path
+INCLUDED_H      equ $60                 ; Hi-byte address of included nodes vector
+INCLUDED_HL     equ $6000               ; Address of included nodes vector
+COLORS_H        equ $61                 ; Hi-byte address of colors nodes vector
+COLORS_HL       equ $6100               ; Address of colors nodes vector
+EDGES           equ $6131               ; Address of edge nodes
 
 ;
 ; Init_Colors: initialize color nodes vector.
@@ -40,7 +40,7 @@ Init_Colors:
 ; Input:     A - node index
 ; Output:    B - number of neighbors nodes
 ;           HL - pointer to 1st element's node in BOARD_GRAPH
-; Destroys: DE, A
+; Destroys:  A
 ;
 GetNode_Definition:
                 add a,a                 ; a node pointer is 2 bytes long
@@ -98,7 +98,7 @@ Pop_Head:
 ; Destroys: HL
 ;
 Push_Tail:
-                ld hl,$7D00             ; get pointer to tail of deque
+                ld hl,$5E70             ; get pointer to tail of deque
                 ld (hl),a               ; set node index at tail of deque
                 inc hl                  ; increments tail pointer
                 ld (Push_Tail+1),hl     ; update tail pointer
@@ -148,7 +148,7 @@ Path_Finder:
 
                 call Vector_Init        ; copy 49 bytes with $FF from HL to DE
 
-                ld hl,$7D00             ; initialize deque (doble-ended queue) pointers
+                ld hl,$5E70             ; initialize deque (doble-ended queue) pointers
                 ld (DEQ_HEAD),hl
                 ld (Push_Tail+1),hl
 
@@ -602,7 +602,7 @@ node52          defb  7, 42, 43, 44, 45, 46, 47, 48 ; bottom
 
                 defb 0                  ; to align node pointers to address $6F00
 ;
-; Node memory pointers
+; Node memory pointers. Must be aligned to address $6F00
 ;
 NODE_POINTERS:
                 defw  node0,  node1,  node2,  node3,  node4,  node5,  node6
