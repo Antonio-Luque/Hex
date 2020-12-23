@@ -6,16 +6,16 @@
 ;
                 org $6200
 
+                #include "Graph.z80asm"
                 #include "Main.z80asm"
-                #include "Frame.z80asm"
                 #include "Draw.z80asm"
                 #include "Output.z80asm"
                 #include "Input.z80asm"
                 #include "Play.z80asm"
                 #include "Brainiac.z80asm"
-                #include "Graph.z80asm"
                 #include "Sound.z80asm"
                 #include "Font.z80asm"
+                #include "Frame.z80asm"
 ;
 ; Credits and acknowledgements:
 ;

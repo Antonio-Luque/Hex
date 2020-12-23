@@ -16,6 +16,10 @@ RED_TOKEN       equ %00111010           ; Attributes: bright 0, flash 0, paper 7
 SW_COLOR        equ %00000011           ; BITs to be XORed to swap current player color
 
 ;
+; Entry point of the program
+;
+                ent $
+;
 ; Set screen colors, draws board frame and empty hex board
 ;
                 ld a,5                  ; set border 5 (cyan)
@@ -141,7 +145,8 @@ DrawToken
 
                 ld a,(PLAYER)           ; get current player color
                 call Path_Finder        ; calculate current player shortest path
-                or a                    ; are # remaining nodes = 0?
+                ld a,(hl)               ; set current player remaining nodes in A
+                or a                    ; are # of remaining nodes = 0?
                 jr z,PlayerWins         ; yes, there is a winner!
 
                 ; swap player colors from BLUE to RED and vice-versa
@@ -174,6 +179,8 @@ Delay
 ; Current player wins the game
 ;
 PlayerWins
+                ld a,(PLAYER)           ; get current player color
+
                 call Bright_Path        ; highlights the winner path
 
                 ld hl,STR_WINNER        ; HL points to "WINS!!" string

@@ -17,12 +17,13 @@ MAX_VALUE       equ 255                ; alphaBeta pruning maximum value
 ; Output:   A  - ((opponent player path distance) minus (current player path distance)) * (-1)
 ;                or MAX_VALUE if speccy is the winner
 ;                or MIN_VALUE if player is the winner
-; Destroys: A', B, HL, IX
+; Destroys: A', B, HL
 ;
 Board_Score:
                 ld a,(AI_PLAYER)        ; set current player (speccy) color in A
 
                 call Path_Finder        ; calculate current player shortest path
+                ld a,(hl)               ; set current player remaining nodes in A
                 ld b,a                  ; set current player remaining nodes in B
                 or a                    ; is current player shortest path = 0?
                 cpl                     ; inverts all bits of A
@@ -30,6 +31,7 @@ Board_Score:
 
                 ex af,af'               ; get opponent player color
                 call Path_Finder        ; calculate opponent player shortest path
+                ld a,(hl)               ; set opponent player remaining nodes in A
                 or a                    ; is opponent player shortest path = 0?
                 ret z                   ; yes, return MIN_VALUE
 
@@ -69,14 +71,14 @@ BRAINIAC_best_move:
                 ld e,(hl)               ; E = best player node (initialization)
 
 AIMainLoop
-                ld a,(hl)               ; get node from player nodes vector*
-                ld c,a                  ; set player node in C
+                push hl                 ; stores player vector's nodes*
 
-                push hl                 ; stores player nodes vector pointer*
-                push bc                 ; stores path length and player node index
-
+                ld l,(hl)               ; get node from player vector's nodes*
                 ld h,COLORS_H           ; HL to points to node color
-                ld l,a
+
+                ld c,l                  ; set player node in C
+
+                push bc                 ; stores path length and player node index
 
                 ld a,(AI_PLAYER)        ; get current player (speccy) color
                 ld c,a                  ; C = current player (speccy) color
@@ -97,7 +99,7 @@ AIMainLoop
                 ld (hl),WHITE_BLACK     ; restores node color* (BRAINIAC_undo)
 
                 pop bc                  ; restores path length and player node index
-                pop hl                  ; restores player nodes vector pointer
+                pop hl                  ; restores player vector's nodes*
 
                 cp d
                 jr c,AIMainNext
@@ -150,6 +152,7 @@ AIMainNext
 Alphabeta_Min:
                 ld a,c                  ; set current player color in A
                 call Path_Finder        ; calculate current player shortest path
+                ld a,(hl)               ; set current player remaining nodes in A
                 or a                    ; is current player shortest path = 0?
                 cpl                     ; inverts all bits of A
                 ret z                   ; yes, return MAX_VALUE
@@ -164,12 +167,11 @@ Alphabeta_Min:
                 call GetPlayer_Nodes    ; get opponent player vector's nodes
 
 AlphabetaMinLoop
-                ld a,(hl)               ; get node from opponent player vector's nodes
-
                 push hl                 ; stores opponent player vector's nodes pointer
-
+                
+                ld l,(hl)               ; get node from opponent player vector's nodes
                 ld h,COLORS_H           ; HL to points to node color
-                ld l,a
+
                 ld (hl),c               ; update node color with opponent player color (BRAINIAC_play)
 
                 push hl                 ; stores address of node color
@@ -241,12 +243,11 @@ Heuristic_Min:
                 call GetPlayer_Nodes    ; get opponent player vector's nodes
 
 HeuristicMinLoop
-                ld a,(hl)               ; get node from opponent player vector's nodes
-
                 push hl                 ; stores opponent player vector's nodes pointer
 
+                ld l,(hl)               ; get node from opponent player vector's nodes
                 ld h,COLORS_H           ; HL to points to node color
-                ld l,a
+
                 ld (hl),c               ; update node color with opponent player color (BRANIAC_play)
 
                 exx                     ; stores address of node color, alphaMax and betaMin,
@@ -317,6 +318,7 @@ HeuristicMinExit
 Alphabeta_Max:
                 ld a,c                  ; set opponent player color in A
                 call Path_Finder        ; calculate opponent player shortest path
+                ld a,(hl)
                 or a                    ; is opponent player shortest path = 0?
                 ret z                   ; yes, return MIN_VALUE
 
@@ -330,12 +332,11 @@ Alphabeta_Max:
                 call GetPlayer_Nodes    ; get current player vector's nodes
 
 AlphabetaMaxLoop
-                ld a,(hl)               ; get node from current player vector's nodes
-
                 push hl                 ; stores current player vector's nodes pointer
 
+                ld l,(hl)               ; get node from current player vector's nodes
                 ld h,COLORS_H           ; HL to points to node color
-                ld l,a
+
                 ld (hl),c               ; update node color with current player color (BRANIAC_play)
 
                 push hl                 ; stores address of node color
@@ -407,12 +408,11 @@ Heuristic_Max:
                 call GetPlayer_Nodes    ; get current player vector's nodes
 
 HeuristicMaxLoop
-                ld a,(hl)               ; get node from current player vector's nodes
-
                 push hl                 ; stores current player vector's nodes pointer
 
+                ld l,(hl)               ; get node from current player vector's nodes
                 ld h,COLORS_H           ; HL to points to node color
-                ld l,a
+
                 ld (hl),c               ; update node color with current player color (BRANIAC_play)
 
                 exx                     ; stores address of node color, alphaMax and betaMin,
