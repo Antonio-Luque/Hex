@@ -30,7 +30,8 @@ Input_Options:
                 ld bc,$3132             ; set input limits to key '1' ($31) or key '2' ($32)
                 call Read_Key           ; read key from keyboard
 
-                push af
+                push af                 ; stores key pressed
+
                 call Clear_Alert        ; clear alert message (if any)
 
                 ; clear last players moves
@@ -50,6 +51,7 @@ Input_Options:
                 call Print_String       ; prints string
 
                 pop af                  ; restores key pressed
+
                 ld (NUM_PLAYERS),a      ; stores # of players choice
                 cp '2'                  ; is it '2'?
                 jr z,TwoPlayers         ; yes, skip rest of choices

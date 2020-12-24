@@ -54,8 +54,8 @@ GameInit
 
                 call Input_Options      ; Input game options
 
-                ld a,1
-                ld (MOVE_NUMBER),a      ; set move number to 1
+                ld a,1                  ; initialize move number
+                ld (MOVE_NUMBER),a
 
                 ld a,BLUE_TOKEN         ; set current player color
                 ld (PLAYER),a           ; saves current player color
@@ -128,6 +128,9 @@ HumanMove
                 ld a,WHITE_BLACK        ; set empty node color in A
                 cp (hl)                 ; is node empty?
                 jr nz,HexFilled         ; no, node is filled
+
+                ld a,l                  ; saves last human move
+                ld (LAST_MOVE),a
 
                 ld a,(PLAYER)           ; update graph's node color with current player color
                 ld (hl),a
@@ -284,7 +287,7 @@ ExitConv
 ; Designed by Sonia Ortega
 ;
 ; Input:    BC - board indexes of the hexagon (B=column, C=row)
-; Output:   DE - node index (0 to 48)
+; Output:    A - node index (0 to 48)
 ; Destroys: -
 ;
 Indexes2_Node:            
@@ -302,9 +305,6 @@ LoopNode
 
                 pop bc                  ; restores board indexes
 
-                ld e,a                  ; return node index in DE
-                ld d,0
-
                 ret
 ;
 ; Strings
@@ -318,3 +318,4 @@ STR_WINNER      defm " WINS \0"
 ;
 PLAYER          defb 0                  ; Current player color
 MOVE_NUMBER     defb 0                  ; Current number of moves
+LAST_MOVE       defb 0                  ; Last move for the human player
