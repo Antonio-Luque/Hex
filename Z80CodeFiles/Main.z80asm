@@ -190,7 +190,7 @@ PlayerWins
 
                 call Bright_Path        ; highlights the winner path
 
-                ld hl,STR_WINNER        ; HL points to "WINS!!" string
+                ld hl,STR_WINNER        ; HL points to " WINS " string
                 call Print_Alert        ; print string
 
                 ld hl,WINNER_FX         ; HL points to filled node sound fx
