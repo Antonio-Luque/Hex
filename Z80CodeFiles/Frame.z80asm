@@ -12,19 +12,17 @@
 ;
 Draw_Frame:
                 ld ix,FRAME_MAP         ; IX points to frame map
-                ld b,120                ; # of tiles definition in frame map
+                ld b,120                ; number of tiles definition in frame map
 
 NextTile
-                push bc                 ; stores loop counter
+                push bc                 ; store loop counter
 
                 ld b,(ix+0)             ; get the X row location of the screen (in bytes)
                 ld c,(ix+1)             ; get the Y col location of the screen (in pixels) 
 
-                ld a,(ix+2)             ; get the tile index
                 ld de,TILE_SET          ; DE points to the tile set array
-
                 ld h,0                  ; set tile index
-                ld l,a                  
+                ld l,(ix+2)
                 add hl,hl               ; a tile is 8 bytes long
                 add hl,hl
                 add hl,hl
@@ -35,7 +33,7 @@ NextTile
                 ld (de),a               ; set tile color
                 call GetXY_Screen       ; get pixel screen memory address of XY location
 
-                ld b,8                  ; # of lines of tile
+                ld b,8                  ; number of lines of tile
 
 NextTileLn
                 ld a,(hl)               ; source tile line
@@ -49,9 +47,9 @@ NextTileLn
                 ld bc,4                 ; length of a tile definition
                 add ix,bc               ; IX points to next tile definition
 
-                pop bc                  ; restores loop counter
+                pop bc                  ; restore loop counter
 
-                djnz NextTile           ; processes next tile
+                djnz NextTile           ; process next tile
 
                 ret
 ;

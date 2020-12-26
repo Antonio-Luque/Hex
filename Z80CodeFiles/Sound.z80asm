@@ -14,9 +14,9 @@ BORDCR          equ $5C48              ; RAM address of border colour system var
 SoundFX:
                 di                      ; disable interrupts
 
-                push bc                 ; stores BC register
+                push bc                 ; store BC register
 
-                push ix                 ; store registers
+                push ix                 ; store index registers
                 push iy
 
                 push hl                 ; simulate ld ix,hl
@@ -84,10 +84,10 @@ ToneBorder
                 or c                    ; is it 0?
                 jr nz,RT0               ; no, repeat RT0
 
-                pop iy                  ; restores registers
+                pop iy                  ; restore index registers
                 pop ix
 
-                pop bc                  ; restores BC register
+                pop bc                  ; restore BC register
 
                 ei                      ; enable interrupts
 

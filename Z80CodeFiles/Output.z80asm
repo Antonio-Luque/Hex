@@ -96,7 +96,8 @@ GetPosXY
 Print_String:
                 push bc                 ; stores XY current player input/output screen location
 
-GetChar         ld a,(hl)               ; get string char
+GetChar
+                ld a,(hl)               ; get string char
                 or a                    ; is it 0? (end of string)
                 jr z,ExitPrint          ; yes, return
                                     
@@ -106,7 +107,8 @@ GetChar         ld a,(hl)               ; get string char
                 inc b                   ; increments X (column)
                 jp GetChar              ; repeat until end of string
 
-ExitPrint       pop bc                  ; restores XY current player input/output screen location
+ExitPrint
+                pop bc                  ; restores XY current player input/output screen location
 
                 ret 
 ;
