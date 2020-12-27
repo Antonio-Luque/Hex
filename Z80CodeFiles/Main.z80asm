@@ -6,22 +6,21 @@ CLS             equ $0D6B               ; ROM address of CLS command routine
 BORDER          equ $229B               ; ROM address of BORDER+7 command routine
 ATTR_P          equ $5C8D               ; RAM address of permanent attributes system variable
 
-RED_XY          equ $02A8               ; XY RED player input/output screen location
-BLUE_XY         equ $1A30               ; XY BLUE player input/output screen location
+RED_XY          equ $02A8               ; XY RED input/output screen location
+BLUE_XY         equ $1A30               ; XY BLUE input/output screen location
 
 CYAN_FLASH0     equ %00101000           ; Attributes: bright 0, flash 0, paper 5, ink 0
 CYAN_REVERSE    equ %00000101           ; Attributes: bright 0, flash 0, paper 0, ink 5
 BLUE_TOKEN      equ %00111001           ; Attributes: bright 0, flash 0, paper 7, ink 1
 RED_TOKEN       equ %00111010           ; Attributes: bright 0, flash 0, paper 7, ink 2
-SW_COLOR        equ %00000011           ; BITs to be XORed to swap current player color
 
 ;
 ; Entry point of the program
 ;
-                xent $
-;
-; Set screen colors and draws board frame and empty hex board
-;
+                ent $
+
+                ; set screen colors
+
                 ld a,5                  ; set border 5 (cyan)
                 call BORDER             ; call BORDER ROM routine
 
@@ -29,104 +28,121 @@ SW_COLOR        equ %00000011           ; BITs to be XORed to swap current playe
                 ld (ATTR_P),a           ; stores it in ATTR_P system variable
                 call CLS                ; call CLS ROM routine
 
+                ; print " HEX " header
+
                 ld hl,STR_HEADER        ; HL points to header string
                 ld bc,$0A08             ; set string position
                 ld a,CYAN_REVERSE       ; set header attributes
                 ld (CHAR_ATTR),a
-                call Print_String       ; prints string
 
-                call Draw_Frame         ; draws board frame
+                call Print_String       ; print string
+
+                ; draw board frame and empty hex board
+
+                call Draw_Frame         ; draw board frame
                 call Draw_Board         ; draw an empty hexagons board
+
+                ; initialize graph colors vector edges 
+
+                ld ix,EDGES             ; IX points to colors vector edges
+                ld (ix+0),BLUE_TOKEN    
+                ld (ix+1),RED_TOKEN
+                ld (ix+2),RED_TOKEN
+                ld (ix+3),BLUE_TOKEN
 ;
 ; Game (re)initialization - main loop
 ;
 GameInit
-                call Init_Colors        ; initialize colors vector
+                call Init_Colors        ; initialize graph colors vector
 
                 ld a,CYAN_FLASH0        ; set clear attributes
                 ld (CHAR_ATTR),a
 
-                call Input_Options      ; Input game options
+                call Input_Options      ; input game options
 
-                ld a,1
-                ld (MOVE_NUMBER),a      ; set move number to 1
+                ld a,1                  ; initialize move number
+                ld (MOVE_NUMBER),a
 
-                ld a,BLUE_TOKEN         ; set current player color
-                ld (PLAYER),a           ; saves current player color
-;
+                ld a,BLUE_TOKEN         ; set BLUE token color in A
+                ld (TOKEN_COLOR),a      ; save current token color (BLUE plays first)
+
 ; Process players moves - game loop
 ;
 GameLoop
-                push af                 ; stores current player color
-                rra                     ; is RED player turn?
-                jr nc,RedInput          ; yes, set XY RED player input/output screen location
+                push af                 ; store current token color
+                rra                     ; is RED the current token color?
+                jr nc,RedInput          ; yes, set XY RED input/output screen location
 
-                ld bc,BLUE_XY           ; set XY BLUE player input/output screen location
-                jr StorePosXY           ; continue storing player XY input/output screen location
+                ld bc,BLUE_XY           ; set XY BLUE input/output screen location
+                jp StorePosXY           ; continue storing XY input/output screen location
 
 RedInput
-                ld bc,RED_XY            ; set XY RED player input/output screen location
+                ld bc,RED_XY            ; set XY RED input/output screen location
 
 StorePosXY             
-                ld (MOVE_POSXY),bc      ; stores current player XY input/output screen location
+                ld (MOVE_POSXY),bc      ; store current XY input/output screen location
 
                 ; check game options
 
                 ld a,(NUM_PLAYERS)      ; get number of players
                 cp '2'                  ; is it '2'?
-                jr z,HumanMove          ; yes, input human move
+                jr z,PlayerMove         ; yes, input player move
 
-                ld hl,HUMAN_COLOR       ; get human color choice
-                pop af                  ; restores current player color
-                cp (hl)                 ; is human color choice = current player color?
-                jr z,HumanMove          ; yes, input human move
+                ld hl,PLAYER_COLOR      ; get player color choice
+                pop af                  ; restore current token color
+                cp (hl)                 ; is player color choice = current token color?
+                jr z,PlayerMove         ; yes, input player move
 
-                ; Speccy move
+                ; speccy move
 
-                call Print_Wait         ; prints "WAIT" message
+                call Print_Wait         ; print "WAIT" message
 
                 call Speccy_Move        ; get Speccy move
                 call Node2_Indexes      ; get XY hexagon board indexes
 
-                push bc                 ; stores XY hexagon board indexes
+                push bc                 ; store XY hexagon board indexes
 
                 call Format_Move        ; format string move
-                ld a,CYAN_FLASH0        ; restores message color
+                ld a,CYAN_FLASH0        ; restore message color
                 ld (CHAR_ATTR),a
-                call Print_Move         ; prints Speccy move
+                call Print_Move         ; print Speccy move
 
-                pop bc                  ; restores XY hexagon board indexes
+                pop bc                  ; restore XY hexagon board indexes
 
-                jr DrawToken            ; continue drawing token
+                jp DrawToken            ; continue drawing token
 
-HumanMove
-                call Clear_Move         ; clear human player last move
+PlayerMove
+                call Clear_Move         ; clear player last move
 
-                ld hl,HUMAN_MOVE        ; HL points to the string to store the move
-                call Input_String       ; input human player move
+                ld hl,PLAYER_MOVE       ; HL points to the string to store player move
+                call Input_String       ; input player move
 
                 call String2_Indexes    ; get XY hexagon board indexes
 
-                push bc                 ; stores XY hexagon board indexes
+                push bc                 ; store XY hexagon board indexes
 
                 call Format_Move        ; format string move
-                call Print_Move         ; prints Human move
+                call Print_Move         ; print player move
 
-                pop bc                  ; restores XY hexagon board indexes
+                pop bc                  ; restore XY hexagon board indexes
 
-                ; check human move legality
+                ; check player move legality
 
-                call Indexes2_Node      ; get graph's node index
-                call GetNode_Color      ; get graph's node color
+                call Indexes2_Node      ; get graph's node index (0-48)
+                ld h,COLORS_H           ; HL points to node color
+                ld l,a
                 ld a,WHITE_BLACK        ; set empty node color in A
                 cp (hl)                 ; is node empty?
                 jr nz,HexFilled         ; no, node is filled
 
-                ld a,(PLAYER)           ; update graph's node color with current player color
+                ld a,l                  ; save last player move
+                ld (LAST_MOVE),a
+
+                ld a,(TOKEN_COLOR)      ; update node color with current token color
                 ld (hl),a
 
 DrawToken
-                call Draw_Token         ; draw token (human or speccy) on the screen
+                call Draw_Token         ; draw token (player or speccy) on the screen
 
                 ld hl,TOKEN_FX          ; HL points to the sound fx for move
                 call SoundFX            ; play sound fx
@@ -136,23 +152,22 @@ DrawToken
 
                 ; check winner
 
-                ld a,(PLAYER)           ; get current player color
+                ld a,(TOKEN_COLOR)      ; get current token color
                 call Path_Finder        ; calculate current player shortest path
-                or a                    ; are # remaining nodes = 0?
+                ld a,(hl)               ; set current player remaining nodes in A
+                or a                    ; are # of remaining nodes = 0?
                 jr z,PlayerWins         ; yes, there is a winner!
 
-                ; swap player colors from BLUE to RED and vice-versa
-
                 ex af,af'               ; get opponent player color
-                ld (PLAYER),a           ; stores new current player color
+                ld (TOKEN_COLOR),a      ; store new current token color
 
-                jr GameLoop             ; repeat game loop
+                jp GameLoop             ; repeat game loop
 ;
 ; Illegal human move (node is filled)
 ;
 HexFilled
                 ld hl,STR_FILLED        ; HL points to "FILLED" string
-                call Print_Alert        ; prints string
+                call Print_Alert        ; print string
 
                 ld hl,FILLED_FX         ; HL points to filled hexagon sound fx
                 call SoundFX            ; play sound fx
@@ -166,15 +181,17 @@ Delay
 
                 call Clear_Alert        ; clear alert message
 
-                jr HumanMove            ; repeat human input until move is legal
+                jp PlayerMove           ; repeat player input until move is legal
 ;
 ; Current player wins the game
 ;
 PlayerWins
+                ld a,(TOKEN_COLOR)      ; get current token color
+
                 call Bright_Path        ; highlights the winner path
 
-                ld hl,STR_WINNER        ; HL points to "WINS!!" string
-                call Print_Alert        ; prints string
+                ld hl,STR_WINNER        ; HL points to " WINS " string
+                call Print_Alert        ; print string
 
                 ld hl,WINNER_FX         ; HL points to filled node sound fx
                 call SoundFX            ; play sound fx
@@ -193,11 +210,11 @@ Format_Move:
 
                 ld a,b                  ; set column index position
                 xor %01100000           ; add $60 (see charset 'a'-'g')
-                ld (ix+0),a             ; stores it in 1st position of formated string
+                ld (ix+0),a             ; put it in 1st position of formated string
                 ld a,c                  ; set row index position
 
-                call Int2_String        ; converts row index in a two bytes string (no 0 ended)
-                ld (ix+2),d             ; stores it in 2nd and 3th positions of formated string
+                call Int2_String        ; convert row index in a two bytes string (no 0 ended)
+                ld (ix+2),d             ; put it in 2nd and 3th positions of formated string
                 ld (ix+3),e
 
                 ret
@@ -274,11 +291,11 @@ ExitConv
 ; Designed by Sonia Ortega
 ;
 ; Input:    BC - board indexes of the hexagon (B=column, C=row)
-; Output:   DE - node index (0 to 48)
+; Output:   A  - node index (0 to 48)
 ; Destroys: -
 ;
 Indexes2_Node:            
-                push bc                 ; stores board indexes
+                push bc                 ; store board indexes
 
                 xor a                   ; node = 0
                 add a,b                 ; node = column index
@@ -290,10 +307,7 @@ LoopNode
                 add a,7                 ; node = node + 7            
                 djnz LoopNode           ; repeat (row - 1) times
 
-                pop bc                  ; restores board indexes
-
-                ld e,a                  ; return node index in DE
-                ld d,0
+                pop bc                  ; restore board indexes
 
                 ret
 ;
@@ -306,5 +320,7 @@ STR_WINNER      defm " WINS \0"
 ;
 ; Variables
 ;
-PLAYER          defb 0                  ; Current player color
-MOVE_NUMBER     defb 0                  ; Current number of moves
+TOKEN_COLOR     defb 0                  ; current token color (BLUE_TOKEN or RED_TOKEN)
+MOVE_NUMBER     defb 0                  ; current move number
+PLAYER_MOVE     defb 0, 0, 0, 0         ; 4 bytes for input player move
+LAST_MOVE       defb 0                  ; last move for the player (0-48)

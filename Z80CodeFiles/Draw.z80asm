@@ -13,17 +13,17 @@ WHITE_BLACK     equ %00111000           ; Attributes: bright 0, flash 0, paper 7
 ;
 Draw_Board:
                 ld a,WHITE_BLACK        ; set empty hexagon color in A
-                ld (PLAYER),a           ; stores hexagon color
+                ld (TOKEN_COLOR),a      ; store hexagon color
 
                 ld c,7                  ; indexes: C = row
 NextCol
                 ld b,7                  ; B = column
 NextRow
                 call Draw_Hexagon       ; draw an hexagon in the screen
-                djnz NextRow            ; processes the next column
+                djnz NextRow            ; process next column
 
-                dec c                   ; decrements row
-                jr nz,NextCol           ; processes the next row
+                dec c                   ; decrement row
+                jr nz,NextCol           ; process next row
 
                 ret
 ;
@@ -35,7 +35,7 @@ NextRow
 ;
 Draw_Hexagon:
                 ld hl,HEXAGON           ; HL points to the hexagon address
-                jr DrawProcess          ; continue to draw process
+                jp DrawProcess          ; continue to draw process
 ;
 ; Draw_Token: entry point to draw a token instead of an hexagon
 ;
@@ -43,14 +43,14 @@ Draw_Token:
                 ld hl,TOKEN             ; HL points to the token address
 
 DrawProcess
-                push bc                 ; stores BC register
+                push bc                 ; store BC register
 
                 call GetHEX_Color       ; get the attr memory address of an hexagon in screen
                 call SetHEX_Color       ; set the color of the hexagon
                 call GetHEX_Screen      ; get the screen memory address of an hexagon in screen
                 call Draw_Graphic       ; draw the hexagon/token in screen
 
-                pop bc                  ; restores BC register
+                pop bc                  ; restore BC register
 
                 ret
 ;
@@ -61,7 +61,7 @@ DrawProcess
 ; Destroys: A
 ;
 GetHEX_Color:
-                push hl                 ; stores HL register
+                push hl                 ; store HL register
 
                 ld de,BOARD_MAP         ; DE points to the look-up attr/screen table
 
@@ -72,13 +72,13 @@ GetHEX_Color:
                 add hl,hl
                 add hl,de               ; HL points to the address of C row
                 ex de,hl                ; DE points to the address of C row 
-                ld a,(de)               ; stores in A the attr Hi-byte memory address (row C, col 0)
+                ld a,(de)               ; set the attr Hi-byte memory address (row C, col 0) in A
 
                 ld h,0                  ; go for the B column
                 ld l,b
                 add hl,de               ; HL points to the address of B col
-                ld e,(hl)               ; stores the Low-byte memory address in E 
-                ld d,a                  ; stores the Attr Hi-byte memory address in D
+                ld e,(hl)               ; set the Low-byte memory address in E 
+                ld d,a                  ; set the Attr Hi-byte memory address in D
 
                 pop hl                  ; restores HL register
 
@@ -93,12 +93,12 @@ GetHEX_Color:
 ; Destroys: A
 ;
 SetHEX_Color:
-                push de                 ; stores registers
+                push de                 ; store registers
                 push bc
 
                 ld c,2                  ; height of the hexagon (in bytes)
 ColorLine
-                ld a,(PLAYER)           ; get color
+                ld a,(TOKEN_COLOR)      ; get color
                 ld b,2                  ; width of the hexagon (in bytes)
                 push de
 ColorByte
@@ -114,9 +114,9 @@ ColorByte
                 inc d                   ; add any carry to DE
 EndOfLine
                 dec c
-                jr nz,ColorLine         ; procceses next line
+                jr nz,ColorLine         ; procces next line
 
-                pop bc                  ; restores registers
+                pop bc                  ; restore registers
                 pop de
 
                 ret
@@ -129,19 +129,19 @@ EndOfLine
 ; Destroys: -
 ;
 GetHEX_Screen:
-                push hl                 ; stores HL register
-                push de                 ; stores attribute memory address
+                push hl                 ; store HL register
+                push de                 ; store attribute memory address
 
                 ld hl,BOARD_MAP         ; get the screen Hi-Byte mem location (row 0, col C)
                 ld d,0
                 ld e,c
                 add hl,de               ; HL points to the address of C col
 
-                pop de                  ; restores attribute memory address
+                pop de                  ; restore attribute memory address
 
                 ld d,(hl)               ; change Hi-byte to the screen mem location of the hexagon 
 
-                pop hl                  ; restores HL register
+                pop hl                  ; restore HL register
 
                 ret
 ;

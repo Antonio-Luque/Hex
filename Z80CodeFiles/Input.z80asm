@@ -25,12 +25,13 @@ Input_Options:
 
                 ld hl,STR_PLAYERS       ; HL points to question # players string
                 ld bc,MESSAGE_XY        ; set string position
-                call Print_String       ; prints string
+                call Print_String       ; print string
            
                 ld bc,$3132             ; set input limits to key '1' ($31) or key '2' ($32)
                 call Read_Key           ; read key from keyboard
 
-                push af
+                push af                 ; store key pressed
+
                 call Clear_Alert        ; clear alert message (if any)
 
                 ; clear last players moves
@@ -47,10 +48,11 @@ Input_Options:
 
                 ld hl,STR_NOLEVEL       ; HL points to a 7 blanks string
                 ld bc,LEVEL_XY          ; set string position
-                call Print_String       ; prints string
+                call Print_String       ; print string
 
-                pop af                  ; restores key pressed
-                ld (NUM_PLAYERS),a      ; stores # of players choice
+                pop af                  ; restore key pressed
+
+                ld (NUM_PLAYERS),a      ; store # of players choice
                 cp '2'                  ; is it '2'?
                 jr z,TwoPlayers         ; yes, skip rest of choices
 
@@ -60,7 +62,7 @@ Input_Options:
 
                 ld hl,STR_COLORS        ; HL points to question color string
                 ld bc,MESSAGE_XY        ; set string position
-                call Print_String       ; prints string
+                call Print_String       ; print string
           
                 ld bc,$6272             ; set input limits to key 'b' ($62) or key 'r' ($72)
                 call Read_Key           ; read key from keyboard
@@ -69,67 +71,67 @@ Input_Options:
                 jr z,BlueChosen         ; yes, continue with BLUE
 
                 ld a,RED_TOKEN          ; get RED color
-                ld (HUMAN_COLOR),a      ; saves chosen color
+                ld (PLAYER_COLOR),a     ; save chosen color
                 ld hl,STR_PLAYER        ; HL points to "Player" string
                 ld bc,REDTEXT_XY        ; set string position
-                call Print_String       ; prints string
+                call Print_String       ; print string
 
                 ld hl,STR_SPECCY        ; HL points to "Speccy" string
                 ld bc,BLUETEXT_XY       ; set string position
-                call Print_String       ; prints string
+                call Print_String       ; print string
  
-                jr GameLevel            ; continue to game level choice
+                jp GameLevel            ; continue to game level choice
 
 BlueChosen 
                 ld a,BLUE_TOKEN         ; get BLUE color 
-                ld (HUMAN_COLOR),a      ; saves chosen color
+                ld (PLAYER_COLOR),a     ; save chosen color
                 ld hl,STR_PLAYER        ; HL points to "Player" string
                 ld bc,BLUETEXT_XY       ; set string position
-                call Print_String       ; prints string
+                call Print_String       ; print string
 
                 ld hl,STR_SPECCY        ; HL points to "Speccy" string
                 ld bc,REDTEXT_XY        ; set string position
-                call Print_String       ; prints string
+                call Print_String       ; print string
 
 GameLevel
                 ; choice of game level
 
                 ld hl,STR_LEVEL         ; HL points to level string
                 ld bc,MESSAGE_XY        ; set string position
-                call Print_String       ; prints string
+                call Print_String       ; print string
 
                 call ReadKeys_1to4      ; read key from keyboard in range 1-4
 
                 ld bc,LEVELNUM_XY       ; set char (level number) position
 
-                push af                 ; stores level number (char)
-                call Print_Char         ; prints level number
+                push af                 ; store level number (char)
+                call Print_Char         ; print level number
 
-                pop af                  ; restores level number (char)
-                sub $30                 ; converts to number
-                ld (GAME_LEVEL),a       ; saves game level
+                pop af                  ; restore level number (char)
+                sub $30                 ; convert to number
+                ld (GAME_LEVEL),a       ; save game level
 
                 ld hl,STR_LEVELTEXT     ; HL points to "Level" string
                 ld bc,LEVEL_XY          ; set string position
-                call Print_String       ; prints string
+                call Print_String       ; print string
 
-                jr ExitOptions          ; one player options choosen
+                jp ExitOptions          ; one player options choosen
 
 TwoPlayers
                 call Draw_Board         ; draw an empty hexagons board
 
                 ld hl,STR_PLAYER        ; HL points to "Player" string
                 ld bc,BLUETEXT_XY       ; set blue string position
-                call Print_String       ; prints string
+                call Print_String       ; print string
 
                 ld hl,STR_PLAYER        ; HL points to "Player" string
                 ld bc,REDTEXT_XY        ; set red string position
-                call Print_String       ; prints string
+                call Print_String       ; print string
 
 ExitOptions
                 ld hl,STR_CLEAR         ; HL points to a blank string
                 ld bc,MESSAGE_XY        ; set string position
-                call Print_String       ; prints string
+                call Print_String       ; print string
 
                 ret
 ;
@@ -172,17 +174,17 @@ RangeLoop
                 ld e,4                  ; set loop counter
                 xor a                   ; A = 0
                 in a,(c)                ; read keyboard throught reading port
-                and %00001111           ; mask the first four bits (1-4)
+                and %00001111           ; mask the first four bits (keys 1 to 4)
 
 NextKey
                 srl a                   ; shift A, bit 0 sets carry flag
                 jr nc,KeyPressed        ; a key (1-4) was pressed
 
                 inc hl                  ; HL points to the next key char
-                dec e                   ; decrements loop counter
+                dec e                   ; decrement loop counter
                 jr nz,NextKey           ; repeat for the next key
 
-                jr RangeLoop            ; repeat until a key (1-4) is pressed
+                jp RangeLoop            ; repeat until a key (1-4) is pressed
 
 KeyPressed
                 ld a,(hl)               ; return key char
@@ -198,10 +200,10 @@ KeyPressed
 ; Destroys: A
 ;
 Input_String:
-                push hl                 ; stores registers 
+                push hl                 ; store registers 
                 push de
             
-                ld bc,(MOVE_POSXY)      ; get current player XY input/output screen location
+                ld bc,(MOVE_POSXY)      ; get current XY input/output screen location in BC
 
                 xor a
                 ld (CHAR_COUNT),a       ; char counter = 0
@@ -210,20 +212,20 @@ InputStart
                 ld a,CYAN_FLASH1        ; set attributes for cursor (flash)
                 ld (CHAR_ATTR),a
                 ld a,'_'                ; text input cursor
-                call Print_Char         ; prints cursor
-                ld a,CYAN_FLASH0        ; restores attributes (no flash)
+                call Print_Char         ; print cursor
+                ld a,CYAN_FLASH0        ; restore attributes (no flash)
                 ld (CHAR_ATTR),a
 
                 xor a
-                ld (LAST_K),a           ; clears last key pressed
+                ld (LAST_K),a           ; clear last key pressed
 
 InputLoop
-                push hl                 ; stores registers
+                push hl                 ; store registers
                 push bc
 
                 call KEY_SCAN           ; call KEY_SCAN ROM rutine
 
-                pop bc                  ; restores registers
+                pop bc                  ; restore registers
                 pop hl
 
                 ld a,(LAST_K)           ; A = ASCII of key pressed
@@ -234,7 +236,7 @@ InputLoop
                 cp $0C                  ; is it DELETE?
                 jr z,InputDelete        ; yes, perform delete char
 
-                ex af,af'               ; stores ASCII code in A'
+                ex af,af'               ; store ASCII code in A'
 
                 ld a,(CHAR_COUNT)       ; A = number of chars inserted
 
@@ -250,29 +252,29 @@ InputLoop
 ; char is valid: 'a'-'g' (1st char) and '1'-'7' (2nd char)
 ;
 CharOK
-                ld (hl),a               ; stores char in current string position
-                inc hl                  ; increments string position
-                call Print_Char         ; print char in player input screen location
+                ld (hl),a               ; set char in current string position
+                inc hl                  ; increment string position
+                call Print_Char         ; print char in current input screen location
 
-                ld a,(CHAR_COUNT)       ; increments char counter
+                ld a,(CHAR_COUNT)       ; increment char counter
                 inc a
                 ld (CHAR_COUNT),a
 
-                inc b                   ; increments X position of player input screen location
+                inc b                   ; increment X position of current input screen location
 
                 dec a                   ; is the first char?
                 jr nz,InputStart        ; no, get next char
 
                 ld a,'-'                ; yes, print dash
                 call Print_Char
-                inc b                   ; increments X position of player input screen location
+                inc b                   ; increment X position of current input screen location
 
-                jr InputStart           ; get next char (Do until ENTER is pressed)
+                jp InputStart           ; get next char (do until ENTER is pressed)
 ;
-; restricts first char to 'a'-'g'
+; restrict first char to 'a'-'g'
 ;
 FirstLetter 
-                ex af,af'               ; restores ASCII code
+                ex af,af'               ; restore ASCII code
 
                 cp 'a'                  ; is it < 'a'
                 jr c,InputLoop          ; yes, repeat input loop (char is not allowed)
@@ -280,12 +282,12 @@ FirstLetter
                 cp 'h'                  ; is it >= 'h'
                 jr nc,InputLoop         ; yes, repeat input loop (char is not allowed)
 
-                jr CharOK               ; char is valid
+                jp CharOK               ; char is valid
 ;
-; restricts second char to '1'-'7'
+; restrict second char to '1'-'7'
 ;
 FirstNumber 
-                ex af,af'               ; restores ASCII code
+                ex af,af'               ; restore ASCII code
 
                 cp '1'                  ; is it < '1'
                 jr c,InputLoop          ; yes, repeat input loop (char is not allowed)
@@ -293,9 +295,9 @@ FirstNumber
                 cp '8'                  ; is it >= '8'
                 jr nc,InputLoop         ; yes, repeat input loop (char is not allowed)
 
-                jr CharOK               ; char is valid
+                jp CharOK               ; char is valid
 ;
-; erases last char, updates player input screen location and string pointer
+; erase last char, update input screen location and string pointer
 ;
 InputDelete
                 ld a,(CHAR_COUNT)       ; get char counter
@@ -306,15 +308,15 @@ InputDelete
                 cp 2                    ; is it 2?
                 jr nz,DeleteDash        ; no, delete dash
 
-                jr DecCharCnt           ; continue delete
+                jp DecCharCnt           ; continue delete
 
 DeleteDash  
                 ld a,' '                ; delete dash
                 call Print_Char
-                dec b                   ; decrement X position of player input screen location
+                dec b                   ; decrement X position of input screen location
 
 DecCharCnt 
-                ld a,(CHAR_COUNT)       ; decrements char counter
+                ld a,(CHAR_COUNT)       ; decrement char counter
                 dec a
                 ld (CHAR_COUNT),a
 
@@ -339,7 +341,7 @@ InputEnd
                 xor a                   ; put end of string (0)
                 ld (hl),a
 
-                pop de                  ; restores registers
+                pop de                  ; restore registers
                 pop hl
 
                 ret
@@ -356,14 +358,15 @@ STR_PLAYER      defm "Player\0"
 STR_LEVELTEXT   defm "Level\0"
 STR_NOLEVEL     defm "       \0"
 
+;
+; 1 to 4 keys mapping
+;
 KEYS_MAP        defb '1', '2', '3', '4'
 
 ;
 ; Variables
 ;
-NUM_PLAYERS     defb 0
-HUMAN_COLOR     defb 0
-GAME_LEVEL      defb 0
-
-HUMAN_MOVE      defb 0, 0, 0, 0
-CHAR_COUNT      defb 0
+NUM_PLAYERS     defb 0                  ; number of players selected (1 or 2)
+PLAYER_COLOR    defb 0                  ; player color selected (BLUE_TOKEN or RED_TOKEN)
+GAME_LEVEL      defb 0                  ; number of game level selected (1-4)
+CHAR_COUNT      defb 0                  ; number of current chars in input string
