@@ -88,7 +88,7 @@ GetHEX_Color:
 ; Code from ChibiAkumas lessons: https://www.chibiakumas.com/z80/simplesamples.php#LessonS2
 ;
 ; Input:    DE - attribute memory address of the hexagon
-;           PLAYER - color which be set to the hexagon
+;           TOKEN_COLOR - color which be set to the hexagon
 ; Output:   -
 ; Destroys: A
 ;

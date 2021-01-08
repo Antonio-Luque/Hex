@@ -153,14 +153,17 @@ ChrNextLine
  
                 ret
 ;
-; Variables
+; Strings
 ;
-CHAR_ATTR       defb CYAN_FLASH0
 STR_WAIT        defm "WAIT\0"
 STR_EMPTY4      defm "    \0"
 STR_EMPTY6      defm "      \0"
 STR_MOVE        defb 0, '-', 0, 0, 0
 
+;
+; Variables
+;
+CHAR_ATTR       defb CYAN_FLASH0        ; current char attribute
 MOVE_POSXY:
-MOVE_POSX       defb 0
-MOVE_POSY       defb 0
+MOVE_POSX       defb 0                  ; current player X input/output screen location
+MOVE_POSY       defb 0                  ; current player Y input/output screen location

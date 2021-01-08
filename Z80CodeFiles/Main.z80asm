@@ -2,7 +2,7 @@
 ; Main.z80asm
 ; Coded by Antonio Luque
 ;
-CLS             equ $0D6B               ; ROM address of CLS command routine
+CL_ALL          equ $0DAF               ; ROM address of CL_ALL subroutine
 BORDER          equ $229B               ; ROM address of BORDER+7 command routine
 ATTR_P          equ $5C8D               ; RAM address of permanent attributes system variable
 
@@ -26,7 +26,7 @@ RED_TOKEN       equ %00111010           ; Attributes: bright 0, flash 0, paper 7
 
                 ld a,CYAN_FLASH0        ; set screen color: paper 5, ink 0
                 ld (ATTR_P),a           ; stores it in ATTR_P system variable
-                call CLS                ; call CLS ROM routine
+                call CL_ALL             ; call CL_ALL ROM subroutine
 
                 ; print " HEX " header
 
@@ -156,7 +156,7 @@ DrawToken
                 call Path_Finder        ; calculate current player shortest path
                 ld a,(hl)               ; set current player remaining nodes in A
                 or a                    ; are # of remaining nodes = 0?
-                jr z,PlayerWins         ; yes, there is a winner!
+                jr z,GameOver           ; yes, there is a winner!
 
                 ex af,af'               ; get opponent player color
                 ld (TOKEN_COLOR),a      ; store new current token color
@@ -185,7 +185,7 @@ Delay
 ;
 ; Current player wins the game
 ;
-PlayerWins
+GameOver
                 ld a,(TOKEN_COLOR)      ; get current token color
 
                 call Bright_Path        ; highlights the winner path
@@ -278,7 +278,7 @@ Node2_Indexes:
 CalcXYLoop  
                 inc c                   ; increment board row
                 sub 7                   ; column = column - 7
-                cp 7                    ; is it < 7?
+                cp 7                    ; is it >= 7?
                 jr nc,CalcXYLoop        ; no, subtract again
 
                 ld b,a                  ; set calculated column index
@@ -297,14 +297,13 @@ ExitConv
 Indexes2_Node:            
                 push bc                 ; store board indexes
 
-                xor a                   ; node = 0
-                add a,b                 ; node = column index
+                ld a,b                  ; node = column index
                 dec a                   ; node = node - 1
                 dec c                   ; row = row - 1
                 ld b,c                  ; set loop counter through row index
 
 LoopNode
-                add a,7                 ; node = node + 7            
+                add a,7                 ; node = node + 7
                 djnz LoopNode           ; repeat (row - 1) times
 
                 pop bc                  ; restore board indexes
