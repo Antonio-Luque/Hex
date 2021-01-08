@@ -1,4 +1,4 @@
-# Hex (beta)
+# Hex
 ![Screenshot](https://github.com/Antonio-Luque/Hex/blob/master/hex-load.png)
 ![Screenshot](https://github.com/Antonio-Luque/Hex/blob/master/hex-ingame.png)
 
