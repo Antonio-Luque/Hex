@@ -65,7 +65,7 @@ GameInit
 
                 ld a,BLUE_TOKEN         ; set BLUE token color in A
                 ld (TOKEN_COLOR),a      ; save current token color (BLUE plays first)
-
+;
 ; Process players moves - game loop
 ;
 GameLoop
