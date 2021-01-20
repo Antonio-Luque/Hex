@@ -163,7 +163,7 @@ DrawToken
 
                 jp GameLoop             ; repeat game loop
 ;
-; Illegal human move (node is filled)
+; Illegal player move (node is filled)
 ;
 HexFilled
                 ld hl,STR_FILLED        ; HL points to "FILLED" string
@@ -242,9 +242,9 @@ I2SLoop
 
                 ret
 ;
-; String2_Indexes: converts human move into an hexagon's indexes in board
+; String2_Indexes: converts player move into an hexagon's indexes in board
 ;
-; Input:    HL - pointer to human move string
+; Input:    HL - pointer to player move string
 ; Output:   BC - XY indexes of the hexagons board
 ; Destroys: A
 ;
@@ -264,14 +264,13 @@ String2_Indexes:
 ; Node2_Indexes: converts a node index into an hexagon's XY indexes in board
 ; Designed by Sonia Ortega
 ;
-; Input:     E - node index (0 to 48)
+; Input:     A - node index (0 to 48)
 ; Output:   BC - Board indexes of the hexagon (B=column, C=row)
 ; Destroys: -
 ;
 Node2_Indexes:
                 ld c,1                  ; set board row = 1
-                ld b,e                  ; set board column = hexagon index
-                ld a,b                  ; set board column in A
+                ld b,a                  ; set board column = hexagon index
                 cp 7                    ; is hexagon index < 7?
                 jr c,ExitConv           ; yes, continue to end of rutine
 
@@ -279,7 +278,7 @@ CalcXYLoop
                 inc c                   ; increment board row
                 sub 7                   ; column = column - 7
                 cp 7                    ; is it >= 7?
-                jr nc,CalcXYLoop        ; no, subtract again
+                jr nc,CalcXYLoop        ; yes, subtract again
 
                 ld b,a                  ; set calculated column index
 ExitConv
