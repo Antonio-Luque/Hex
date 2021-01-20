@@ -619,6 +619,7 @@ BrightLoop
 
                 push de                 ; store goal and current path nodes
 
+                ld a,e                  ; set node index in A
                 call Node2_Indexes      ; convert node index into a pair of board indexes
                 call GetHEX_Color       ; get the attributes memory address of an hexagon in screen
 

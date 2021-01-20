@@ -9,8 +9,8 @@
 ; Input:    TOKEN_COLOR - current token color (BLUE_TOKEN or RED_TOKEN)
 ;           MOVE_NUMBER - current move number
 ;           GAME_LEVEL  - number of game level selected (1-4)
-; Output:   E - graph node selected as best move (0-48)
-; Destroys: AF, BC, HL, DE, IX
+; Output:   A - graph node selected as best move (0-48)
+; Destroys: BC, HL, DE, IX
 ;
 Speccy_Move:
                 ; check for the firsts moves
@@ -29,12 +29,14 @@ Speccy_Move:
                 ld a,(TOKEN_COLOR)      ; get current speccy color
                 call BRAINIAC_best_move ; get speccy best move
 
-                jp ReturnMove           ; return selected move
+                ld l,e                  ; set node index in L
+
+                jp UpdateNodeColor      ; continue updating node colors vector
 
 FirstRed_Move
                 call OpeningBook        ; check if first red move is in the "opening book"
 
-                jp ReturnMove           ; return selected move
+                jp SetNodeIndex         ; continue setting node index
 
 FirstBlue_Move
                 ld a,r                  ; get a pseudo-random number [0-127] in A
@@ -51,20 +53,22 @@ FirstBlue_Move
                 add hl,hl
                 add hl,de               ; HL points to first blue move (node)
 
-                ld e,(hl)               ; set node in L
+SetNodeIndex
+                ld l,(hl)               ; set node index in L
 
-ReturnMove
+UpdateNodeColor
                 ld h,COLORS_H           ; HL points to node color
-                ld l,e
                 ld a,(TOKEN_COLOR)      ; get current speccy color
                 ld (hl),a               ; update graph's node color with speccy color
+
+                ld a,l                  ; return node index in A
 
                 ret
 ;
 ; OpeningBook: check for moves in the "opening book" in response against 1st blue move
 ;
 ; Input:        -
-; Output:       E - response move in the opening book or 24 (center node) if there are not responses
+; Output:       HL - pointer to response move in the opening book
 ; Destroys:     A, HL, BC, DE
 ;
 OpeningBook:
@@ -90,8 +94,6 @@ OpeningsLoop
                 djnz OpeningsLoop       ; repeat until ends of opening book
 
 ReturnOpening
-                ld e,(hl)               ; return red move from opening book
-
                 ret
 ;
 ; Definition of a small "Opening Book" for speccy first moves
