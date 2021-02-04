@@ -1,4 +1,0 @@
-push af
-ld a,2
-djnz loop
-ret
