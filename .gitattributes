@@ -2,7 +2,6 @@
 # Set default behavior to automatically normalize line endings.
 ###############################################################################
 * text=auto
-*.z80asm linguist-language=Assembly
 
 ###############################################################################
 # Set default behavior for command prompt diff.
