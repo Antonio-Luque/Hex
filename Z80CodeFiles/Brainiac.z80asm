@@ -1,44 +1,11 @@
 ﻿;
 ; Brainiac.z80asm
 ; Coded by Einar Saukas: https://spectrumcomputing.co.uk/entry/30216/ZX-Spectrum/COMPLICA_DX
-; Slightly adapted by Antonio Luque
+; Adapted for Hex game by Einar Saukas and Antonio Luque
 ;
 MIN_VALUE       equ 0                  ; alphaBeta pruning minimum value
 MAX_VALUE       equ 255                ; alphaBeta pruning maximum value
 
-;
-; Board_Score: get the heuristic score of a determined board position
-; Coded by Antonio Luque
-;
-; Inspired on Greg Surma article:
-; https://towardsdatascience.com/hex-creating-intelligent-adversaries-part-2-heuristics-dijkstras-algorithm-597e4dcacf93 
-;
-; Input:    AI_PLAYER (BLUE_TOKEN or RED_TOKEN)
-; Output:   A  - ((player remaining nodes) minus (speccy remaining nodes)) * (-1)
-;                or MAX_VALUE if speccy is the winner
-;                or MIN_VALUE if player is the winner
-; Destroys: A', B, HL
-;
-Board_Score:
-                ld a,(AI_PLAYER)        ; set speccy color in A
-
-                call Path_Finder        ; calculate speccy shortest path
-                ld a,(hl)               ; set speccy remaining nodes in A
-                ld b,a                  ; set speccy remaining nodes in B
-                or a                    ; is speccy shortest path = 0?
-                cpl                     ; inverts all bits of A
-                ret z                   ; yes, return MAX_VALUE
-
-                ex af,af'               ; get player color
-                call Path_Finder        ; calculate player shortest path
-                ld a,(hl)               ; set player remaining nodes in A
-                or a                    ; is player shortest path = 0?
-                ret z                   ; yes, return MIN_VALUE
-
-                sub b                   ; A = (player remaining nodes) - (speccy remaining nodes)
-                xor $80                 ; A = A * (-1) inverts sign for easier further comparative
-
-                ret
 ;
 ; BRAINIAC_best_move: execute BRAINIAC algorithm to determine best choice for specified player's next move, 
 ; according to specified AI difficulty level. This algorithm is implemented as recursive Minimax with
@@ -48,72 +15,62 @@ Board_Score:
 ; Coded by Einar Saukas: https://spectrumcomputing.co.uk/entry/30216/ZX-Spectrum/COMPLICA_DX
 ; The complete and original source code in the link above. Adaptations are marked with * in routines comments.
 ; 
-; Parameters:
-;   A: speccy color* (BLUE_TOKEN or RED_TOKEN)
+; Input:
+;   A: speccy side* (FRIEND or ENEMY)
 ;
 ; Returns:
-;   E: selected node (0-48)*
+;   E: selected position*
 ;
 ; Uses:
-;   AI_DEPTH:  current recursion depth
-;   AI_PLAYER: speccy color* (BLUE_TOKEN or RED_TOKEN)
+;   AI_PLAYER: speccy side* (FRIEND or ENEMY)
 ;
 ; Destroys:
-;   AF, BC, D, HL, AF'
+;   A, BC, HL, D, IY
 ;
 BRAINIAC_best_move:
-                ld (AI_PLAYER),a        ; save speccy color*
+                ld      (AI_PLAYER), a          ; save speccy side
 
-                call Path_Finder        ; calculate speccy shortest path*
-                call GetPlayer_Nodes    ; get speccy vector's nodes and # of nodes (loop counter)
+                call    Board_Score             ; calculate board score
+                call    Path_Tracker            ; find candidates
 
-                ld e,(hl)               ; E = best speccy move (initialization)
-                ld d,MIN_VALUE          ; D = alphaMax
+                dec     iy
+                ld      a, (iy+0)               ; A is our first candidate
 
-AIMainLoop
-                push hl                 ; store pointer to speccy vector's nodes*
+                ld      e, a                    ; E = best speccy move (initialization)
+                ld      d, MIN_VALUE            ; D = alphaMax
 
-                ld l,(hl)               ; set node index in L*
-                ld h,COLORS_H           ; HL points to node color*
+AIMainLoop                                      ; for each candidate {
+                push    de                      ;       store alphaMax and best speccy move
 
-                ld c,l                  ; save node index in C
+                ld      h, hex_board_blue/256   ;       get and store candidate position on board
+                ld      l, a
+                push    hl
 
-                push bc                 ; store # of nodes (loop counter) and node index
+                ld      a, (AI_PLAYER)          ;       get speccy side
+                call    Put_Hexagon             ;       BRAINIAC_play
+                ld      e, MAX_VALUE            ;       E = betaMin
+                call    Alphabeta_Min           ;       A = alphabeta_min(alphaMax, betaMin)
 
-                ld a,(AI_PLAYER)        ; get speccy color
-                ld c,a                  ; C = speccy color
+                pop     hl                      ;       restore candidate position
+                call    Erase_Hexagon           ;       BRAINIAC_undo
 
-                ld (hl),c               ; update node color with speccy color* (BRAINIAC_play)
+                pop     de                      ;       restore alphaMax and best player node
 
-                push hl                 ; store pointer to node color
-                push de                 ; store alphaMax and best speccy move
-                push bc                 ; store # of nodes (loop counter) and speccy color
+                cp      d
+                jr      c, AIMainNext
+                jr      z, AIMainNext           ;       if (A <= alphaMax) continue
 
-                ld e,MAX_VALUE          ; E = betaMin
-                call Alphabeta_Min      ; A = alphabeta_min(alphaMax, betaMin)
+                ld      d, a                    ;       alphaMax = A
+                ld      e, l                    ;       best move = L
 
-                pop bc                  ; restore # of nodes and speccy color
-                pop de                  ; restore alphaMax and best player node
-                pop hl                  ; restore pointer to node color
-
-                ld (hl),WHITE_BLACK     ; update node color with empty color (BRAINIAC_undo)
-
-                pop bc                  ; restore # of nodes (loop counter) and node index
-                pop hl                  ; restore pointer to speccy vector's nodes*
-
-                cp d
-                jr c,AIMainNext
-                jr z,AIMainNext         ; if (A <= alphaMax) continue
-
-                ld d,a                  ; alphaMax = A
-                ld e,c                  ; best move = C
-
-                inc a                   ; if (alphaMax = MAX_VALUE) return best move*
-                ret z
+                inc     a                       ;       if (alphaMax = MAX_VALUE) return best move*
+                ret     z
 
 AIMainNext
-                dec hl                  ; HL points to the next speccy node*
-                djnz AIMainLoop         ; repeat for each node in speccy vector's nodes
+                dec     iy
+                ld      a, (iy+0)               ;       A is our next candidate
+                and     a                       ;       repeat until no more candidates
+                jr      nz, AIMainLoop          ; }
 
                 ret
 ;
@@ -138,78 +95,89 @@ AIMainNext
 ;
 ; Returns:
 ;   A: "improved" betaMin
-;   C: player color (BLUE_TOKEN or RED_TOKEN)
 ;   D: alphaMax
 ;   E: "improved" betaMin
 ;
 ; Uses:
-;   AI_DEPTH:  current recursion depth
-;   AI_PLAYER: speccy color* (BLUE_TOKEN or RED_TOKEN)
+;   AI_PLAYER: speccy side* (FRIEND or ENEMY)
 ;
 ; Destroys:
-;   F, B, HL, AF'
+;   BC, HL, IY
 ;
 Alphabeta_Min:
                 ; check if last speccy move is a winner one
+                push    de
+                call    Speccy_Score
+                pop     de
 
-                ld a,c                  ; set speccy color in A
-                call Path_Finder        ; calculate speccy shortest path
-                ld a,(hl)               ; set speccy remaining nodes in A
-                or a                    ; is speccy shortest path = 0?
-                cpl                     ; inverts all bits of A
-                ret z                   ; yes, return MAX_VALUE
+                ld      a, c
+                cp      VICTORY                 ; Speccy won?
+                ld      a, MAX_VALUE
+                ret     z                       ; yes, return MAX_VALUE
 
-                ; process player moves
+                ; find candidates for next move
+                push    de
+                call    Player_Score
+                call    Path_Tracker
+                pop     de
 
-                ex af,af'               ; get player color
-                call Path_Finder        ; calculate player shortest path
+                ld      hl, AI_DEPTH
+                dec     (hl)                    ; depth--
+                jr      z, Heuristic_Min        ; if (depth == 0) return heuristic_min
 
-                ld hl,AI_DEPTH
-                dec (hl)                ; depth--
-                jr z,Heuristic_Min      ; if (depth == 0) return heuristic_min
+                dec     iy
+                ld      a, (iy+0)               ; A is our first candidate
 
-                call GetPlayer_Nodes    ; get player vector's nodes, # of nodes (loop counter) and player color
+AlphabetaMinLoop                                ; for each candidate {
+                push    de                      ;       store alphaMax and betaMin
 
-AlphabetaMinLoop
-                push hl                 ; store pointer to player vector's nodes
-                
-                ld l,(hl)               ; set node index in L
-                ld h,COLORS_H           ; HL points to node color
+                ld      h, hex_board_blue/256   ;       get and store candidate position on board
+                ld      l, a
+                push    hl
 
-                ld (hl),c               ; update node color with player color (BRAINIAC_play)
+                ld      a, (AI_PLAYER)          ;       rather to track player or speccy side
+                                                ;       we get it from AI_PLAYER
+                cpl                             ;       get player side
+                call    Put_Hexagon             ;       BRAINIAC_play
+                call    Alphabeta_Max           ;       A = alphabeta_max(alphaMax, betaMin)
 
-                push hl                 ; store pointer to node color
-                push de                 ; store alphaMax and betaMin
-                push bc                 ; store # of nodes (loop counter) and player color
+                pop     hl                      ;       restore candidate position
+                call    Erase_Hexagon           ;       BRAINIAC_undo
 
-                call Alphabeta_Max      ; A = alphabeta_max(alphaMax, betaMin)
+                pop     de                      ;       restore alphaMax and betaMin
 
-                pop bc                  ; restore # of nodes (loop counter) and player color
-                pop de                  ; restore alphaMax and betaMin
-                pop hl                  ; restore pointer to node color
+                cp      e
+                jr      nc, AlphabetaMinNext    ;       if (A >= betaMin) continue
 
-                ld (hl),WHITE_BLACK     ; update node color with empty color (BRAINIAC_undo)
+                cp      d
+                jr      c, AlphabetaMinExit
+                jr      z, AlphabetaMinExit     ;       if (A <= alphaMax) { depth++; return A }
 
-                pop hl                  ; restore pointer to player vector's nodes
-
-                cp e
-                jr nc,AlphabetaMinNext  ; if (A >= betaMin) continue
-
-                cp d
-                jr c,AlphabetaMinExit
-                jr z,AlphabetaMinExit   ; if (A <= alphaMax) { depth++; return A }
-
-                ld e,a                  ; betaMin = A
+                ld      e, a                    ;       betaMin = A
 
 AlphabetaMinNext
-                dec hl                  ; HL points to the next player node*
-                djnz AlphabetaMinLoop   ; repeat for each node in player vector's nodes
+                dec     iy
+                ld      a, (iy+0)               ;       A is our next candidate
+                and     a                       ;       repeat until no more candidates
+                jr      nz, AlphabetaMinLoop    ; }
 
-                ld a,e                  ; return betaMin
+                ld      a, e                    ; return betaMin
+
+                ld      hl, AI_DEPTH
+                inc     (hl)                    ; depth++
+
+                ret
 
 AlphabetaMinExit
-                ld hl,AI_DEPTH
-                inc (hl)                ; depth++
+                ; skip the rest of candidates (Antonio's ugly code)
+                ; for testing purposes it works fine... :)
+                dec     iy
+                ld      a, (iy+0)
+                and     a
+                jr      nz, AlphabetaMinExit
+
+                ld      hl, AI_DEPTH
+                inc     (hl)                    ; depth++
 
                 ret
 ;
@@ -224,7 +192,6 @@ AlphabetaMinExit
 ; The complete and original source code in the link above. Adaptations are marked with * in routines comments.
 ;
 ; Parameters:
-;   A : player color (BLUE_TOKEN or RED_TOKEN)*
 ;   D : alphaMax
 ;   E : betaMin
 ;
@@ -234,53 +201,64 @@ AlphabetaMinExit
 ;   E: "improved" betaMin
 ;
 ; Uses:
-;   AI_DEPTH:  current recursion depth
-;   AI_PLAYER: speccy color* (BLUE_TOKEN or RED_TOKEN)
+;   AI_PLAYER: speccy side* (FRIEND or ENEMY)
 ;
 ; Destroys:
-;   F, B, HL, F'
+;   BC, HL, IY
 ;
 Heuristic_Min:
-                call GetPlayer_Nodes    ; get player vector's nodes, # of nodes (loop counter) and player color
+                dec     iy
+                ld      a, (iy+0)               ; A is our first candidate
 
-HeuristicMinLoop
-                push hl                 ; store pointer to player vector's nodes
+HeuristicMinLoop                                ; for each candidate {
+                push    de                      ;       store alphaMax and betaMin
 
-                ld l,(hl)               ; set node index in L
-                ld h,COLORS_H           ; HL points to node color
+                ld      h, hex_board_blue/256   ;       get and store candidate position on board
+                ld      l, a
+                push    hl
 
-                ld (hl),c               ; update node color with player color (BRAINIAC_play)
+                ld      a, (AI_PLAYER)          ;       rather to track player or speccy side
+                                                ;       we get it from AI_PLAYER
+                cpl                             ;       get player side
+                call    Put_Hexagon             ;       BRAINIAC_play
+                call    Board_Score             ;       A = board score
 
-                exx                     ; store pointer to node color, alphaMax and betaMin
-                                        ; number of nodes (loop counter) and player color
+                pop     hl
+                call    Erase_hexagon           ;       BRAINIAC_undo
 
-                call Board_Score        ; A = board score
+                pop     de
 
-                exx                     ; restore pointer to node color, alphaMax and betaMin
-                                        ; number of nodes (loop counter) and player color
+                cp      e
+                jr      nc, HeuristicMinNext    ;       if (A >= betaMin) continue
 
-                ld (hl),WHITE_BLACK     ; update node color with empty color (BRAINIAC_undo)
+                cp      d
+                jr      c,HeuristicMinExit
+                jr      z,HeuristicMinExit      ;       if (A <= alphaMax) { depth++; return A }
 
-                pop hl                  ; restore pointer to player vector's nodes
-
-                cp e
-                jr nc,HeuristicMinNext  ; if (A >= betaMin) continue
-
-                cp d
-                jr c,HeuristicMinExit
-                jr z,HeuristicMinExit   ; if (A <= alphaMax) { depth++; return A }
-
-                ld e,a                  ; betaMin = A
+                ld      e, a                    ;       betaMin = A
 
 HeuristicMinNext
-                dec hl                  ; HL points to the next node
-                djnz HeuristicMinLoop   ; repeat for each node in player vector's nodes
+                dec     iy
+                ld      a, (iy+0)               ;       A is our next candidate
+                and     a                       ;       repeat until no more candidates
+                jr      nz, HeuristicMinLoop    ; }
 
-                ld a,e                  ; return betaMin
+                ld      a, e                    ; return betaMin
+
+                ld      hl, AI_DEPTH
+                inc     (hl)                    ; depth++
+
+                ret
 
 HeuristicMinExit
-                ld hl,AI_DEPTH
-                inc (hl)                ; depth++
+                ; skip the rest of candidates (Antonio's ugly code)
+                dec     iy
+                ld      a, (iy+0)
+                and     a
+                jr      nz, HeuristicMinExit
+
+                ld      hl, AI_DEPTH
+                inc     (hl)                    ; depth++
 
                 ret
 ;
@@ -305,77 +283,86 @@ HeuristicMinExit
 ;
 ; Returns:
 ;   A: "improved" alphaMax
-;   C: speccy color* (BLUE_TOKEN or RED_TOKEN)
 ;   D: "improved" alphaMax
 ;   E: betaMin
 ;
 ; Uses:
-;   AI_DEPTH:  current recursion depth
-;   AI_PLAYER: speccy color* (BLUE_TOKEN or RED_TOKEN)
+;   AI_PLAYER: speccy side* (FRIEND or ENEMY)
 ;
 ; Destroys:
-;   F, B, HL, AF'
+;   BC, HL, IY
 ;
 Alphabeta_Max:
                 ; check if last player move is a winner one
+                push    de
+                call    Player_Score
+                pop     de
 
-                ld a,c                  ; set player color in A
-                call Path_Finder        ; calculate player shortest path
-                ld a,(hl)               ; set player remaining nodes in A
-                or a                    ; is player shortest path = 0?
-                ret z                   ; yes, return MIN_VALUE
+                ld      a, c
+                cp      VICTORY                 ; Player won?
+                ld      a, MIN_VALUE
+                ret     z                       ; yes, return MIN value
 
-                ; process speccy moves
+                ; find candidates for next move
+                push    de
+                call    Speccy_Score
+                call    Path_Tracker
+                pop     de
 
-                ex af,af'               ; get speccy color
-                call Path_Finder        ; calculate speccy shortest path
+                ld      hl, AI_DEPTH
+                dec     (hl)                    ; depth--
+                jr      z, Heuristic_Max        ; if (depth == 0) return heuristic_max
 
-                ld hl,AI_DEPTH
-                dec (hl)                ; depth--
-                jr z,Heuristic_Max      ; if (depth == 0) return heuristic_max
+                dec     iy
+                ld      a, (iy+0)               ; A is our first candidate
 
-                call GetPlayer_Nodes    ; get speccy vector's nodes, # of nodes (loop counter) and speccy color
+AlphabetaMaxLoop                                ; for each candidate {
+                push    de                      ;       store alphaMax and betaMin
 
-AlphabetaMaxLoop
-                push hl                 ; store pointer to speccy vector's nodes
+                ld      h, hex_board_blue/256   ;       get and store candidate position on board
+                ld      l, a
+                push    hl
 
-                ld l,(hl)               ; set index in L
-                ld h,COLORS_H           ; HL points to node color
+                ld      a, (AI_PLAYER)          ;       get speccy side
+                call    Put_Hexagon             ;       BRAINIAC_play
+                call    Alphabeta_Min           ;       A = alphabeta_min(alphaMax, betaMin)
 
-                ld (hl),c               ; update node color with speccy color (BRANIAC_play)
+                pop     hl                      ;       restore candidate position
+                call    Erase_Hexagon           ;       BRAINIAC_undo
 
-                push hl                 ; store pointer to node color
-                push de                 ; store alphaMax and betaMin
-                push bc                 ; store # of nodes (loop counter) and speccy color
+                pop     de                      ;       restore alphaMax and betaMin
 
-                call Alphabeta_Min      ; A = alphabeta_min(alphaMax, betaMin)
+                cp      d
+                jr      c, AlphabetaMaxNext
+                jr      z, AlphabetaMaxNext     ;       if (A <= alphaMax) continue
 
-                pop bc                  ; restore pointer to node color
-                pop de                  ; restore alphaMax and betaMin
-                pop hl                  ; restore # of nodes (loop counter) and speccy color
+                cp      e
+                jr      nc, AlphabetaMaxExit    ;       if (A >= betaMin) { depth++; return A }
 
-                ld (hl),WHITE_BLACK     ; update node color with empty color (BRAINIAC_undo)
-
-                pop hl                  ; restore pointer to speccy vector's nodes
-
-                cp d
-                jr c,AlphabetaMaxNext
-                jr z,AlphabetaMaxNext   ; if (A <= alphaMax) continue
-
-                cp e
-                jr nc,AlphabetaMaxExit  ; if (A >= betaMin) { depth++; return A }
-
-                ld d,a                  ; alphaMax = A
+                ld      d, a                    ;       alphaMax = A
 
 AlphabetaMaxNext
-                dec hl                  ; HL points to the next node
-                djnz AlphabetaMaxLoop   ; repeat for each node in speccy vector's nodes
+                dec     iy
+                ld      a, (iy+0)               ;       A is our next candidate
+                and     a                       ;       repeat until no more candidates
+                jr      nz, AlphabetaMaxLoop    ; }
 
-                ld a,d                  ; return alphaMax
+                ld      a, d                    ; return alphaMax
+
+                ld      hl, AI_DEPTH
+                inc     (hl)                    ; depth++
+
+                ret
 
 AlphabetaMaxExit
-                ld hl,AI_DEPTH
-                inc (hl)                ; depth++
+                ; skip the rest of candidates (Antonio's ugly code)
+                dec     iy
+                ld      a, (iy+0)
+                and     a
+                jr      nz, AlphabetaMaxExit
+
+                ld      hl, AI_DEPTH
+                inc     (hl)                    ; depth++
 
                 ret
 ;
@@ -399,57 +386,66 @@ AlphabetaMaxExit
 ;   E: betaMin
 ;
 ; Uses:
-;   AI_DEPTH:  current recursion depth
-;   AI_PLAYER: speccy color* (BLUE_TOKEN or RED_TOKEN)
+;   AI_PLAYER: speccy side* (FRIEND or ENEMY)
 ;
 ; Destroys:
-;   F, B, HL, F'
+;   BC, HL, IY
 ;
 Heuristic_Max:
-                call GetPlayer_Nodes    ; get speccy vector's nodes, # of nodes (loop counter) and speccy color
+                dec     iy
+                ld      a, (iy+0)               ; A is our first candidate
 
-HeuristicMaxLoop
-                push hl                 ; store pointer to speccy vector's nodes
+HeuristicMaxLoop                                ; for each candidate {
+                push    de                      ;       store alphaMax and betaMin
 
-                ld l,(hl)               ; set node index in L
-                ld h,COLORS_H           ; HL points to node color
+                ld      h, hex_board_blue/256   ;       get and store candidate position on board
+                ld      l, a
+                push    hl
 
-                ld (hl),c               ; update node color with speccy color (BRANIAC_play)
+                ld      a, (AI_PLAYER)          ;       get speccy side
+                call    Put_Hexagon             ;       (BRAINIAC_play)
+                call    Board_Score             ;       A = board score
 
-                exx                     ; store pointer to node color, alphaMax and betaMin,
-                                        ; number of nodes (loop counter) and speccy color
+                pop     hl                      ;       restore candidate position
+                call    Erase_hexagon           ;       BRAINIAC_undo
 
-                call Board_Score        ; A = board score
+                pop     de                      ;       restore alphaMax and betaMin
 
-                exx                     ; restore pointer to node color, alphaMax and betaMin,
-                                        ; number of nodes (loop counter) and speccy color
+                cp      d
+                jr      c, HeuristicMaxNext
+                jr      z, HeuristicMaxNext     ;       if (A <= alphaMax) continue
 
-                ld (hl),WHITE_BLACK     ; update node color with empty color (BRAINIAC_undo)
+                cp      e
+                jr      nc, HeuristicMaxExit    ;       if (A >= betaMin) { depth++; return A }
 
-                pop hl                  ; restore pointer to speccy vector's nodes
-
-                cp d
-                jr c,HeuristicMaxNext
-                jr z,HeuristicMaxNext   ; if (A <= alphaMax) continue
-
-                cp e
-                jr nc,HeuristicMaxExit  ; if (A >= betaMin) { depth++; return A }
-
-                ld d,a                  ; alphaMax = A
+                ld      d, a                    ;       alphaMax = A
 
 HeuristicMaxNext
-                dec hl                  ; HL points to the next node
-                djnz HeuristicMaxLoop   ; repeat for each node in speccy vector's nodes
+                dec     iy
+                ld      a, (iy+0)               ;       A is our next candidate
+                and     a                       ;       repeat until no more candidates
+                jr      nz, HeuristicMaxLoop    ; }
 
-                ld a,d                  ; return alphaMax
+                ld      a, d                    ; return alphaMax
+
+                ld      hl,AI_DEPTH
+                inc     (hl)                    ; depth++
+
+                ret
 
 HeuristicMaxExit
-                ld hl,AI_DEPTH
-                inc (hl)                ; depth++
+                ; skip the rest of candidates (Antonio's ugly code)
+                dec     iy
+                ld      a, (iy+0)
+                and     a
+                jr      nz, HeuristicMaxExit
+
+                ld      hl,AI_DEPTH
+                inc     (hl)                    ; depth++
 
                 ret
 ;
 ; Variables
 ;
-AI_PLAYER       defb 0                  ; speccy color (BLUE_TOKEN or RED_TOKEN)
-AI_DEPTH        defb 0                  ; recursion depth level (0-4)
+;AI_PLAYER       defb 0                  ; speccy side (FRIEND or ENEMY)
+;AI_DEPTH        defb 0                  ; recursion depth level (0-4)

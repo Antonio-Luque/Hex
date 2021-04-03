@@ -13,17 +13,15 @@ CYAN_FLASH0     equ %00101000           ; Attributes: bright 0, flash 0, paper 5
 CYAN_REVERSE    equ %00000101           ; Attributes: bright 0, flash 0, paper 0, ink 5
 BLUE_TOKEN      equ %00111001           ; Attributes: bright 0, flash 0, paper 7, ink 1
 RED_TOKEN       equ %00111010           ; Attributes: bright 0, flash 0, paper 7, ink 2
+SW_COLOR        equ %00000011           ; BITs to be XORed to swap current player color
 
 ;
 ; Entry point of the program
 ;
-                ent $
-
                 ; set screen colors
 
                 ld a,5                  ; set border 5 (cyan)
                 call BORDER             ; call BORDER ROM routine
-
                 ld a,CYAN_FLASH0        ; set screen color: paper 5, ink 0
                 ld (ATTR_P),a           ; stores it in ATTR_P system variable
                 call CL_ALL             ; call CL_ALL ROM subroutine
@@ -34,26 +32,34 @@ RED_TOKEN       equ %00111010           ; Attributes: bright 0, flash 0, paper 7
                 ld bc,$0A08             ; set string position
                 ld a,CYAN_REVERSE       ; set header attributes
                 ld (CHAR_ATTR),a
-
-                call Print_String       ; print string
+                call Print_String       ; print header
 
                 ; draw board frame and empty hex board
 
                 call Draw_Frame         ; draw board frame
                 call Draw_Board         ; draw an empty hexagons board
 
-                ; initialize graph colors vector edges 
-
-                ld ix,EDGES             ; IX points to colors vector edges
-                ld (ix+0),BLUE_TOKEN    
-                ld (ix+1),RED_TOKEN
-                ld (ix+2),RED_TOKEN
-                ld (ix+3),BLUE_TOKEN
 ;
 ; Game (re)initialization - main loop
 ;
 GameInit
-                call Init_Colors        ; initialize graph colors vector
+                ld hl,hex_board_blue+WIDTH
+                ld c,7
+
+EraseBoardsRow
+                ld b,7
+
+EraseBoardsHex
+                call Erase_Hexagon
+                dec h
+                inc l
+                djnz EraseBoardsHex
+
+                inc l
+                inc l
+
+                dec c
+                jr nz,EraseBoardsRow
 
                 ld a,CYAN_FLASH0        ; set clear attributes
                 ld (CHAR_ATTR),a
@@ -64,22 +70,18 @@ GameInit
                 ld (MOVE_NUMBER),a
 
                 ld a,BLUE_TOKEN         ; set BLUE token color in A
-                ld (TOKEN_COLOR),a      ; save current token color (BLUE plays first)
+
 ;
 ; Process players moves - game loop
 ;
 GameLoop
-                push af                 ; store current token color
-                rra                     ; is RED the current token color?
-                jr nc,RedInput          ; yes, set XY RED input/output screen location
-
-                ld bc,BLUE_XY           ; set XY BLUE input/output screen location
-                jp StorePosXY           ; continue storing XY input/output screen location
-
-RedInput
+                ld (TOKEN_COLOR),a      ; save current token color
                 ld bc,RED_XY            ; set XY RED input/output screen location
+                rra                     ; is RED the current token color?
+                jr nc,StorePosXY        ; yes, continue storing XY input/output screen location
+                ld bc,BLUE_XY           ; no, set XY BLUE input/output screen location
 
-StorePosXY             
+StorePosXY
                 ld (MOVE_POSXY),bc      ; store current XY input/output screen location
 
                 ; check game options
@@ -88,17 +90,17 @@ StorePosXY
                 cp '2'                  ; is it '2'?
                 jr z,PlayerMove         ; yes, input player move
 
+                ld a,(TOKEN_COLOR)      ; get current player color
                 ld hl,PLAYER_COLOR      ; get player color choice
-                pop af                  ; restore current token color
                 cp (hl)                 ; is player color choice = current token color?
                 jr z,PlayerMove         ; yes, input player move
 
                 ; speccy move
 
                 call Print_Wait         ; print "WAIT" message
-
                 call Speccy_Move        ; get Speccy move
-                call Node2_Indexes      ; get XY hexagon board indexes
+                ;call Node2_Indexes      ; get XY hexagon board indexes
+                call Board2Indexes
 
                 push bc                 ; store XY hexagon board indexes
 
@@ -128,18 +130,19 @@ PlayerMove
 
                 ; check player move legality
 
-                call Indexes2_Node      ; get graph's node index (0-48)
-                ld h,COLORS_H           ; HL points to node color
+                ;call Indexes2Node      ; get graph's node index (0-48)
+                call Indexes2Board
+                ld h,hex_board_blue/256           ; HL points to node color
                 ld l,a
-                ld a,WHITE_BLACK        ; set empty node color in A
+                ld a,EMPTY        ; set empty node color in A
                 cp (hl)                 ; is node empty?
                 jr nz,HexFilled         ; no, node is filled
 
                 ld a,l                  ; save last player move
                 ld (LAST_MOVE),a
 
-                ld a,(TOKEN_COLOR)      ; update node color with current token color
-                ld (hl),a
+                call Friend_Or_Foe
+                call Put_Hexagon
 
 DrawToken
                 call Draw_Token         ; draw token (player or speccy) on the screen
@@ -153,13 +156,21 @@ DrawToken
                 ; check winner
 
                 ld a,(TOKEN_COLOR)      ; get current token color
-                call Path_Finder        ; calculate current player shortest path
-                ld a,(hl)               ; set current player remaining nodes in A
-                or a                    ; are # of remaining nodes = 0?
+                rra
+                jr c,GetBlueScore
+                call RedScore
+                jr CheckWinner
+
+GetBlueScore
+                call BlueScore
+
+CheckWinner
+                ld a,VICTORY
+                cp c
                 jr z,GameOver           ; yes, there is a winner!
 
-                ex af,af'               ; get opponent player color
-                ld (TOKEN_COLOR),a      ; store new current token color
+                ld a,(TOKEN_COLOR)
+                xor SW_COLOR
 
                 jp GameLoop             ; repeat game loop
 ;
@@ -186,17 +197,27 @@ Delay
 ; Current player wins the game
 ;
 GameOver
-                ld a,(TOKEN_COLOR)      ; get current token color
-
                 call Bright_Path        ; highlights the winner path
 
                 ld hl,STR_WINNER        ; HL points to " WINS " string
                 call Print_Alert        ; print string
 
-                ld hl,WINNER_FX         ; HL points to filled node sound fx
+                ld hl,WINNER_FX         ; HL points to winner sound fx
                 call SoundFX            ; play sound fx
 
                 jp GameInit             ; initialize a new game
+
+; -----------------------------------------------------------------------------
+; Bright_Path: highlight the hexagons included in shortest path when game ends
+;
+; Input:    
+; Output:   
+; Destroys: 
+; -----------------------------------------------------------------------------
+Bright_Path:
+                ; TO DO
+                ret
+
 ;
 ; Format_Move: applies format ("a-nn") to move string
 ;
@@ -227,7 +248,7 @@ Format_Move:
 ; Destroys:  A 
 ;
 Int2_String:
-                ld d,'0'                ; initializes in char '0'
+                ld d,'0'                ; initialize in char '0'
                 dec d                   ; for later inc
                 ld e,10                 ; base-10
                 and a                   ; set carry flag to 0
@@ -261,6 +282,34 @@ String2_Indexes:
 
                 ret
 ;
+; Indexes2Node: converts an hexagon's XY indexes into a node index
+; Designed by Sonia Ortega
+;
+; Input:    BC - board indexes of the hexagon (B=column, C=row)
+; Output:   A  - node index (0 to 48)
+; Destroys: -
+;
+; [Antonio] this routine is in the project from the begining for update
+; player moves. I have take advantage of it for this other use
+;
+;Indexes2Node:
+                push bc                 ; store board indexes
+
+                ld a,b                  ; node = column index
+                dec a                   ; node = node - 1
+                dec c                   ; row = row - 1
+                ld b,c                  ; set loop counter through row index
+                ld c,7
+
+LoopNode
+                add a,c                 ; node = node + 7
+                djnz LoopNode           ; repeat (row - 1) times
+
+                pop bc                  ; restore board indexes
+
+                ret
+
+;
 ; Node2_Indexes: converts a node index into an hexagon's XY indexes in board
 ; Designed by Sonia Ortega
 ;
@@ -268,7 +317,7 @@ String2_Indexes:
 ; Output:   BC - Board indexes of the hexagon (B=column, C=row)
 ; Destroys: -
 ;
-Node2_Indexes:
+;Node2_Indexes:
                 ld c,1                  ; set board row = 1
                 ld b,a                  ; set board column = hexagon index
                 cp 7                    ; is hexagon index < 7?
@@ -285,29 +334,7 @@ ExitConv
                 inc b                   ; increment board column index
 
                 ret
-;
-; Indexes2_Node: converts an hexagon's XY indexes into a node index
-; Designed by Sonia Ortega
-;
-; Input:    BC - board indexes of the hexagon (B=column, C=row)
-; Output:   A  - node index (0 to 48)
-; Destroys: -
-;
-Indexes2_Node:            
-                push bc                 ; store board indexes
 
-                ld a,b                  ; node = column index
-                dec a                   ; node = node - 1
-                dec c                   ; row = row - 1
-                ld b,c                  ; set loop counter through row index
-
-LoopNode
-                add a,7                 ; node = node + 7
-                djnz LoopNode           ; repeat (row - 1) times
-
-                pop bc                  ; restore board indexes
-
-                ret
 ;
 ; Strings
 ;
@@ -318,7 +345,7 @@ STR_WINNER      defm " WINS \0"
 ;
 ; Variables
 ;
-TOKEN_COLOR     defb 0                  ; current token color (BLUE_TOKEN or RED_TOKEN)
+;TOKEN_COLOR     defb 0                  ; current token color (BLUE_TOKEN or RED_TOKEN)
 MOVE_NUMBER     defb 0                  ; current move number
-PLAYER_MOVE     defb 0, 0, 0, 0         ; 4 bytes for input player move
 LAST_MOVE       defb 0                  ; last move for the player (0-48)
+PLAYER_MOVE     defb 0, 0, 0, 0         ; 4 bytes for input player move

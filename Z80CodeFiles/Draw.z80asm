@@ -35,7 +35,7 @@ NextRow
 ;
 Draw_Hexagon:
                 ld hl,HEXAGON           ; HL points to the hexagon address
-                jp DrawProcess          ; continue to draw process
+                jr DrawProcess          ; continue to draw process
 ;
 ; Draw_Token: entry point to draw a token instead of an hexagon
 ;
@@ -97,21 +97,28 @@ SetHEX_Color:
                 push bc
 
                 ld c,2                  ; height of the hexagon (in bytes)
+
 ColorLine
-                ld a,(TOKEN_COLOR)      ; get color
                 ld b,2                  ; width of the hexagon (in bytes)
+                ld a,(TOKEN_COLOR)      ; get color
+
                 push de
+
 ColorByte
                 ld (de),a               ; color a byte
                 inc de                  ; next byte
-                djnz ColorByte          ; repeat until hexagon with is colored
+
+                djnz ColorByte          ; repeat until hexagon width is colored
 
                 pop de
+
                 ld a,e                  ; move down a ColorMem line
                 add a,32                ; add 32 to line DE (height in pixels)
                 ld e,a
                 jr nc,EndOfLine         ; check EOL
+
                 inc d                   ; add any carry to DE
+
 EndOfLine
                 dec c
                 jr nz,ColorLine         ; procces next line

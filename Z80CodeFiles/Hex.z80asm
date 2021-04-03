@@ -4,9 +4,9 @@
 ;
 ; Build file
 ;
-                org $6200
+                org $6000
 
-                #include "Graph.z80asm"
+                ;#include "Graph.z80asm"
                 #include "Main.z80asm"
                 #include "Draw.z80asm"
                 #include "Output.z80asm"
@@ -16,6 +16,7 @@
                 #include "Sound.z80asm"
                 #include "Font.z80asm"
                 #include "Frame.z80asm"
+                #include "PathFinder_v5.z80asm"
 ;
 ; Credits and acknowledgements:
 ;

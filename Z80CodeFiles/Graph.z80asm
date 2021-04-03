@@ -5,25 +5,25 @@
 ; Inspired on Greg Surma article:
 ; https://towardsdatascience.com/hex-creating-intelligent-adversaries-part-2-heuristics-dijkstras-algorithm-597e4dcacf93 
 ;
-PARENT_H        equ $5E                 ; Hi-byte address of parent nodes vector
-PARENT_HL       equ $5E00               ; Address of parent vector nodes
-PATH_START      equ $5E33               ; Address of start node (RED/BLUE) of shortest path
+COLORS_H        equ $7A                 ; Hi-byte address of colors nodes vector
+COLORS_HL       equ $7A00               ; Address of colors nodes vector
+EDGES           equ $7A31               ; Address of edge nodes
 
-DISTANCE_H      equ $5F                 ; Hi-byte address of distance nodes vector
-DISTANCE_HL     equ $5F00               ; Address of distance nodes vector
-REMAINING       equ $5F33               ; Address of remaining nodes (RED/BLUE) of shortest path
+PARENT_H        equ $7B                 ; Hi-byte address of parent nodes vector
+PARENT_HL       equ $7B00               ; Address of parent vector nodes
+PATH_START      equ $7B33               ; Address of start node (RED/BLUE) of shortest path
 
-INCLUDED_H      equ $60                 ; Hi-byte address of included nodes vector
-INCLUDED_HL     equ $6000               ; Address of included nodes vector
+DISTANCE_H      equ $7C                 ; Hi-byte address of distance nodes vector
+DISTANCE_HL     equ $7C00               ; Address of distance nodes vector
+REMAINING       equ $7C33               ; Address of remaining nodes (RED/BLUE) of shortest path
 
-COLORS_H        equ $61                 ; Hi-byte address of colors nodes vector
-COLORS_HL       equ $6100               ; Address of colors nodes vector
-EDGES           equ $6131               ; Address of edge nodes
+INCLUDED_H      equ $7D                 ; Hi-byte address of included nodes vector
+INCLUDED_HL     equ $7D00               ; Address of included nodes vector
 
-SW_COLOR        equ %00000011           ; BITs to be XORed to swap current player color
+
 
 ;
-; Node memory pointers (aligned to memory address $6200)
+; Node memory pointers
 ;
 NODE_POINTERS:
                 defw  node0,  node1,  node2,  node3,  node4,  node5,  node6
@@ -113,7 +113,7 @@ node52          defb  7, 42, 43, 44, 45, 46, 47, 48 ; bottom
 ;
 GetNode_Definition:
                 add a,a                 ; node pointer is 2 bytes long
-                ld h,$62                ; HL points to node index pointer of board graph
+                ld h,$60                ; HL points to node index pointer of board graph
                 ld l,a
 
                 ld b,(hl)               ; simulate ld hl,(hl)
@@ -229,7 +229,7 @@ Path_Finder:
 
                 call Vector_Init        ; copy 49 bytes with $FF from HL to DE
 
-                ld hl,$5E80             ; initialize deque (doble-ended queue) pointers
+                ld hl,$7E00             ; initialize deque (doble-ended queue) pointers
                 ld (Pop_Head+1),hl
                 ld (Push_Tail+1),hl
 
@@ -382,13 +382,13 @@ GetPlayer_Nodes:
 
                 ; set up address of player vector's nodes
 
-                ld de,$6040             ; set address of nodes vector in DE
+                ld de,$7F00             ; set address of nodes vector in DE
                 ld a,(AI_DEPTH)         ; get recursion depth level
                 rla                     ; calculate low address of nodes vector pointer
                 rla
                 rla
                 rla                     ; A = AI_DEPTH * 16
-                add a,e                 ; A = A + E
+                ;add a,e                 ; A = A + E
                 ld e,a                  ; set low address of nodes vector pointer in E
 
                 push de                 ; store player vector's nodes pointer
