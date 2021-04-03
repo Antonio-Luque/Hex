@@ -171,10 +171,16 @@ AlphabetaMinNext
 AlphabetaMinExit
                 ; skip the rest of candidates (Antonio's ugly code)
                 ; for testing purposes it works fine... :)
+
+                ld      l, a                    ; save A in L
+
+AlphabetaMinSkip
                 dec     iy
                 ld      a, (iy+0)
                 and     a
-                jr      nz, AlphabetaMinExit
+                jr      nz, AlphabetaMinSkip
+
+                ld      a, l                    ; return A
 
                 ld      hl, AI_DEPTH
                 inc     (hl)                    ; depth++
@@ -252,10 +258,16 @@ HeuristicMinNext
 
 HeuristicMinExit
                 ; skip the rest of candidates (Antonio's ugly code)
+
+                ld      l, a
+
+HeuristicMinSkip
                 dec     iy
                 ld      a, (iy+0)
                 and     a
-                jr      nz, HeuristicMinExit
+                jr      nz, HeuristicMinSkip
+
+                ld      a, l
 
                 ld      hl, AI_DEPTH
                 inc     (hl)                    ; depth++
@@ -356,10 +368,16 @@ AlphabetaMaxNext
 
 AlphabetaMaxExit
                 ; skip the rest of candidates (Antonio's ugly code)
+
+                ld      l, a
+
+AlphabetaMaxSkip
                 dec     iy
                 ld      a, (iy+0)
                 and     a
-                jr      nz, AlphabetaMaxExit
+                jr      nz, AlphabetaMaxSkip
+
+                ld      a, l
 
                 ld      hl, AI_DEPTH
                 inc     (hl)                    ; depth++
@@ -435,10 +453,16 @@ HeuristicMaxNext
 
 HeuristicMaxExit
                 ; skip the rest of candidates (Antonio's ugly code)
+
+                ld      l, a
+
+HeuristicMaxSkip
                 dec     iy
                 ld      a, (iy+0)
                 and     a
-                jr      nz, HeuristicMaxExit
+                jr      nz, HeuristicMaxSkip
+
+                ld      a, l
 
                 ld      hl,AI_DEPTH
                 inc     (hl)                    ; depth++
