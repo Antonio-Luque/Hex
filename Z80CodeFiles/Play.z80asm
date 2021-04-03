@@ -26,8 +26,14 @@ Speccy_Move:
                 ld a,(GAME_LEVEL)       ; get game level
                 ld (AI_DEPTH),a         ; save recursion depth level
 
-                ld a,(TOKEN_COLOR)      ; get current speccy color
+                call Friend_Or_Foe
+
+                di
+                push iy
+                ld iy,$B000
                 call BRAINIAC_best_move ; get speccy best move
+                pop iy
+                ei
 
                 ld l,e                  ; set node index in L
 
@@ -57,9 +63,9 @@ SetNodeIndex
                 ld l,(hl)               ; set node index in L
 
 UpdateNodeColor
-                ld h,COLORS_H           ; HL points to node color
-                ld a,(TOKEN_COLOR)      ; get current speccy color
-                ld (hl),a               ; update graph's node color with speccy color
+                ld h,hex_board_blue/256           ; HL points to node color
+                call Friend_Or_Foe
+                call Put_Hexagon
 
                 ld a,l                  ; return node index in A
 
@@ -81,19 +87,17 @@ OpeningsLoop
 
                 push hl                 ; store opening book address
 
-                ld h,COLORS_H           ; HL points to node color
+                ld h,hex_board_blue/256           ; HL points to node color
                 ld l,a
-                ld a,BLUE_TOKEN         ; set blue color in A
+                ld a,FRIEND         ; set blue color in A
                 cp (hl)                 ; has blue player done this move?
                 pop hl                  ; restore opening book address
                 inc hl                  ; HL points to the red move response
-                jr z,ReturnOpening      ; yes, blue player done this move
+                ret z                   ; yes, blue player done this move
 
                 inc hl                  ; HL points to the next blue move
-
                 djnz OpeningsLoop       ; repeat until ends of opening book
 
-ReturnOpening
                 ret
 ;
 ; Definition of a small "Opening Book" for speccy first moves
@@ -101,9 +105,9 @@ ReturnOpening
 ;   2nd byte - response red move
 ;
 OPENINGS:
-                defb 18, 31
-                defb 23, 30
-                defb 24, 37
-                defb 25, 18
-                defb 30, 17
-                defb     24             ; red player default response (center node)
+                defb $1F, $30
+                defb $26, $2F
+                defb $27, $38
+                defb $28, $1F
+                defb $2F, $1E
+                defb      $27             ; red player default response (center node)
