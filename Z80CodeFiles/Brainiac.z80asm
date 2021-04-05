@@ -7,14 +7,14 @@ MIN_VALUE       equ 0                  ; alphaBeta pruning minimum value
 MAX_VALUE       equ 255                ; alphaBeta pruning maximum value
 
 ;
-; BRAINIAC_best_move: execute BRAINIAC algorithm to determine best choice for specified player's next move, 
+; BRAINIAC_best_move: execute BRAINIAC algorithm to determine best choice for specified player's next move,
 ; according to specified AI difficulty level. This algorithm is implemented as recursive Minimax with
 ; alpha-beta pruning, that alternates between tree nodes maximizing score (speccy move) and minimizing
 ; it (player move) depending on recursion depth.
 ;
 ; Coded by Einar Saukas: https://spectrumcomputing.co.uk/entry/30216/ZX-Spectrum/COMPLICA_DX
 ; The complete and original source code in the link above. Adaptations are marked with * in routines comments.
-; 
+;
 ; Input:
 ;   A: speccy side* (FRIEND or ENEMY)
 ;
@@ -30,7 +30,8 @@ MAX_VALUE       equ 255                ; alphaBeta pruning maximum value
 BRAINIAC_best_move:
                 ld      (AI_PLAYER), a          ; save speccy side
 
-                call    Board_Score             ; calculate board score
+                call    BlueScore               ; (solve both paths just so we can find candidates)
+                call    RedScore
                 call    Path_Tracker            ; find candidates
 
                 dec     iy
@@ -227,7 +228,22 @@ HeuristicMinLoop                                ; for each candidate {
                                                 ;       we get it from AI_PLAYER
                 cpl                             ;       get player side
                 call    Put_Hexagon             ;       BRAINIAC_play
-                call    Board_Score             ;       A = board score
+
+
+                ; evaluate board (calculate heuristic value)
+                call Player_Score
+                ld a, c
+                cp VICTORY
+                ld a, MIN_VALUE
+                jr z, HeuristicMinVictory
+                ld a, c
+                ex af, af'
+                call Speccy_Score
+                ex af, af'
+                sub c                           ;       A = (player steps to win) - (speccy steps to win)
+                add a, 128                      ;       A = 128 + (player steps to win) - (speccy steps to win)
+HeuristicMinVictory:
+
 
                 pop     hl
                 call    Erase_hexagon           ;       BRAINIAC_undo
@@ -422,7 +438,24 @@ HeuristicMaxLoop                                ; for each candidate {
 
                 ld      a, (AI_PLAYER)          ;       get speccy side
                 call    Put_Hexagon             ;       (BRAINIAC_play)
-                call    Board_Score             ;       A = board score
+
+
+                ; evaluate board (calculate heuristic value)
+                call Speccy_Score
+                ld a, c
+                cp VICTORY
+                ld a, MAX_VALUE
+                jr z, HeuristicMaxVictory
+                ld a, c
+                ex af, af'
+                call Player_Score
+                ex af, af'
+                sub c                           ;       A = (speccy steps to win) - (player steps to win)
+                neg
+                add a, 128                      ;       A = 128 + (player steps to win) - (speccy steps to win)
+HeuristicMaxVictory:
+
+
 
                 pop     hl                      ;       restore candidate position
                 call    Erase_hexagon           ;       BRAINIAC_undo
