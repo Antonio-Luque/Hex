@@ -159,11 +159,15 @@ DrawToken
                 rra
                 jr c,GetBlueScore
                 call RedScore
+                    ld      hl, Board_Red+WIDTH
+                    ld      de, Path_Finder_Red
+
                 jr CheckWinner
 
 GetBlueScore
                 call BlueScore
-
+                    ld      hl, Board_Blue+WIDTH
+                    ld      de, Path_Finder_Blue
 CheckWinner
                 ld a,VICTORY
                 cp c
@@ -212,11 +216,48 @@ GameOver
 ;
 ; Input:    
 ; Output:   
-; Destroys: 
+; Destroys:
 ; -----------------------------------------------------------------------------
 Bright_Path:
-                ; TO DO
-                ret
+                    ret
+
+; Work in progress...
+                    push    hl
+                    call    GetWinner_Path
+                    pop     hl
+
+BrightLoop
+                    ; TO DO
+                    ret
+
+;
+;
+;
+GetWinner_Path:
+                    ld      b, 61
+                    ld      a, EMPTY
+ChangeEmpty
+                    cp      (hl)
+                    jr      nz, NextEmpty
+                    ld      (hl), ENEMY
+NextEmpty
+                    inc     l
+                    djnz    ChangeEmpty
+
+                    dec     l
+
+                    ld      b, 61
+                    ld      a, $84
+ChangeFriend
+                    cp      (hl)
+                    jr      nz, NextFriend
+                    ld      (hl), EMPTY
+NextFriend
+                    dec     l
+                    djnz    ChangeFriend
+
+                    ex      de, hl
+                    jp      (hl)
 
 ;
 ; Format_Move: applies format ("a-nn") to move string
