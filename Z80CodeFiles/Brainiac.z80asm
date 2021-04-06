@@ -114,7 +114,7 @@ Alphabeta_Min:
                 cp      VICTORY                 ; if (speccy won)
                 jr      nz, AlphabetaMinCandidates
                 ld      a, (AI_DEPTH)
-                add     192                     ;     return 192+depth
+                add     a, 192                     ;     return 192+depth
                 pop     de
                 ret
 
@@ -323,7 +323,7 @@ Alphabeta_Max:
                 jr      nz, AlphabetaMaxCandidates
                 ld      a, (AI_DEPTH)
                 neg
-                add     64                      ;     return 64-depth
+                add     a, 64                      ;     return 64-depth
                 pop     de
                 ret
 
