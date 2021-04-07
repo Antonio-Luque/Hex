@@ -43,7 +43,9 @@ SW_COLOR        equ %00000011           ; BITs to be XORed to swap current playe
 ; Game (re)initialization - main loop
 ;
 GameInit
-                ld hl,hex_board_blue+WIDTH
+                ; initialize hex_board_blue and hex_board_red
+
+                ld hl,hex_board_blue+9
                 ld c,7
 
 EraseBoardsRow
@@ -60,6 +62,8 @@ EraseBoardsHex
 
                 dec c
                 jr nz,EraseBoardsRow
+
+                ; initialize screen attributes and input game options
 
                 ld a,CYAN_FLASH0        ; set clear attributes
                 ld (CHAR_ATTR),a
@@ -214,50 +218,170 @@ GameOver
 ; -----------------------------------------------------------------------------
 ; Bright_Path: highlight the hexagons included in shortest path when game ends
 ;
-; Input:    
-; Output:   
-; Destroys:
+; Input:    HL = address of 'Board_(Color)' + 9
+;           DE = address of 'Path_Finder_(Color)'
+; Output:   -
+; Destroys: BC, HL, DE, AF
 ; -----------------------------------------------------------------------------
 Bright_Path:
-                    ret
+                    ; Prepare 'Board_(Color)' and call 'Path_Finder_(Color)' to find victory path
 
-; Work in progress...
                     push    hl
-                    call    GetWinner_Path
+                    call    Prepare_Board  
                     pop     hl
 
-BrightLoop
-                    ; TO DO
+                    ; Find the start position of the victory path
+
+                    ld      de, WIDTH-1             ; number of positions to add to jump to the next row (for Board_Red)
+FindStartPosition                                   ; for each position in first row/column {
+                    ld      a, (hl)                 ;       get length of current position
+                    cp      c                       ;       is it equal to victory path length?
+                    jr      z, BrightPosition       ;       yes, exit and bright current position
+                    inc     l                       ;       move to next position inside 1st. row
+                    ld      a, h 
+                    cp      Board_Blue/256          ;       are we searching in Board_Blue?
+                    jr      z, FindStartPosition    ;       yes, continue searching
+                    add     hl, de                  ;       move to next position inside 1st. column and continue searching
+                    jr      FindStartPosition       ; }
+
+FindNextNeighbour
+                    dec     l                       ; left neighbour
+                    cp      (hl)
+                    jr      z, BrightPosition
+                    inc     l
+                    inc     l                       ; right neighbour
+                    cp      (hl)
+                    jr      z, BrightPosition
+                    ld      a, l
+                    sub     WIDTH
+                    ld      l, a                    ; upper-right neighbour
+                    ld      a, c
+                    cp      (hl)
+                    jr      z, BrightPosition
+                    dec     l                       ; upper-left neighbour
+                    cp      (hl)
+                    jr      z, BrightPosition
+                    ld      a, l
+                    add     a, WIDTH*2
+                    ld      l, a                    ; lower-right neighbour
+                    ld      a, c
+                    cp      (hl)
+                    jr      z, BrightPosition
+                    dec     l                       ; lower-left neighbour
+BrightPosition
+                    push    bc                      ; store victory path length and current position
+                    push    hl
+                    ld      a, l
+                    call    Board2Indexes           ; convert a board position into a XY indexes of the hexagon in screen
+                    pop     hl
+                    call    GetHEX_Color            ; get the attributes memory address of an hexagon in screen
+                    pop     bc
+                    ld      a, (de)                 ; get hexagon color and brights it
+                    set     6, a
+                    ld      (TOKEN_COLOR), a
+                    call    SetHEX_Color
+                    dec     c                       ; decrement victory path length
+                    ld      a, c
+                    cp      VICTORY
+                    jr      nz, FindNextNeighbour   ; repeat for each neighbour until reach VICTORY length
+
                     ret
 
+; -----------------------------------------------------------------------------
+; Update 'Board_(color)', changing $84 to EMPTY, everything else to ENEMY. 
+; Immediately after 'Path_Finder_(color)' returned VICTORY, you can execute
+; this routine, then execute 'Path_Finder_(color)' again to find a victory
+; path.
 ;
-;
-;
-GetWinner_Path:
-                    ld      b, 61
-                    ld      a, EMPTY
-ChangeEmpty
-                    cp      (hl)
-                    jr      nz, NextEmpty
-                    ld      (hl), ENEMY
-NextEmpty
-                    inc     l
-                    djnz    ChangeEmpty
-
-                    dec     l
-
-                    ld      b, 61
+; Input:    HL = address of 'Board_(Color)' + 9
+;           DE = address of 'Path_Finder_(Color)'
+; Output:    C = victory path length
+; Destroys:  B, HL, AF
+; -----------------------------------------------------------------------------
+Prepare_Board:
                     ld      a, $84
-ChangeFriend
+                    ld      c, 7                    ; 7 rows
+
+PrepareBoardNextRow
+                    ld      b, 7                    ; 7 columns
+PrepareBoardNextCol
                     cp      (hl)
-                    jr      nz, NextFriend
                     ld      (hl), EMPTY
-NextFriend
-                    dec     l
-                    djnz    ChangeFriend
+                    jr      z, PrepareBoardSkip
+                    ld      (hl), ENEMY
+PrepareBoardSkip
+                    inc     l
+                    djnz    PrepareBoardNextCol
+
+                    inc     l                       ; skip borders
+                    inc     l
+                    dec     c
+                    jr      nz, PrepareBoardNextRow
 
                     ex      de, hl
-                    jp      (hl)
+                    jp      (hl)                    ; simulate a call to Path_Finder_(Color)
+
+; -----------------------------------------------------------------------------
+; Convert a XY indexes of the hexagon in screen into a board position
+;
+; Input:    BC - board indexes of the hexagon in screen (B=column, C=row)
+; Output:   A  - board position
+; Destroys: DE, HL
+; -----------------------------------------------------------------------------
+Indexes2Board:
+                push bc
+
+                ld de,BOARD_COORDINATES
+                ld h,0                  ; first, get the C row
+                ld l,c
+                add hl,hl               ; a row is 8 bytes long
+                add hl,hl
+                add hl,hl
+                add hl,de
+                ex de,hl                ; DE, HL points to the address of C row 
+                ld h,0                  ; go for to the B column
+                ld l,b
+                add hl,de               ; HL points to the address of B col
+                ld a,(hl)               ; return board position
+
+                pop bc
+
+                ret
+
+; -----------------------------------------------------------------------------
+; Convert a board position into a XY indexes of the hexagon in screen
+;
+; Input:    A  - board position
+; Output:   BC - board indexes of the hexagon in screen (B=column, C=row)
+; Destroys: -
+; -----------------------------------------------------------------------------
+Board2Indexes:
+                ld hl,BOARD_COORDINATES+64
+                ld c,7                    ; 7 rows
+
+BoardRow
+                ld b,7                    ; 7 columns
+
+BoardPos
+                dec hl
+                cp (hl)                  ; is it the position?
+                ret z                    ; yes, return XY indexes
+                djnz BoardPos
+
+                dec hl                  ; skip borders
+                dec c
+                jp BoardRow
+
+; -----------------------------------------------------------------------------
+BOARD_COORDINATES:
+                defb $00, $00, $00, $00, $00, $00, $00, $00
+                defb $00, $09, $0A, $0B, $0C, $0D, $0E, $0F
+                defb $00, $12, $13, $14, $15, $16, $17, $18
+                defb $00, $1B, $1C, $1D, $1E, $1F, $20, $21
+                defb $00, $24, $25, $26, $27, $28, $29, $2A
+                defb $00, $2D, $2E, $2F, $30, $31, $32, $33
+                defb $00, $36, $37, $38, $39, $3A, $3B, $3C
+                defb $00, $3F, $40, $41, $42, $43, $44, $45
 
 ;
 ; Format_Move: applies format ("a-nn") to move string
@@ -320,59 +444,6 @@ String2_Indexes:
 
                 xor %00110000           ; subtract $30
                 ld c,a                  ; set row position
-
-                ret
-;
-; Indexes2Node: converts an hexagon's XY indexes into a node index
-; Designed by Sonia Ortega
-;
-; Input:    BC - board indexes of the hexagon (B=column, C=row)
-; Output:   A  - node index (0 to 48)
-; Destroys: -
-;
-; [Antonio] this routine is in the project from the begining for update
-; player moves. I have take advantage of it for this other use
-;
-;Indexes2Node:
-                push bc                 ; store board indexes
-
-                ld a,b                  ; node = column index
-                dec a                   ; node = node - 1
-                dec c                   ; row = row - 1
-                ld b,c                  ; set loop counter through row index
-                ld c,7
-
-LoopNode
-                add a,c                 ; node = node + 7
-                djnz LoopNode           ; repeat (row - 1) times
-
-                pop bc                  ; restore board indexes
-
-                ret
-
-;
-; Node2_Indexes: converts a node index into an hexagon's XY indexes in board
-; Designed by Sonia Ortega
-;
-; Input:     A - node index (0 to 48)
-; Output:   BC - Board indexes of the hexagon (B=column, C=row)
-; Destroys: -
-;
-;Node2_Indexes:
-                ld c,1                  ; set board row = 1
-                ld b,a                  ; set board column = hexagon index
-                cp 7                    ; is hexagon index < 7?
-                jr c,ExitConv           ; yes, continue to end of rutine
-
-CalcXYLoop  
-                inc c                   ; increment board row
-                sub 7                   ; column = column - 7
-                cp 7                    ; is it >= 7?
-                jr nc,CalcXYLoop        ; yes, subtract again
-
-                ld b,a                  ; set calculated column index
-ExitConv
-                inc b                   ; increment board column index
 
                 ret
 
