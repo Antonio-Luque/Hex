@@ -1,113 +1,106 @@
-﻿;
+﻿; -----------------------------------------------------------------------------
 ; Play.z80asm
 ; Coded by Antonio Luque
-;
+; -----------------------------------------------------------------------------
 
-;
+; -----------------------------------------------------------------------------
 ; Speccy_Move: return the Speccy best move
 ;
-; Input:    TOKEN_COLOR - current token color (BLUE_TOKEN or RED_TOKEN)
-;           MOVE_NUMBER - current move number
+; Input:    MOVE_NUMBER - current move number
 ;           GAME_LEVEL  - number of game level selected (1-4)
-; Output:   A - graph node selected as best move (0-48)
+;           TOKEN_COLOR - current token color (BLUE_TOKEN or RED_TOKEN)
+; Output:   A - board position of move in HEX_BOARD_BLUE or HEX_BOARD_RED
 ; Destroys: BC, HL, DE, IX
-;
+; -----------------------------------------------------------------------------
 Speccy_Move:
-                ; check for the firsts moves
+                    ; check for the firsts moves (openning book)
 
-                ld a,(MOVE_NUMBER)      ; get move number
-                dec a                   ; is it BLUE first move?
-                jr z,FirstBlue_Move     ; yes, do first move as BLUE player
-                dec a                   ; is it RED 1st move?
-                jr z,FirstRed_Move      ; yes, do first move as RED player
+                    ld      a, (MOVE_NUMBER)        ; get move number
+                    dec     a                       ; is it BLUE first move?
+                    jr      z, FirstBlue_Move       ; yes, do first move as BLUE player
+                    dec     a                       ; is it RED 1st move?
+                    jr      z, FirstRed_Move        ; yes, do first move as RED player
 
-                ; initialize BRAINIAC input
+                    ; initialize BRAINIAC
 
-                ld a,(GAME_LEVEL)       ; get game level
-                ld (AI_DEPTH),a         ; save recursion depth level
+                    di
+                    push    iy
 
-                call Friend_Or_Foe
+                    ld      iy, $7900               ; intercept queue address 
+                    ld      a, (GAME_LEVEL)         ; get game level
+                    ld      (AI_DEPTH), a           ; save recursion depth level
+                    call    Friend_Or_Foe           ; get speccy side
+                    call    BRAINIAC_best_move      ; get speccy best move
 
-                di
-                push iy
-                ld iy,$B000
-                call BRAINIAC_best_move ; get speccy best move
-                pop iy
-                ei
+                    pop     iy
+                    ei
 
-                ld l,e                  ; set node index in L
+                    ; return BRAINIAC move
 
-                jp UpdateNodeColor      ; continue updating node colors vector
-
+                    ld      l, e                    ; set node index in L
+                    jr      UpdateBoardPos          ; continue updating board position
 FirstRed_Move
-                call OpeningBook        ; check if first red move is in the "opening book"
-
-                jp SetNodeIndex         ; continue setting node index
-
+                    call    OpeningBook             ; check if first red move is in the "opening book"
+                    jr      SetNodeIndex            ; continue setting node index
 FirstBlue_Move
-                ld a,r                  ; get a pseudo-random number [0-127] in A
-                and %00000011           ; set range as [0-3]
-                cp 3                    ; is random number = 3?
-                jr z,FirstBlue_Move     ; yes, repeat until random number < 3
+                    ld      a, r                    ; get a pseudo-random number [0-127] in A
+                    and     %00000011               ; set range as [0-3]
+                    cp      3                       ; is random number = 3?
+                    jr      z, FirstBlue_Move       ; yes, repeat until random number < 3
 
-                ; choose a random first BLUE move among first BLUE moves in "opening book"
+                    ; choose a random first BLUE move among first BLUE moves in "opening book"
 
-                ld de,OPENINGS          ; DE points to opening book address
-                ld h,0                  ; set index in HL
-                ld l,a
-                add hl,hl               ; best blue moves are 4 bytes long
-                add hl,hl
-                add hl,de               ; HL points to first blue move (node)
-
+                    ld      de, OPENINGS            ; DE points to opening book address
+                    ld      h, 0                    ; set index in HL
+                    ld      l, a
+                    add     hl ,hl                  ; best blue moves are 4 bytes long
+                    add     hl, hl
+                    add     hl, de                  ; HL points to first blue move (node)
 SetNodeIndex
-                ld l,(hl)               ; set node index in L
+                    ld      l, (hl)                 ; set node index in L
+UpdateBoardPos
+                    ld      h, hex_board_blue/256   ; HL points to board position       
+                    call    Friend_Or_Foe
+                    call    Put_Hexagon             ; update board position
 
-UpdateNodeColor
-                ld h,hex_board_blue/256           ; HL points to node color
-                call Friend_Or_Foe
-                call Put_Hexagon
+                    ld      a, l                    ; return position in A
 
-                ld a,l                  ; return node index in A
+                    ret
 
-                ret
-;
+; -----------------------------------------------------------------------------
 ; OpeningBook: check for moves in the "opening book" in response against 1st blue move
 ;
 ; Input:        -
 ; Output:       HL - pointer to response move in the opening book
 ; Destroys:     A, HL, BC, DE
-;
+; -----------------------------------------------------------------------------
 OpeningBook:
-                ld hl,OPENINGS          ; HL points to openings address
-
-                ld b,5                  ; lenght of the "opening book"
-
+                    ld      hl, OPENINGS            ; HL points to openings address
+                    ld      b, 5                    ; length of the "opening book"
 OpeningsLoop
-                ld a,(hl)               ; get first opening move (blue move)
+                    ld      a, (hl)                 ; get first opening move (blue move)
+                    push    hl                      ; store opening book address
+                    ld      h, hex_board_blue/256           
+                    ld      l, a                    ; HL points to board position
+                    ld      a, FRIEND
+                    cp      (hl)                    ; has blue player done this move?
+                    pop     hl                      ; restore opening book address
+                    inc     hl                      ; HL points to the red move response
+                    ret     z                       ; yes, blue player done this move
+                    inc     hl                      ; HL points to the next blue move
+                    djnz    OpeningsLoop            ; repeat until ends of opening book
 
-                push hl                 ; store opening book address
+                    ret
 
-                ld h,hex_board_blue/256           ; HL points to node color
-                ld l,a
-                ld a,FRIEND         ; set blue color in A
-                cp (hl)                 ; has blue player done this move?
-                pop hl                  ; restore opening book address
-                inc hl                  ; HL points to the red move response
-                ret z                   ; yes, blue player done this move
-
-                inc hl                  ; HL points to the next blue move
-                djnz OpeningsLoop       ; repeat until ends of opening book
-
-                ret
-;
+; -----------------------------------------------------------------------------
 ; Definition of a small "Opening Book" for speccy first moves
 ;   1st byte - first blue move
 ;   2nd byte - response red move
-;
+; -----------------------------------------------------------------------------
 OPENINGS:
-                defb $1F, $30
-                defb $26, $2F
-                defb $27, $38
-                defb $28, $1F
-                defb $2F, $1E
-                defb      $27             ; red player default response (center node)
+                    defb    $1F, $30
+                    defb    $26, $2F
+                    defb    $27, $38
+                    defb    $28, $1F
+                    defb    $2F, $1E
+                    defb         $27                ; red player default response (center node)

@@ -15,18 +15,17 @@
     <Z80Asm Include="Z80CodeFiles\Font.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Draw.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Frame.z80asm" />
-    <Z80Asm Include="Z80CodeFiles\Graph.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Input.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Main.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Hex.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Output.z80asm" />
     <Z80Asm Include="Z80CodeFiles\PathFinder.z80asm" />
-    <Z80Asm Include="Z80CodeFiles\PathFinder_v3.z80asm" />
-    <Z80Asm Include="Z80CodeFiles\PathFinder_v5.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Play.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Sound.z80asm" />
   </ItemGroup>
   <ItemGroup>
+    <None Include=".gitattributes" />
+    <None Include="Z80CodeFiles\.gitattributes" />
     <None Include="Z80CodeFiles\King+.bin" />
   </ItemGroup>
   <ItemGroup>

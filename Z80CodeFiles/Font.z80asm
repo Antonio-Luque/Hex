@@ -1,12 +1,13 @@
-﻿;
+﻿; -----------------------------------------------------------------------------
 ; Font.z80asm
 ; Designed by Einar Saukas
-;
+; -----------------------------------------------------------------------------
 
-;
+; -----------------------------------------------------------------------------
 ; King+ font address
 ; Based on "King" font https://spectrumcomputing.co.uk/entry/25245/ZX-Spectrum/ZX-ALFA
 ; this font was designed by Einar Saukas for Hex game
-;
+; -----------------------------------------------------------------------------
+
 FONT
-                includebin "King+.bin"
+                    includebin "King+.bin"
