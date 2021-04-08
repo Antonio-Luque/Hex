@@ -1,89 +1,88 @@
-﻿;
+﻿; -----------------------------------------------------------------------------
 ; Draw.z80asm
 ; Coded by Antonio Luque
-;
-WHITE_BLACK     equ %00111000           ; Attributes: bright 0, flash 0, paper 7, ink 0
+; -----------------------------------------------------------------------------
 
-;
+WHITE_BLACK         equ     %00111000               ; Attributes: bright 0, flash 0, paper 7, ink 0
+
+; -----------------------------------------------------------------------------
 ; Draw_Board: draw an empty 7x7 hexagons board in the screen
 ;
 ; Input:     -
 ; Output:    -
 ; Destroys:  A, BC, HL, DE
-;
+; -----------------------------------------------------------------------------
 Draw_Board:
-                ld a,WHITE_BLACK        ; set empty hexagon color in A
-                ld (TOKEN_COLOR),a      ; store hexagon color
+                    ld      a, WHITE_BLACK          ; set empty hexagon color in A
+                    ld      (TOKEN_COLOR), a        ; store hexagon color
 
-                ld c,7                  ; indexes: C = row
+                    ld      c, 7                    ; 7 rows
 NextCol
-                ld b,7                  ; B = column
+                    ld      b, 7                    ; 7 columns
 NextRow
-                call Draw_Hexagon       ; draw an hexagon in the screen
-                djnz NextRow            ; process next column
+                    call    Draw_Hexagon            ; draw an hexagon in the screen
+                    djnz    NextRow                 ; process next column
+                    dec     c                       ; decrement row
+                    jr      nz, NextCol             ; process next row
 
-                dec c                   ; decrement row
-                jr nz,NextCol           ; process next row
+                    ret
 
-                ret
-;
+; -----------------------------------------------------------------------------
 ; Draw_Hexagon: draw an empty hexagon on the screen
 ;
 ; Input:     BC - hexagon board indexes: B = column, C = row
 ; Output:    -
 ; Destroys:  A, DE
-;
+; -----------------------------------------------------------------------------
 Draw_Hexagon:
-                ld hl,HEXAGON           ; HL points to the hexagon address
-                jr DrawProcess          ; continue to draw process
-;
+                    ld      hl, HEXAGON             ; HL points to the hexagon address
+                    jr      DrawProcess             ; continue to draw process
+
+; -----------------------------------------------------------------------------
 ; Draw_Token: entry point to draw a token instead of an hexagon
-;
+; -----------------------------------------------------------------------------
 Draw_Token:
-                ld hl,TOKEN             ; HL points to the token address
-
+                    ld      hl, TOKEN               ; HL points to the token address
 DrawProcess
-                push bc                 ; store BC register
+                    push    bc                      ; store BC register
+                    call    GetHEX_Color            ; get the attr memory address of an hexagon in screen
+                    call    SetHEX_Color            ; set the color of the hexagon
+                    call    GetHEX_Screen           ; get the screen memory address of an hexagon in screen
+                    call    Draw_Graphic            ; draw the hexagon/token in screen
+                    pop     bc                      ; restore BC register
 
-                call GetHEX_Color       ; get the attr memory address of an hexagon in screen
-                call SetHEX_Color       ; set the color of the hexagon
-                call GetHEX_Screen      ; get the screen memory address of an hexagon in screen
-                call Draw_Graphic       ; draw the hexagon/token in screen
+                    ret
 
-                pop bc                  ; restore BC register
-
-                ret
-;
+; -----------------------------------------------------------------------------
 ; GetHEX_Color: return the attribute memory address of an hexagon/token in the screeen
 ;
 ; Input:    BC - hexagon board indexes: B = column, C = row
 ; Output:   DE - attribute memory address of the hexagon
 ; Destroys: A
-;
+; -----------------------------------------------------------------------------
 GetHEX_Color:
-                push hl                 ; store HL register
+                    push    hl
 
-                ld de,BOARD_MAP         ; DE points to the look-up attr/screen table
+                    ld      de, BOARD_MAP           ; DE points to the look-up attr/screen table
+                    ld      h, 0                    ; first, get the C row
+                    ld      l, c
+                    add     hl, hl                  ; a row is 8 bytes long
+                    add     hl, hl
+                    add     hl, hl
+                    add     hl, de                  ; HL points to the address of C row
+                    ex      de, hl                  ; DE points to the address of C row 
+                    ld      a, (de)                 ; set the attr Hi-byte memory address (row C, col 0) in A
+                    ld      h, 0                    ; go for the B column
+                    ld      l, b
+                    add     hl, de                  ; HL points to the address of B col
+                    ld      e, (hl)                 ; set the Low-byte memory address in E 
+                    ld      d, a                    ; set the Attr Hi-byte memory address in D
 
-                ld h,0                  ; first, get the C row
-                ld l,c
-                add hl,hl               ; a row is 8 bytes long
-                add hl,hl
-                add hl,hl
-                add hl,de               ; HL points to the address of C row
-                ex de,hl                ; DE points to the address of C row 
-                ld a,(de)               ; set the attr Hi-byte memory address (row C, col 0) in A
+                    pop     hl
 
-                ld h,0                  ; go for the B column
-                ld l,b
-                add hl,de               ; HL points to the address of B col
-                ld e,(hl)               ; set the Low-byte memory address in E 
-                ld d,a                  ; set the Attr Hi-byte memory address in D
+                    ret
 
-                pop hl                  ; restores HL register
-
-                ret
-;
+; -----------------------------------------------------------------------------
 ; SetHEX_Color: set the color of an hexagon/token in the screen
 ; Code from ChibiAkumas lessons: https://www.chibiakumas.com/z80/simplesamples.php#LessonS2
 ;
@@ -91,67 +90,62 @@ GetHEX_Color:
 ;           TOKEN_COLOR - color which be set to the hexagon
 ; Output:   -
 ; Destroys: A
-;
+; -----------------------------------------------------------------------------
 SetHEX_Color:
-                push de                 ; store registers
-                push bc
+                    push    de
+                    push    bc
 
-                ld c,2                  ; height of the hexagon (in bytes)
-
+                    ld      c, 2                    ; height of the hexagon (in bytes)
 ColorLine
-                ld b,2                  ; width of the hexagon (in bytes)
-                ld a,(TOKEN_COLOR)      ; get color
+                    ld      b, 2                    ; width of the hexagon (in bytes)
+                    ld      a, (TOKEN_COLOR)        ; get color
 
-                push de
-
+                    push    de
 ColorByte
-                ld (de),a               ; color a byte
-                inc de                  ; next byte
+                    ld      (de), a                 ; color a byte
+                    inc     de                      ; next byte
+                    djnz    ColorByte               ; repeat until hexagon width is colored
 
-                djnz ColorByte          ; repeat until hexagon width is colored
+                    pop     de
 
-                pop de
-
-                ld a,e                  ; move down a ColorMem line
-                add a,32                ; add 32 to line DE (height in pixels)
-                ld e,a
-                jr nc,EndOfLine         ; check EOL
-
-                inc d                   ; add any carry to DE
-
+                    ld      a, e                    ; move down a ColorMem line
+                    add     a, 32                   ; add 32 to line DE (height in pixels)
+                    ld      e, a
+                    jr      nc ,EndOfLine           ; check EOL
+                    inc     d                       ; add any carry to DE
 EndOfLine
-                dec c
-                jr nz,ColorLine         ; procces next line
+                    dec     c
+                    jr      nz, ColorLine           ; procces next line
 
-                pop bc                  ; restore registers
-                pop de
+                    pop     bc
+                    pop     de
 
-                ret
-;
+                    ret
+
+; -----------------------------------------------------------------------------
 ; GetHEX_Screen: return the screen memory address of an hexagon/token
 ;
 ; Input:    BC - hexagon board indexes: B = column (not used), C = row
 ;           DE - attribute memory address of an hexagon
 ; Output:   DE - screen memory address of the row index hexagon
 ; Destroys: -
-;
+; -----------------------------------------------------------------------------
 GetHEX_Screen:
-                push hl                 ; store HL register
-                push de                 ; store attribute memory address
+                    push    hl
 
-                ld hl,BOARD_MAP         ; get the screen Hi-Byte mem location (row 0, col C)
-                ld d,0
-                ld e,c
-                add hl,de               ; HL points to the address of C col
+                    push    de                      ; store attribute memory address
+                    ld      hl, BOARD_MAP           ; get the screen Hi-Byte mem location (row 0, col C)
+                    ld      d, 0
+                    ld      e, c
+                    add     hl, de                  ; HL points to the address of C col
+                    pop     de                      ; restore attribute memory address
+                    ld      d, (hl)                 ; change Hi-byte to the screen mem location of the hexagon 
+    
+                    pop     hl
 
-                pop de                  ; restore attribute memory address
+                    ret
 
-                ld d,(hl)               ; change Hi-byte to the screen mem location of the hexagon 
-
-                pop hl                  ; restore HL register
-
-                ret
-;
+; -----------------------------------------------------------------------------
 ; Draw_Graphic: draw an hexagon or token on the screen
 ; Code from ChibiAkumas lessons: https://www.chibiakumas.com/z80/simplesamples.php#LessonS2
 ;
@@ -159,70 +153,70 @@ GetHEX_Screen:
 ;           HL - hexagon or token address
 ; Output:   -
 ; Destroys: DE, HL, IXH, A
-;
+; -----------------------------------------------------------------------------
 Draw_Graphic:
-                push bc
-                ld ixh,16               ; # of lines 
+                    push    bc
 
+                    ld      ixh, 16                 ; number of lines 
 NextHexLine
-                push de
-                ldi                     ; copy 2 bytes from HL to DE
-                ldi
-                pop de
+                    push    de
+                    ldi                             ; copy 2 bytes from HL to DE
+                    ldi
+                    pop     de
+                    call    GetNext_Line            ; screen next line 
+                    dec     ixh                     ; decrement # of lines
+                    jr      nz, NextHexLine         ; repeat for next line
 
-                call GetNext_Line       ; screen next line 
+                    pop     bc
 
-                dec ixh                 ; decrement # of lines
-                jr nz,NextHexLine       ; repeat for next line
+                    ret
 
-                pop bc
-
-                ret
-;
+; -----------------------------------------------------------------------------
 ; GetNext_Line: also an entry point for drawing frame tiles and print characters
 ; Code from ChibiAkumas lessons: https://www.chibiakumas.com/z80/simplesamples.php#LessonS2
-;
-GetNext_Line:                       ; move DE down one line
-                inc d
-                ld a,d
-                and   %00000111         ; see if we're over the first 3rd
-                ret nz
-                ld a,e
-                add a,%00100000
-                ld e,a
-                ret c                   ; see if we're over the 2'nd 3rd
-                ld a,d
-                sub   %00001000
-                ld d,a
+; -----------------------------------------------------------------------------
+GetNext_Line:                                       ; move DE down one line
+                    inc     d
+                    ld      a, d
+                    and     %00000111               ; see if we're over the first 3rd
+                    ret     nz
+                    ld      a, e
+                    add     a, %00100000
+                    ld      e, a
+                    ret     c                       ; see if we're over the 2'nd 3rd
+                    ld      a, d
+                    sub     %00001000
+                    ld      d, a
 
-                ret
-;
+                    ret
+
+; -----------------------------------------------------------------------------
 ; GetXY_ATTR: return attributes memory address of XY screen location
 ; Code from ChibiAkumas lessons: https://www.chibiakumas.com/z80/simplesamples.php#LessonS2
 ;
 ; Input:    BC - XY screen location (X in bytes, Y in pixels)
 ; Output:   DE - pointer to X,Y attribute memory address
 ; Destroys: A
-;
+; -----------------------------------------------------------------------------
 GetXY_ATTR:
-                ; YYYYYyyy - color ram is in 8x8 tiles
+                    ; YYYYYyyy - color ram is in 8x8 tiles
 
-                ld a,c                  ; low three Y bits are ignored
-                and %11000000           ; YY------
-                rlca
-                rlca                    ; ------YY
-                add a,$58
-                ld d,a                  ; $5800 start of attr memory address
-                ld a,c
-                and %00111000           ; --YYY---
-                rlca
-                rlca                    ; YYY-----
+                    ld      a, c                    ; low three Y bits are ignored
+                    and     %11000000               ; YY------
+                    rlca
+                    rlca                            ; ------YY
+                    add     a, $58
+                    ld      d, a                    ; $5800 start of attr memory address
+                    ld      a, c
+                    and     %00111000               ; --YYY---
+                    rlca
+                    rlca                            ; YYY-----
+                    add     a, b                    ; add X location
+                    ld      e, a
 
-                add a,b                 ; add X location
-                ld e,a
+                    ret
 
-                ret
-;
+; -----------------------------------------------------------------------------
 ; GetXY_Screen: return screen memory address of XY screen location
 ; Code from ChibiAkumas lessons: https://www.chibiakumas.com/z80/simplesamples.php#LessonS2
 ;
@@ -231,54 +225,56 @@ GetXY_ATTR:
 ; Input:    BC - XY screen location (X in bytes, Y in pixels)
 ; Output:   DE - pointer to screen memory address
 ; Destroys: A
-;
+; -----------------------------------------------------------------------------
 GetXY_Screen:
-                ld a,c                  ; Ypos (Y5-Y3)
-                and %00111000           ; --YYY---
-                rlca
-                rlca                    ; YYY-----
-                or b                    ; add Xpos (X4-X0)
-                ld e,a
-                ld a,c                  ; Ypos (Y2-Y0)
-                and %00000111           ; -----YYY
-                ld d,a
-                ld a,c                  ; Ypos (Y7-Y6)
-                and %11000000           ; YY------
-                rrca
-                rrca
-                rrca                    ; ---YY---
-                or d                    ; add Ypos (Y2-Y0)
-                or  $40
-                ld d,a                  ; $4000 start of screen memory address 
+                    ld      a, c                    ; Ypos (Y5-Y3)
+                    and     %00111000               ; --YYY---
+                    rlca
+                    rlca                            ; YYY-----
+                    or      b                       ; add Xpos (X4-X0)
+                    ld      e, a
+                    ld      a, c                    ; Ypos (Y2-Y0)
+                    and     %00000111               ; -----YYY
+                    ld      d, a
+                    ld      a, c                    ; Ypos (Y7-Y6)
+                    and     %11000000               ; YY------
+                    rrca
+                    rrca
+                    rrca                            ; ---YY---
+                    or      d                       ; add Ypos (Y2-Y0)
+                    or      $40
+                    ld      d, a                    ; $4000 start of screen memory address 
 
-                ret
-;
+                    ret
+
+; -----------------------------------------------------------------------------
 ; Attributes/Screen look-up table for HEX board
 ;
 ; (First byte unused)
 ;   Row 0: contains Hi-Byte screen memory addresses
 ;   Column 0: contains Hi-Byte attribute memory addresses
 ; Rest of bytes are the Lo-Byte attr/screen memory addresses
-;
+; -----------------------------------------------------------------------------
 BOARD_MAP:
-                defb $00, $40, $40, $48, $48, $48, $48, $50
-                defb $58, $A6, $A8, $AA, $AC, $AE, $B0, $B2
-                defb $58, $E7, $E9, $EB, $ED, $EF, $F1, $F3
-                defb $59, $28, $2A, $2C, $2E, $30, $32, $34
-                defb $59, $69, $6B, $6D, $6F, $71, $73, $75
-                defb $59, $AA, $AC, $AE, $B0, $B2, $B4, $B6
-                defb $59, $EB, $ED, $EF, $F1, $F3, $F5, $F7
-                defb $5A, $2C, $2E, $30, $32, $34, $36, $38
-;
+                    defb    $00, $40, $40, $48, $48, $48, $48, $50
+                    defb    $58, $A6, $A8, $AA, $AC, $AE, $B0, $B2
+                    defb    $58, $E7, $E9, $EB, $ED, $EF, $F1, $F3
+                    defb    $59, $28, $2A, $2C, $2E, $30, $32, $34
+                    defb    $59, $69, $6B, $6D, $6F, $71, $73, $75
+                    defb    $59, $AA, $AC, $AE, $B0, $B2, $B4, $B6
+                    defb    $59, $EB, $ED, $EF, $F1, $F3, $F5, $F7
+                    defb    $5A, $2C, $2E, $30, $32, $34, $36, $38
+
+; -----------------------------------------------------------------------------
 ; Graphics
-;
+; -----------------------------------------------------------------------------
 TOKEN:
-                defb   7, 224,  31, 248,  56,  28, 115, 206
-                defb 103, 230, 111, 118, 111, 182, 111, 182
-                defb 111, 246, 111, 246, 111, 246, 103, 230
-                defb 115, 206,  56,  28,  31, 248,   7, 224
+                    defb      7, 224,  31, 248,  56,  28, 115, 206
+                    defb    103, 230, 111, 118, 111, 182, 111, 182
+                    defb    111, 246, 111, 246, 111, 246, 103, 230
+                    defb    115, 206,  56,  28,  31, 248,   7, 224
 HEXAGON:
-                defb   7, 224,  28,  56,  48,  12,  96,   6
-                defb  64,   2,  64,   2,  64,   2,  64,   2
-                defb  64,   2,  64,   2,  64,   2,  64,   2
-                defb  96,   6,  48,  12,  28,  56,   7, 224
+                    defb      7, 224,  28,  56,  48,  12,  96,   6
+                    defb     64,   2,  64,   2,  64,   2,  64,   2
+                    defb     64,   2,  64,   2,  64,   2,  64,   2
+                    defb     96,   6,  48,  12,  28,  56,   7, 224

@@ -1,100 +1,95 @@
-﻿;
+﻿; -----------------------------------------------------------------------------
 ; Sound.z80asm
 ; Coded with BeepFX player tool by Shiru: https://opengameart.org/content/zx-spectrum-beeper-sound-effects
-;
-BORDCR          equ $5C48              ; RAM address of border colour system variable
+; -----------------------------------------------------------------------------
 
-;
+BORDCR              equ     $5C48                   ; RAM address of border colour system variable
+
+; -----------------------------------------------------------------------------
 ; SoundFX: play a sound effect
 ;
 ; Input:    HL - pointer to a sound effect
 ; Output:   -
 ; Destroys: A, BC, HL, DE
-;
+; -----------------------------------------------------------------------------
 SoundFX:
-                di                      ; disable interrupts
+                    di                              ; disable interrupts
 
-                push bc                 ; store BC register
+                    push    bc                      ; store BC register
+                    push    ix                      ; store index registers
+                    push    iy
 
-                push ix                 ; store index registers
-                push iy
+                    push    hl                      ; simulate ld ix,hl
+                    pop     ix
 
-                push hl                 ; simulate ld ix,hl
-                pop ix
+                    ld      a, (BORDCR)             ; get border color
+                    rra                             ; keep it unchanged
+                    rra
+                    rra
+                    and     7
+                    ld      (ToneBorder+1), a       ; self-modifying code: puts A as OR parameter
+                    ld      c, (ix+0)               ; frames
+                    ld      b, (ix+1)
+                    ld      e, (ix+2)               ; frame length
+                    ld      d, (ix+3)
 
-                ld a,(BORDCR)           ; get border color
-                rra                     ; keep it unchanged
-                rra
-                rra
-                and 7
-                ld (ToneBorder+1),a     ; self-modifying code: puts A as OR parameter
+                    push    de                      ; simulate ld iy,de
+                    pop     iy
 
-                ld c,(ix+0)             ; frames
-                ld b,(ix+1)
-                ld e,(ix+2)             ; frame length
-                ld d,(ix+3)
-                push de                 ; simulate ld iy,de
-                pop iy
-;
+; -----------------------------------------------------------------------------
 ; generate tone with many parameters
-;
+; -----------------------------------------------------------------------------
 Tone
-                ld e,(ix+4)             ; pitch
-                ld d,(ix+5)
-                ld a,(ix+8)             ; duty 
-                ld (ToneDuty+1),a       ; self-modifying: puts A as CP parameter
-                ld hl,0                 ; reset HL
-
+                    ld      e, (ix+4)               ; pitch
+                    ld      d, (ix+5)
+                    ld      a, (ix+8)               ; duty 
+                    ld      (ToneDuty+1), a         ; self-modifying: puts A as CP parameter
+                    ld      hl, 0                   ; reset HL
 RT0
-                push bc                 ; store frames
-                push iy                 ; simulate ld bc,iy
-                pop bc
-
+                    push    bc                      ; store frames
+                    push    iy                      ; simulate ld bc,iy
+                    pop     bc
 RT1
-                add hl,de               ; HL points to pitch address
-                ld a,h                  ; set high-byte in A
-
+                    add     hl, de                  ; HL points to pitch address
+                    ld      a, h                    ; set high-byte in A
 ToneDuty
-                cp 0                    ; self-modifying: CP parameter was changed above and below
-                sbc a,a
-                and 16
-
+                    cp      0                       ; self-modifying: CP parameter was changed above and below
+                    sbc     a, a
+                    and     16
 ToneBorder
-                or 0                    ; self-modifying by Tone: OR parameter was changed above
-                out (254),a             ; play sound
-
-                dec bc                  ; decrement frame length
-                ld a,b
-                or c                    ; is it 0?
-                jr nz,RT1               ; no, repeat RT1
+                    or      0                       ; self-modifying by Tone: OR parameter was changed above
+                    out     (254) ,a                ; play sound
+                    dec     bc                      ; decrement frame length
+                    ld      a, b
+                    or      c
+                    jr      nz, RT1
             
-                ld a,(ToneDuty+1)       ; duty change
-                add a,(ix+9)            ; duty slide
-                ld (ToneDuty+1),a
+                    ld      a, (ToneDuty+1)         ; duty change
+                    add     a, (ix+9)               ; duty slide
+                    ld      (ToneDuty+1), a
+                    ld      c, (ix+6)               ; pitch slide
+                    ld      b, (ix+7)
+                    ex      de, hl
+                    add     hl, bc
+                    ex      de, hl
 
-                ld c,(ix+6)             ; pitch slide
-                ld b,(ix+7)
-                ex de,hl
-                add hl,bc
-                ex de,hl
+                    pop     bc                      ; restores frames
+                    dec     bc                      ; decrement frames
+                    ld      a, b
+                    or      c
+                    jr      nz, RT0
 
-                pop bc                  ; restores frames
-                dec bc                  ; decrement frames
-                ld a,b
-                or c                    ; is it 0?
-                jr nz,RT0               ; no, repeat RT0
+                    pop     iy                      ; restore index registers
+                    pop     ix
+                    pop     bc                      ; restore BC register
 
-                pop iy                  ; restore index registers
-                pop ix
+                    ei                              ; enable interrupts
 
-                pop bc                  ; restore BC register
+                    ret
 
-                ei                      ; enable interrupts
-
-                ret
-;
+; -----------------------------------------------------------------------------
 ; Sounds of the game
-;
-FILLED_FX       defw 1000, 10, 100, 0, 128
-TOKEN_FX        defw 1, 200, 1000, 0, 128
-WINNER_FX       defw 5, 5000, 200, 100, 128
+; -----------------------------------------------------------------------------
+FILLED_FX           defw    1000, 10, 100, 0, 128
+TOKEN_FX            defw    1, 200, 1000, 0, 128
+WINNER_FX           defw    5, 5000, 200, 100, 128
