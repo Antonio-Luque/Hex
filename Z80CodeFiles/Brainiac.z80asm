@@ -233,9 +233,7 @@ HeuristicMinLoop:                                   ; for each candidate {
                     ld      a, c
                     cp      VICTORY                 ;       if (player won)
                     jr      nz, HeuristicMinElse
-                    ld      a, (AI_DEPTH)           ;           A = 64-depth
-                    neg
-                    add     a, 64
+                    ld      a, 64                   ;           A = 64
                     jr      HeuristicMinContinue
 HeuristicMinElse:
                     ex      af, af'                 ;       else
@@ -441,8 +439,7 @@ HeuristicMaxLoop:                                   ; for each candidate {
                     ld      a, c
                     cp      VICTORY                 ;       if (speccy won)
                     jr      nz, HeuristicMaxElse
-                    ld      a, (AI_DEPTH)           ;           A = 192+depth
-                    add     a, 192
+                    ld      a, 192                  ;           A = 192
                     jr      HeuristicMaxContinue
 HeuristicMaxElse:
                     ex      af, af'                 ;       else
