@@ -59,25 +59,6 @@ Erase_Hexagon:
                     ret
 
 ; -----------------------------------------------------------------------------
-; Calculate current board score
-;
-; Input:    -
-; Output:   A  - ((player steps to win) minus (speccy steps to win)) * (-1)
-; Destroys: BC, DE, HL
-; -----------------------------------------------------------------------------
-Board_Score:
-                    call    Player_Score            ; get player score
-                    ld      a, c
-                    ex      af, af'                 ; save player score
-
-                    call    Speccy_Score            ; get speccy score
-                    ex      af, af'                 ; recover player score
-
-                    sub     c                       ; A = (player steps to win) - (player speccy to win)
-                    add     a, $80                  ; A = A * (-1) inverts sign for easier further comparative
-                    ret
-
-; -----------------------------------------------------------------------------
 ; Copy from 'hex_board_(color)' to its corresponding 'Board_(Color)'
 ;
 ; Input:    HL = address of 'hex_board_(color)' + 7
