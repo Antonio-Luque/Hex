@@ -68,7 +68,7 @@ EraseBoardsHex
 ; Process players moves - game loop
 ; -----------------------------------------------------------------------------
 GameLoop
-                    ld      (TOKEN_COLOR) ,a        ; save current token color
+                    ld      (TOKEN_COLOR), a        ; save current token color
                     ld      bc, RED_XY              ; set XY RED input/output screen location
                     rra                             ; is RED the current token color?
                     jr      nc, StorePosXY          ; yes, continue storing XY input/output screen location

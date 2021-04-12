@@ -135,7 +135,7 @@ LimitInput
                     ret
 
 ; -----------------------------------------------------------------------------
-; ReadKeys_1to4: read a key from keyboard in range 1-4
+; ReadKeys_1to4: read a key from keyboard in range 1-5
 ;
 ; Input:     -
 ; Output:    A - ASCII char code of chosen option
@@ -144,18 +144,17 @@ LimitInput
 ReadKeys_1to4:
                     ld      bc, $F7FE               ; set input range for port (keys 1 to 5)
 RangeLoop
-                    ld      hl, KEYS_MAP            ; HL points to keys chars "1" to "4"
-                    ld      e, 4                    ; set loop counter
+                    ld      hl, KEYS_MAP            ; HL points to keys chars "1" to "5"
+                    ld      e, 5                    ; set loop counter
                     xor     a                       ; A = 0
                     in      a, (c)                  ; read keyboard throught reading port
-                    and     %00001111               ; mask the first four bits (keys 1 to 4)
 NextKey
                     srl     a                       ; shift A, bit 0 sets carry flag
-                    jr      nc, KeyPressed          ; a key (1-4) was pressed
+                    jr      nc, KeyPressed          ; a key (1-5) was pressed
                     inc     hl                      ; HL points to the next key char
                     dec     e                       ; decrement loop counter
                     jr      nz, NextKey             ; repeat for the next key
-                    jr      RangeLoop               ; repeat until a key (1-4) is pressed
+                    jr      RangeLoop               ; repeat until a key (1-5) is pressed
 KeyPressed
                     ld      a, (hl)                 ; return key char
 
@@ -294,7 +293,7 @@ InputEnd
 ; -----------------------------------------------------------------------------
 STR_PLAYERS         defm    "One or two players? 1/2\0"
 STR_COLORS          defm    "Choose blue or red, b/r\0"
-STR_LEVEL           defm    "Select game level, 1-4 \0"
+STR_LEVEL           defm    "Select game level, 1-5 \0"
 STR_CLEAR           defm    "                       \0"
 STR_SPECCY          defm    "Speccy\0"
 STR_PLAYER          defm    "Player\0"
@@ -304,7 +303,7 @@ STR_NOLEVEL         defm    "       \0"
 ; -----------------------------------------------------------------------------
 ; 1 to 4 keys mapping
 ; -----------------------------------------------------------------------------
-KEYS_MAP            defb    '1', '2', '3', '4'
+KEYS_MAP            defb    '1', '2', '3', '4', '5'
 
 ; -----------------------------------------------------------------------------
 ; Variables
