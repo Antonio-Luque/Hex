@@ -423,6 +423,9 @@ Path_Tracker_Stack:
                     call    Path_Tracker_Blue
                     call    Path_Tracker_Red
 
+; promote empty positions on just one color's shortest path, if they are neighbour to a position on both blue's and red's shortest paths
+                    call    Path_Promote
+
 ; collect all empty positions on both blue's and red's shortest paths into IY queue
                     ld      a, 1
                     ld      hl, Board_Intersect+8
@@ -437,6 +440,65 @@ Path_Tracker_Col:
                     ret     nz
                     ld      (iy+0), l
                     jp      Path_Tracker_Row
+
+; -----------------------------------------------------------------------------
+; Promote empty positions that belong to only one color's shortest path, but
+; have a neighbour that belongs to both colors shortest paths.
+;
+; Input:    -
+; Output:   -
+; Destroys: C, HL, AF
+; -----------------------------------------------------------------------------
+Path_Promote:
+                    ld      a, 1
+                    ld      c, 5
+                    ld      hl, Board_Intersect+8
+Path_Promote_Loop:
+                    inc     l
+                    bit     1, (hl)
+                    jr      z, Path_Promote_Loop
+                    bit     7, (hl)
+                    ret     nz
+                    push    hl
+                    dec     l
+                    cp      (hl)                    ; check left neighbour
+                    jp      nz, Path_Promote_Left
+                    ld      (hl), c
+Path_Promote_Left:
+                    inc     l
+                    inc     l
+                    cp      (hl)                    ; check right neighbour
+                    jp      nz, Path_Promote_Right
+                    ld      (hl), c
+Path_Promote_Right:
+                    ld      a, l
+                    sub     WIDTH
+                    ld      l, a
+                    ld      a, 1
+                    cp      (hl)                    ; check upper-right neighbour?
+                    jp      nz, Path_Promote_Up_Right
+                    ld      (hl), c
+Path_Promote_Up_Right:
+                    dec     l
+                    cp      (hl)                    ; check upper-left neighbour
+                    jp      nz, Path_Promote_Up_Left
+                    ld      (hl), c
+Path_Promote_Up_Left:
+                    ld      a, l
+                    add     a, WIDTH*2
+                    ld      l, a
+                    ld      a, 1
+                    cp      (hl)                    ; check lower-right neighbour
+                    jp      nz, Path_Promote_Down_Right
+                    ld      (hl), c
+Path_Promote_Down_Right:
+                    dec     l
+                    cp      (hl)                    ; check lower-left neighbour
+                    jp      nz, Path_Promote_Down_Left
+                    ld      (hl), c
+Path_Promote_Down_Left:
+                    pop     hl
+                    jp      Path_Promote_Loop
 
 ; -----------------------------------------------------------------------------
 ; Identify all empty positions in blue's shortest paths. It must be called
