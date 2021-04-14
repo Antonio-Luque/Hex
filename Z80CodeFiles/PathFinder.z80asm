@@ -362,6 +362,7 @@ Path_Filler_Begin:
 ; IMPORTANT: This routine must be executed with interrupts disabled.
 ; -----------------------------------------------------------------------------
 Path_Tracker:
+                    ex      af, af'
 ; fill "Board_Intersect" with zeroes
                     ld      (Path_Tracker_Stack+1), sp
                     ld      sp, Board_Intersect_Final
@@ -407,6 +408,9 @@ Path_Tracker_Stack:
 ; promote empty positions on just one color's shortest path, if they are neighbour to a position on both blue's and red's shortest paths
                     call    Path_Promote
 
+                    ex      af, af'
+                    jr      z, Sort_Candidates
+
 ; collect all empty positions on both blue's and red's shortest paths into IY queue
                     ld      a, 1
                     ld      hl, Board_Intersect+8
@@ -421,6 +425,36 @@ Path_Tracker_Col:
                     ret     nz
                     ld      (iy+0), l
                     jp      Path_Tracker_Row
+
+; -----------------------------------------------------------------------------
+; Collect all empty positions on both blue's and red's shortest paths into IY 
+; queue, following a pre-established ordering
+;
+; Input:    IY = Intercept Queue
+;           DE = board order table (a sequence of 7x7=49 coordinates*
+;                between 9 and 69, lower priority positions first)
+; Output:   -
+; Destroys: B, DE, HL, AF
+; -----------------------------------------------------------------------------
+Sort_Candidates:
+                    inc     a
+                    ld      de, Board_Order_Table
+                    ld      hl, Board_Intersect+8
+                    ld      b, 49
+                    ld      (iy+0), 0               ; queue endmarker
+                    inc     iy
+Path_Tracker_Ordered_Next:
+                    ex      de, hl
+                    ld      e, (hl)
+                    inc     hl
+                    ex      de, hl
+                    cp      (hl)
+                    jp      nc, Path_Tracker_Ordered_Skip
+                    ld      (iy+0), l
+                    inc     iy
+Path_Tracker_Ordered_Skip:
+                    djnz    Path_Tracker_Ordered_Next
+                    ret
 
 ; -----------------------------------------------------------------------------
 ; Promote empty positions that belong to only one color's shortest path, but
@@ -652,6 +686,16 @@ Path_Tracker_Friendly:
                     ret
 
 ; -----------------------------------------------------------------------------
+Board_Order_Table:
+                    defb    $45, $09, $12, $3C, $0A, $44, $13
+                    defb    $3B, $43, $0B, $1B, $33, $14, $3A
+                    defb    $1C, $32, $42, $0C, $24, $2A, $2D
+                    defb    $21, $41, $0D, $0E, $40, $36, $18
+                    defb    $3F, $0F, $31, $1D, $25, $29, $15
+                    defb    $39, $16, $38, $20, $2E, $17, $37
+                    defb    $30, $26, $28, $1E, $2F, $1F, $27 
+
+; -----------------------------------------------------------------------------
                     org $7100
 hex_board_blue:
                     defb    0, 0, 0, 0, 0, 0, 0,     0, 0   ; (ignore this row)
@@ -691,18 +735,18 @@ hex_board_red:
 ; -----------------------------------------------------------------------------
                     org $7300
 Board_Blue:
-                    defb       0,  0,  0,  0,  0,  0,  0,  0
-                    defb   255,  1,  1,  1,  1,  1,  1,  1, 255
-                    defb     255,  1,  1,  1,  1,  1,  1,  1, 255
-                    defb       255,  1,  1,  1,  1,  1,  1,  1, 255
-                    defb         255,  1,  1,  1,  1,  1,  1,  1, 255
+                    defb        0,  0,  0,  0,  0,  0,  0,  0
+                    defb    255,  1,  1,  1,  1,  1,  1,  1, 255
+                    defb      255,  1,  1,  1,  1,  1,  1,  1, 255
+                    defb        255,  1,  1,  1,  1,  1,  1,  1, 255
+                    defb          255,  1,  1,  1,  1,  1,  1,  1, 255
                     defb           255,  1,  1,  1,  1,  1,  1,  1, 255
                     defb             255,  1,  1,  1,  1,  1,  1,  1, 255
                     defb               255,  1,  1,  1,  1,  1,  1,  1, 255
-                    defb                  255,255,255,255,255,255,255,255
+                    defb                 255,255,255,255,255,255,255,255
 Board_Blue_Final:
-                    defb 255
-                    defb 255
+                    defb    255
+                    defb    255
 
 ; -----------------------------------------------------------------------------
 ; Red's PATHFINDER board. It contains a special surrounding border that helps
@@ -730,8 +774,8 @@ Board_Red:
                     defb                0,  1,  1,  1,  1,  1,  1,  1, 255
                     defb                  0, 255,255,255,255,255,255,255
 Board_Red_Final:
-                    defb 255
-                    defb 255
+                    defb    255
+                    defb    255
 
 ; -----------------------------------------------------------------------------
 ; Intersection board. Before running "Path_Tracker", this area must be filled

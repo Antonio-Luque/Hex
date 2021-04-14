@@ -33,6 +33,7 @@ BRAINIAC_best_move:
 
                     call    BlueScore               ; (solve both paths just so we can find candidates)
                     call    RedScore
+                    xor     a                       ; set Z flag to sort candidates
                     call    Path_Tracker            ; find candidates
 
                     dec     iy
