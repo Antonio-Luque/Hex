@@ -356,13 +356,13 @@ Path_Filler_Begin:
 ; be added to IY queue
 ;
 ; Input:    IY = Intercept Queue
-; Output:   -
+;            A = if 0 then return sort candidates
+; Output:    -
 ; Destroys: BC, DE, HL, AF
 ;
 ; IMPORTANT: This routine must be executed with interrupts disabled.
 ; -----------------------------------------------------------------------------
 Path_Tracker:
-                    ex      af, af'
 ; fill "Board_Intersect" with zeroes
                     ld      (Path_Tracker_Stack+1), sp
                     ld      sp, Board_Intersect_Final
@@ -401,6 +401,7 @@ Path_Tracker:
 Path_Tracker_Stack:
                     ld      sp, 0
 
+                    ex      af, af'                 ; save A and flags
 ; execute both Path_Tracker_Blue and Path_Tracker_Red
                     call    Path_Tracker_Blue
                     call    Path_Tracker_Red
@@ -408,13 +409,14 @@ Path_Tracker_Stack:
 ; promote empty positions on just one color's shortest path, if they are neighbour to a position on both blue's and red's shortest paths
                     call    Path_Promote
 
-                    ex      af, af'
-                    jr      z, Sort_Candidates
+                    ex      af, af'                 ; restore A and flags
+                    jr      z, Sort_Candidates      ; if (A = 0) then sort candidates
 
 ; collect all empty positions on both blue's and red's shortest paths into IY queue
                     ld      a, 1
                     ld      hl, Board_Intersect+8
                     ld      (iy+0), 0               ; queue endmarker
+                    ld      c,iyl
 Path_Tracker_Row:
                     inc     iy
 Path_Tracker_Col:
@@ -422,7 +424,7 @@ Path_Tracker_Col:
                     cp      (hl)
                     jp      nc, Path_Tracker_Col
                     bit     7, (hl)
-                    ret     nz
+                    jr      nz, Exit_Path_Tracker
                     ld      (iy+0), l
                     jp      Path_Tracker_Row
 
@@ -431,13 +433,14 @@ Path_Tracker_Col:
 ; queue, following a pre-established ordering
 ;
 ; Input:    IY = Intercept Queue
-;           DE = board order table (a sequence of 7x7=49 coordinates*
-;                between 9 and 69, lower priority positions first)
-; Output:   -
-; Destroys: B, DE, HL, AF
+;            A = 0
+; Output:    -
+; Destroys:  B, DE, HL, AF
 ; -----------------------------------------------------------------------------
 Sort_Candidates:
-                    inc     a
+                    inc     a                       ; A = 1
+
+; DE = board order table (a sequence of 7x7=49 coordinates  between 9 and 69, lower priority positions first)
                     ld      de, Board_Order_Table
                     ld      hl, Board_Intersect+8
                     ld      b, 49
@@ -454,6 +457,9 @@ Path_Tracker_Ordered_Next:
                     inc     iy
 Path_Tracker_Ordered_Skip:
                     djnz    Path_Tracker_Ordered_Next
+
+Exit_Path_Tracker:
+                    dec     iy                      ; adjust start position
                     ret
 
 ; -----------------------------------------------------------------------------

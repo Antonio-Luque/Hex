@@ -36,7 +36,6 @@ BRAINIAC_best_move:
                     xor     a                       ; set Z flag to sort candidates
                     call    Path_Tracker            ; find candidates
 
-                    dec     iy
                     ld      a, (iy+0)               ; A is our first candidate
 
                     ld      e, a                    ; E = best speccy move (initialization)
@@ -126,12 +125,11 @@ AlphabetaMinCandidates:
                     call    Path_Tracker            ; find candidates for next move
                     pop     de
 
+                    ld      a, (iy+0)               ; A is our first candidate
+
                     ld      hl, AI_DEPTH
                     dec     (hl)                    ; depth--
                     jr      z, Heuristic_Min        ; if (depth == 0) return heuristic_min
-
-                    dec     iy
-                    ld      a, (iy+0)               ; A is our first candidate
 
 AlphabetaMinLoop:                                   ; for each candidate {
                     push    de                      ;       store alphaMax and betaMin
@@ -199,6 +197,7 @@ AlphabetaMinSkip:
 ; The complete and original source code in the link above. Adaptations are marked with * in routines comments.
 ;
 ; Parameters:
+;   A : first candidate
 ;   D : alphaMax
 ;   E : betaMin
 ;
@@ -213,11 +212,7 @@ AlphabetaMinSkip:
 ; Destroys:
 ;   BC, HL, IY
 ; -----------------------------------------------------------------------------
-Heuristic_Min:
-                    dec     iy
-                    ld      a, (iy+0)               ; A is our first candidate
-
-HeuristicMinLoop:                                   ; for each candidate {
+Heuristic_Min:                                      ; for each candidate {
                     push    de                      ;       store alphaMax and betaMin
 
                     ld      h, hex_board_blue/256   ;       get and store candidate position on board
@@ -262,7 +257,7 @@ HeuristicMinNext:
                     dec     iy
                     ld      a, (iy+0)               ;       A is our next candidate
                     and     a                       ;       repeat until no more candidates
-                    jr      nz, HeuristicMinLoop    ; }
+                    jr      nz, Heuristic_Min       ; }
 
                     ld      a, e                    ; return betaMin
 
@@ -335,12 +330,11 @@ AlphabetaMaxCandidates:
                     call    Path_Tracker            ; find candidates for next move
                     pop     de
 
+                    ld      a, (iy+0)               ; A is our first candidate
+
                     ld      hl, AI_DEPTH
                     dec     (hl)                    ; depth--
                     jr      z, Heuristic_Max        ; if (depth == 0) return heuristic_max
-
-                    dec     iy
-                    ld      a, (iy+0)               ; A is our first candidate
 
 AlphabetaMaxLoop:                                   ; for each candidate {
                     push    de                      ;       store alphaMax and betaMin
@@ -406,6 +400,7 @@ AlphabetaMaxSkip:
 ; The complete and original source code in the link above. Adaptations are marked with * in routines comments.
 ;
 ; Parameters:
+;   A : first candidate
 ;   D : alphaMax
 ;   E : betaMin
 ;
@@ -420,11 +415,7 @@ AlphabetaMaxSkip:
 ; Destroys:
 ;   BC, HL, IY
 ; -----------------------------------------------------------------------------
-Heuristic_Max:
-                    dec     iy
-                    ld      a, (iy+0)               ; A is our first candidate
-
-HeuristicMaxLoop:                                   ; for each candidate {
+Heuristic_Max:                                      ; for each candidate {
                     push    de                      ;       store alphaMax and betaMin
 
                     ld      h, hex_board_blue/256   ;       get and store candidate position on board
@@ -433,7 +424,6 @@ HeuristicMaxLoop:                                   ; for each candidate {
 
                     ld      a, (AI_PLAYER)          ;       get speccy side
                     call    Put_Hexagon             ;       (BRAINIAC_play)
-
 
                     ; evaluate board (calculate heuristic value)
                     call    Speccy_Score
@@ -469,7 +459,7 @@ HeuristicMaxNext:
                     dec     iy
                     ld      a, (iy+0)               ;       A is our next candidate
                     and     a                       ;       repeat until no more candidates
-                    jr      nz, HeuristicMaxLoop    ; }
+                    jr      nz, Heuristic_Max       ; }
 
                     ld      a, d                    ; return alphaMax
 
