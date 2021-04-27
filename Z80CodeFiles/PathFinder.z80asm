@@ -410,13 +410,12 @@ Path_Tracker_Stack:
                     call    Path_Promote
 
                     ex      af, af'                 ; restore A and flags
-                    jr      z, Sort_Candidates      ; if (A = 0) then sort candidates
+                    jr      z, Path_Tracker_Ordering ; if (A = 0) then ordering candidates
 
 ; collect all empty positions on both blue's and red's shortest paths into IY queue
                     ld      a, 1
                     ld      hl, Board_Intersect+8
                     ld      (iy+0), 0               ; queue endmarker
-                    ld      c,iyl
 Path_Tracker_Row:
                     inc     iy
 Path_Tracker_Col:
@@ -424,7 +423,7 @@ Path_Tracker_Col:
                     cp      (hl)
                     jp      nc, Path_Tracker_Col
                     bit     7, (hl)
-                    jr      nz, Exit_Path_Tracker
+                    jr      nz, Path_Tracker_Exit
                     ld      (iy+0), l
                     jp      Path_Tracker_Row
 
@@ -437,12 +436,12 @@ Path_Tracker_Col:
 ; Output:    -
 ; Destroys:  B, DE, HL, AF
 ; -----------------------------------------------------------------------------
-Sort_Candidates:
+Path_Tracker_Ordering:
                     inc     a                       ; A = 1
 
 ; DE = board order table (a sequence of 7x7=49 coordinates  between 9 and 69, lower priority positions first)
                     ld      de, Board_Order_Table
-                    ld      hl, Board_Intersect+8
+                    ld      h, Board_Intersect/256
                     ld      b, 49
                     ld      (iy+0), 0               ; queue endmarker
                     inc     iy
@@ -458,7 +457,7 @@ Path_Tracker_Ordered_Next:
 Path_Tracker_Ordered_Skip:
                     djnz    Path_Tracker_Ordered_Next
 
-Exit_Path_Tracker:
+Path_Tracker_Exit:
                     dec     iy                      ; adjust start position
                     ret
 
@@ -692,6 +691,7 @@ Path_Tracker_Friendly:
                     ret
 
 ; -----------------------------------------------------------------------------
+
 Board_Order_Table:
                     defb    $45, $09, $12, $3C, $0A, $44, $13
                     defb    $3B, $43, $0B, $1B, $33, $14, $3A
