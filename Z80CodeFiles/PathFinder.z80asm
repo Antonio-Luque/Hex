@@ -410,7 +410,7 @@ Path_Tracker_Stack:
                     call    Path_Promote
 
                     ex      af, af'                 ; restore A and flags
-                    jr      z, Path_Tracker_Ordering ; if (A = 0) then ordering candidates
+                    jr      z, Path_Tracker_Ordered ; if (A = 0) then ordering candidates
 
 ; collect all empty positions on both blue's and red's shortest paths into IY queue
                     ld      a, 1
@@ -436,7 +436,7 @@ Path_Tracker_Col:
 ; Output:    -
 ; Destroys:  B, DE, HL, AF
 ; -----------------------------------------------------------------------------
-Path_Tracker_Ordering:
+Path_Tracker_Ordered:
                     inc     a                       ; A = 1
 
 ; DE = board order table (a sequence of 7x7=49 coordinates  between 9 and 69, lower priority positions first)
@@ -693,13 +693,13 @@ Path_Tracker_Friendly:
 ; -----------------------------------------------------------------------------
 
 Board_Order_Table:
-                    defb    $45, $09, $12, $3C, $0A, $44, $13
-                    defb    $3B, $43, $0B, $1B, $33, $14, $3A
-                    defb    $1C, $32, $42, $0C, $24, $2A, $2D
-                    defb    $21, $41, $0D, $0E, $40, $36, $18
-                    defb    $3F, $0F, $31, $1D, $25, $29, $15
-                    defb    $39, $16, $38, $20, $2E, $17, $37
-                    defb    $30, $26, $28, $1E, $2F, $1F, $27 
+                    defb    $09, $45, $0A, $12, $44, $3C, $0B
+                    defb    $13, $1B, $43, $3B, $33, $0F, $0E
+                    defb    $0D, $0C, $14, $1C, $24, $2D, $36
+                    defb    $3F, $40, $41, $42, $3A, $32, $2A
+                    defb    $21, $18, $17, $16, $15, $1D, $25
+                    defb    $2E, $37, $38, $39, $31, $29, $20
+                    defb    $1F, $1E, $26, $2F, $30, $28, $27 
 
 ; -----------------------------------------------------------------------------
                     org $7100
