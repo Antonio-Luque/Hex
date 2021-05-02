@@ -17,6 +17,7 @@ SW_COLOR            equ     %00000011               ; BITs to be XORed to swap c
 ; -----------------------------------------------------------------------------
 ; Entry point of the program
 ; -----------------------------------------------------------------------------
+                    org 24000
 
                     ; set border/screen colors, print "HEX" header and draw empty board
 

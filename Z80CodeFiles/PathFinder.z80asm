@@ -6,15 +6,18 @@
 ; Adapted by Einar Saukas to be used as heuristic in Antonio Luque's Hex game.
 ; -----------------------------------------------------------------------------
 
-WIDTH               equ     9                       ; distance to up-left/down-right neighbour
-ORIGIN              equ     0                       ; origin positions on the board
-EMPTY               equ     1                       ; empty positions on the board
-FRIEND              equ     2                       ; positions occupied by friendly hexagons on the board
-ENEMY               equ     253                     ; positions occupied by opponent hexagons on the board
-VICTORY             equ     4                       ; return value if victory
-DEFEAT              equ     255                     ; return value if defeat
-Queue_Area_Blue     equ     $7e00                   ; A 256-aligned memory area reserved for blue's circular queue
-Queue_Area_Red      equ     $7f00                   ; A 256-aligned memory area reserved for red's circular queue
+WIDTH                   equ     9                       ; distance to up-left/down-right neighbour
+ORIGIN                  equ     0                       ; origin positions on the board
+EMPTY                   equ     1                       ; empty positions on the board
+FRIEND                  equ     2                       ; positions occupied by friendly hexagons on the board
+ENEMY                   equ     253                     ; positions occupied by opponent hexagons on the board
+VICTORY                 equ     4                       ; return value if victory
+DEFEAT                  equ     255                     ; return value if defeat
+
+hex_board_blue          equ     $7100                   ; A 256-aligned memory area reserved for blue positions
+hex_board_red           equ     $7200                   ; A 256-aligned memory area reserved for red positions
+Queue_Area_Blue         equ     $7e00                   ; A 256-aligned memory area reserved for blue's circular queue
+Queue_Area_Red          equ     $7f00                   ; A 256-aligned memory area reserved for red's circular queue
 
 ; -----------------------------------------------------------------------------
 ; Return if current player is FRIEND or ENEMY from the perspective of the blue player
@@ -437,28 +440,39 @@ Path_Tracker_Col:
 ; Destroys:  B, DE, HL, AF
 ; -----------------------------------------------------------------------------
 Path_Tracker_Ordered:
-                    inc     a                       ; A = 1
-
-; DE = board order table (a sequence of 7x7=49 coordinates  between 9 and 69, lower priority positions first)
-                    ld      de, Board_Order_Table
-                    ld      h, Board_Intersect/256
-                    ld      b, 49
                     ld      (iy+0), 0               ; queue endmarker
                     inc     iy
+
+; candidates that belong to a shortest path and are adjacent to an intersect candidate (low priority)
+                    ld      a, 5
+                    ld      h, Board_Intersect/256
+                    call    Path_Tracker_Ordered_Loop
+
+; candidates that belong to any intersect path (high priority)
+                    ld      a, 2
+                    ld      l, Board_Intersect_Final%256
+                    call    Path_Tracker_Ordered_Loop
+
+Path_Tracker_Exit:
+                    dec     iy                      ; adjust start position
+                    ret
+
+; -----------------------------------------------------------------------------
+Path_Tracker_Ordered_Loop:
+; DE = board order table (a sequence of 7x7=49 coordinates  between 9 and 69, lower priority positions first)
+                    ld      de, Board_Order_Table
+                    ld      b, 49
 Path_Tracker_Ordered_Next:
                     ex      de, hl
                     ld      e, (hl)
                     inc     hl
                     ex      de, hl
                     cp      (hl)
-                    jp      nc, Path_Tracker_Ordered_Skip
+                    jp      nz, Path_Tracker_Ordered_Skip
                     ld      (iy+0), l
                     inc     iy
 Path_Tracker_Ordered_Skip:
                     djnz    Path_Tracker_Ordered_Next
-
-Path_Tracker_Exit:
-                    dec     iy                      ; adjust start position
                     ret
 
 ; -----------------------------------------------------------------------------
@@ -691,7 +705,8 @@ Path_Tracker_Friendly:
                     ret
 
 ; -----------------------------------------------------------------------------
-
+; A sequence of 7x7=49 coordinates between 9 and 69, lower priority positions first
+; -----------------------------------------------------------------------------
 Board_Order_Table:
                     defb    $09, $45, $0A, $12, $44, $3C, $0B
                     defb    $13, $1B, $43, $3B, $33, $0F, $0E
@@ -699,31 +714,7 @@ Board_Order_Table:
                     defb    $3F, $40, $41, $42, $3A, $32, $2A
                     defb    $21, $18, $17, $16, $15, $1D, $25
                     defb    $2E, $37, $38, $39, $31, $29, $20
-                    defb    $1F, $1E, $26, $2F, $30, $28, $27 
-
-; -----------------------------------------------------------------------------
-                    org $7100
-hex_board_blue:
-                    defb    0, 0, 0, 0, 0, 0, 0,     0, 0   ; (ignore this row)
-                    defb    1, 1, 1, 1, 1, 1, 1,     0, 0   ; 1st row (ignore last 2 values)
-                    defb    1, 1, 1, 1, 1, 1, 1,     0, 0   ; 2nd row (ignore last 2 values)
-                    defb    1, 1, 1, 1, 1, 1, 1,     0, 0   ; 3rd row (ignore last 2 values)
-                    defb    1, 1, 1, 1, 1, 1, 1,     0, 0   ; 4th row (ignore last 2 values)
-                    defb    1, 1, 1, 1, 1, 1, 1,     0, 0   ; 5th row (ignore last 2 values)
-                    defb    1, 1, 1, 1, 1, 1, 1,     0, 0   ; 6th row (ignore last 2 values)
-                    defb    1, 1, 1, 1, 1, 1, 1             ; 7th row
-
-; -----------------------------------------------------------------------------
-                    org $7200
-hex_board_red:
-                    defb    0, 0, 0, 0, 0, 0, 0,     0, 0   ; (ignore this row)
-                    defb    1, 1, 1, 1, 1, 1, 1,     0, 0   ; 1st row (ignore last 2 values)
-                    defb    1, 1, 1, 1, 1, 1, 1,     0, 0   ; 2nd row (ignore last 2 values)
-                    defb    1, 1, 1, 1, 1, 1, 1,     0, 0   ; 3rd row (ignore last 2 values)
-                    defb    1, 1, 1, 1, 1, 1, 1,     0, 0   ; 4th row (ignore last 2 values)
-                    defb    1, 1, 1, 1, 1, 1, 1,     0, 0   ; 5th row (ignore last 2 values)
-                    defb    1, 1, 1, 1, 1, 1, 1,     0, 0   ; 6th row (ignore last 2 values)
-                    defb    1, 1, 1, 1, 1, 1, 1             ; 7th row
+                    defb    $1F, $1E, $26, $2F, $30, $28, $27
 
 ; -----------------------------------------------------------------------------
 ; Blue's PATHFINDER board. It contains a special surrounding border that helps
@@ -739,6 +730,7 @@ hex_board_red:
 ;
 ; IMPORTANT: This board must be located at a 256-aligned address.
 ; -----------------------------------------------------------------------------
+
                     org $7300
 Board_Blue:
                     defb        0,  0,  0,  0,  0,  0,  0,  0
@@ -768,6 +760,7 @@ Board_Blue_Final:
 ;
 ; IMPORTANT: This board must be located at a 256-aligned address.
 ; -----------------------------------------------------------------------------
+
                     org $7400
 Board_Red:
                     defb     255,255,255,255,255,255,255,255
@@ -794,6 +787,7 @@ Board_Red_Final:
 ;
 ; IMPORTANT: This board must be located at a 256-aligned address.
 ; -----------------------------------------------------------------------------
+
                     org $7500
 Board_Intersect:
                     defb    0, 0, 0, 0, 0, 0, 0,     0, 0   ; (ignore this row)
