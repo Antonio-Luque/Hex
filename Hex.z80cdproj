@@ -20,7 +20,6 @@
     <Z80Asm Include="Z80CodeFiles\Main.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Hex.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Output.z80asm" />
-    <Z80Asm Include="Z80CodeFiles\PathFinder.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Play.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Sound.z80asm" />
   </ItemGroup>
