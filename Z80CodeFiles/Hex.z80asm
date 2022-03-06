@@ -14,7 +14,7 @@
                     #include "Sound.z80asm"
                     #include "Font.z80asm"
                     #include "Frame.z80asm"
-                    #include "PathFinder.z80asm"
+                    #include "Heuristic.z80asm"
 
 ; -----------------------------------------------------------------------------
 ; Credits and acknowledgements:

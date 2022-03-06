@@ -11,7 +11,7 @@
     <DisassAnn Include="Rom\ZxSpectrum48.disann" />
   </ItemGroup>
   <ItemGroup>
-    <Z80Asm Include="Z80CodeFiles\Braniac.z80asm" />
+    <Z80Asm Include="Z80CodeFiles\Brainiac.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Font.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Draw.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Frame.z80asm" />
