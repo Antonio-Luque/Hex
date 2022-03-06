@@ -29,9 +29,6 @@
     <None Include="Z80CodeFiles\King+.bin" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="NewFolder\" />
-  </ItemGroup>
-  <ItemGroup>
     <Tzx Include="TapeFiles\Hex.tzx" />
   </ItemGroup>
   <ItemGroup>
