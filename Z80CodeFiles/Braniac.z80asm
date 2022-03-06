@@ -1,7 +1,7 @@
 ; -----------------------------------------------------------------------------
 ; Brainiac.z80asm
 ; Coded by Einar Saukas: https://spectrumcomputing.co.uk/entry/30216/ZX-Spectrum/COMPLICA_DX
-; Adapted for Hex game by Einar Saukas and Antonio Luque
+; Adapted for Hex game by Einar Saukas
 ; -----------------------------------------------------------------------------
 
 MIN_VALUE           equ     0                       ; alphaBeta pruning minimum value
@@ -31,48 +31,48 @@ MAX_VALUE           equ     255                     ; alphaBeta pruning maximum 
 BRAINIAC_best_move:
                     ld      (AI_PLAYER), a          ; save speccy side
 
-                    call    BlueScore               ; (solve both paths just so we can find candidates)
-                    call    RedScore
-                    xor     a                       ; set Z flag to perform ordered candidates
-                    call    Path_Tracker            ; find candidates
-
-                    ld      a, (iy+0)               ; A is our first candidate
+                    call    Speccy_Score            ; (solve one path just so we can find candidates)
+                    cp      WIN_CONDITION           ; if (speccy won)
+                    jr      nz, AI_candidates
+                    call    Victory_Candidates      ;       get candidates for speccy victory
+                    jp      AI_first_candidate                              
+AI_candidates                    
+                    call    Search_Candidates       ; find canditates
+AI_first_candidate
+                    ld      a, (ix+0)               ; A is our first candidate
 
                     ld      e, a                    ; E = best speccy move (initialization)
                     ld      d, MIN_VALUE            ; D = alphaMax
 
-AIMainLoop:                                         ; for each candidate {
+AI_Main_Loop:                                       ; for each candidate {
                     push    de                      ;       store alphaMax and best speccy move
 
-                    ld      h, hex_board_blue/256   ;       get and store candidate position on board
+                    ld      h, BLUE_BOARD/256       ;       get and store candidate position on board
                     ld      l, a
                     push    hl
 
                     ld      a, (AI_PLAYER)          ;       get speccy side
-                    call    Put_Hexagon             ;       BRAINIAC_play
+                    call    Put_Token               ;       BRAINIAC_play
                     ld      e, MAX_VALUE            ;       E = betaMin
                     call    Alphabeta_Min           ;       A = alphabeta_min(alphaMax, betaMin)
 
                     pop     hl                      ;       restore candidate position
-                    call    Erase_Hexagon           ;       BRAINIAC_undo
+                    call    Erase_Token             ;       BRAINIAC_undo
 
                     pop     de                      ;       restore alphaMax and best player node
 
                     cp      d
-                    jr      c, AIMainNext
-                    jr      z, AIMainNext           ;       if (A <= alphaMax) continue
+                    jr      c, AI_Main_Next
+                    jr      z, AI_Main_Next         ;       if (A <= alphaMax) continue
 
                     ld      d, a                    ;       alphaMax = A
                     ld      e, l                    ;       best move = L
 
-                    inc     a                       ;       if (alphaMax = MAX_VALUE) return best move*
-                    ret     z
-
-AIMainNext:
-                    dec     iy
-                    ld      a, (iy+0)               ;       A is our next candidate
-                    and     a                       ;       repeat until no more candidates
-                    jr      nz, AIMainLoop          ; }
+AI_Main_Next:
+                    dec     ixl
+                    ld      a, (ix+0)               ;       A is our next candidate
+                    or      a                       ;       repeat until no more candidates
+                    jr      nz, AI_Main_Loop        ; }
 
                     ret
 
@@ -111,21 +111,19 @@ Alphabeta_Min:
                     ; check if last speccy move is a winner one
                     push    de
 
-                    call    Speccy_Score
-                    ld      a, c
-                    cp      VICTORY                 ; if (speccy won)
+                    call    Speccy_Score            ; if (speccy won)
+                    cp      WIN_CONDITION
                     jr      nz, AlphabetaMinCandidates
                     ld      a, (AI_DEPTH)
-                    add     a, 192                  ;     return 192+depth
+                    add     a, 192                  ;     return 192+depth             
                     pop     de
                     ret
 
 AlphabetaMinCandidates:
-                    call    Player_Score
-                    call    Path_Tracker            ; find candidates for next move
+                    call    Search_Candidates       ; find candidates for next move
                     pop     de
 
-                    ld      a, (iy+0)               ; A is our first candidate
+                    ld      a, (ix+0)               ; A is our first candidate
 
                     ld      hl, AI_DEPTH
                     dec     (hl)                    ; depth--
@@ -134,18 +132,18 @@ AlphabetaMinCandidates:
 AlphabetaMinLoop:                                   ; for each candidate {
                     push    de                      ;       store alphaMax and betaMin
 
-                    ld      h, hex_board_blue/256   ;       get and store candidate position on board
+                    ld      h, BLUE_BOARD/256       ;       get and store candidate position on board
                     ld      l, a
                     push    hl
 
                     ld      a, (AI_PLAYER)          ;       rather to track player or speccy side
                                                     ;       we get it from AI_PLAYER
-                    cpl                             ;       get player side
-                    call    Put_Hexagon             ;       BRAINIAC_play
+                    xor     $7C                     ;       get player side
+                    call    Put_Token               ;       BRAINIAC_play
                     call    Alphabeta_Max           ;       A = alphabeta_max(alphaMax, betaMin)
 
                     pop     hl                      ;       restore candidate position
-                    call    Erase_Hexagon           ;       BRAINIAC_undo
+                    call    Erase_Token             ;       BRAINIAC_undo
 
                     pop     de                      ;       restore alphaMax and betaMin
 
@@ -159,9 +157,9 @@ AlphabetaMinLoop:                                   ; for each candidate {
                     ld      e, a                    ;       betaMin = A
 
 AlphabetaMinNext:
-                    dec     iy
-                    ld      a, (iy+0)               ;       A is our next candidate
-                    and     a                       ;       repeat until no more candidates
+                    dec     ixl
+                    ld      a, (ix+0)               ;       A is our next candidate
+                    or      a                       ;       repeat until no more candidates
                     jr      nz, AlphabetaMinLoop    ; }
 
                     ld      a, e                    ; return betaMin
@@ -175,8 +173,8 @@ AlphabetaMinExit:
                     ld      e, a                    ; (discard remaining candidates)
                     xor     a
 AlphabetaMinSkip:
-                    dec     iy
-                    cp      (iy+0)
+                    dec     ixl
+                    cp      (ix+0)
                     jr      nz, AlphabetaMinSkip
                     ld      a, e
 
@@ -215,32 +213,23 @@ AlphabetaMinSkip:
 Heuristic_Min:                                      ; for each candidate {
                     push    de                      ;       store alphaMax and betaMin
 
-                    ld      h, hex_board_blue/256   ;       get and store candidate position on board
+                    ld      h, BLUE_BOARD/256       ;       get and store candidate position on board
                     ld      l, a
                     push    hl
 
                     ld      a, (AI_PLAYER)          ;       rather to track player or speccy side
                                                     ;       we get it from AI_PLAYER
-                    cpl                             ;       get player side
-                    call    Put_Hexagon             ;       BRAINIAC_play
+                    xor     $7C                     ;       get player side
+                    call    Put_Token               ;       BRAINIAC_play
 
-                    ; evaluate board (calculate heuristic value)
-                    call    Player_Score
-                    ld      a, c
-                    cp      VICTORY                 ;       if (player won)
-                    jr      nz, HeuristicMinElse
+                    call    Player_Score            ;       if (player won)
+                    cp      WIN_CONDITION
+                    jr      nz, HeuristicMinContinue
                     ld      a, 64                   ;           A = 64
-                    jr      HeuristicMinContinue
-HeuristicMinElse:
-                    ex      af, af'                 ;       else
-                    call    Speccy_Score
-                    ex      af, af'
-                    sub     c
-                    add     a, 128                  ;           A = 128 + (player steps to win) - (speccy steps to win)
 
 HeuristicMinContinue:
                     pop     hl
-                    call    Erase_hexagon           ;       BRAINIAC_undo
+                    call    Erase_Token             ;       BRAINIAC_undo
 
                     pop     de
 
@@ -248,16 +237,16 @@ HeuristicMinContinue:
                     jr      nc, HeuristicMinNext    ;       if (A >= betaMin) continue
 
                     cp      d
-                    jr      c,HeuristicMinExit
-                    jr      z,HeuristicMinExit      ;       if (A <= alphaMax) { depth++; return A }
+                    jr      c, HeuristicMinExit
+                    jr      z, HeuristicMinExit     ;       if (A <= alphaMax) { depth++; return A }
 
                     ld      e, a                    ;       betaMin = A
 
 HeuristicMinNext:
-                    dec     iy
-                    ld      a, (iy+0)               ;       A is our next candidate
-                    and     a                       ;       repeat until no more candidates
-                    jr      nz, Heuristic_Min       ; }
+                    dec     ixl
+                    ld      a, (ix+0)               ;       A is our next candidate
+                    or      a                       ;       repeat until no more candidates
+                    jp      nz, Heuristic_Min       ; }
 
                     ld      a, e                    ; return betaMin
 
@@ -270,8 +259,8 @@ HeuristicMinExit:
                     ld      e, a                    ; (discard remaining candidates)
                     xor     a
 HeuristicMinSkip:
-                    dec     iy
-                    cp      (iy+0)
+                    dec     ixl
+                    cp      (ix+0)
                     jr      nz, HeuristicMinSkip
                     ld      a, e
 
@@ -315,22 +304,20 @@ Alphabeta_Max:
                     ; check if last player move is a winner one
                     push    de
 
-                    call    Player_Score
-                    ld      a, c
-                    cp      VICTORY                 ; if (player won)
+                    call    Player_Score            ; if (player won)
+                    cp      WIN_CONDITION        
                     jr      nz, AlphabetaMaxCandidates
                     ld      a, (AI_DEPTH)
                     neg
-                    add     a, 64                      ;     return 64-depth
+                    add     a, 64                   ;     return 64-depth
                     pop     de
                     ret
 
 AlphabetaMaxCandidates:
-                    call    Speccy_Score
-                    call    Path_Tracker            ; find candidates for next move
+                    call    Search_Candidates       ; find candidates for next move
                     pop     de
 
-                    ld      a, (iy+0)               ; A is our first candidate
+                    ld      a, (ix+0)               ; A is our first candidate
 
                     ld      hl, AI_DEPTH
                     dec     (hl)                    ; depth--
@@ -339,16 +326,16 @@ AlphabetaMaxCandidates:
 AlphabetaMaxLoop:                                   ; for each candidate {
                     push    de                      ;       store alphaMax and betaMin
 
-                    ld      h, hex_board_blue/256   ;       get and store candidate position on board
+                    ld      h, BLUE_BOARD/256       ;       get and store candidate position on board
                     ld      l, a
                     push    hl
 
                     ld      a, (AI_PLAYER)          ;       get speccy side
-                    call    Put_Hexagon             ;       BRAINIAC_play
+                    call    Put_Token               ;       BRAINIAC_play
                     call    Alphabeta_Min           ;       A = alphabeta_min(alphaMax, betaMin)
 
                     pop     hl                      ;       restore candidate position
-                    call    Erase_Hexagon           ;       BRAINIAC_undo
+                    call    Erase_Token             ;       BRAINIAC_undo
 
                     pop     de                      ;       restore alphaMax and betaMin
 
@@ -362,9 +349,9 @@ AlphabetaMaxLoop:                                   ; for each candidate {
                     ld      d, a                    ;       alphaMax = A
 
 AlphabetaMaxNext:
-                    dec     iy
-                    ld      a, (iy+0)               ;       A is our next candidate
-                    and     a                       ;       repeat until no more candidates
+                    dec     ixl
+                    ld      a, (ix+0)               ;       A is our next candidate
+                    or      a                       ;       repeat until no more candidates
                     jr      nz, AlphabetaMaxLoop    ; }
 
                     ld      a, d                    ; return alphaMax
@@ -378,8 +365,8 @@ AlphabetaMaxExit:
                     ld      d, a                    ; (discard remaining candidates)
                     xor     a
 AlphabetaMaxSkip:
-                    dec     iy
-                    cp      (iy+0)
+                    dec     ixl
+                    cp      (ix+0)
                     jr      nz, AlphabetaMaxSkip
                     ld      a, d
 
@@ -418,31 +405,21 @@ AlphabetaMaxSkip:
 Heuristic_Max:                                      ; for each candidate {
                     push    de                      ;       store alphaMax and betaMin
 
-                    ld      h, hex_board_blue/256   ;       get and store candidate position on board
+                    ld      h, BLUE_BOARD/256       ;       get and store candidate position on board
                     ld      l, a
                     push    hl
 
                     ld      a, (AI_PLAYER)          ;       get speccy side
-                    call    Put_Hexagon             ;       (BRAINIAC_play)
+                    call    Put_Token               ;       (BRAINIAC_play)
 
-                    ; evaluate board (calculate heuristic value)
-                    call    Speccy_Score
-                    ld      a, c
-                    cp      VICTORY                 ;       if (speccy won)
-                    jr      nz, HeuristicMaxElse
+                    call    Speccy_Score            ;       if (speccy won)
+                    cp      WIN_CONDITION       
+                    jr      nz, HeuristicMaxContinue
                     ld      a, 192                  ;           A = 192
-                    jr      HeuristicMaxContinue
-HeuristicMaxElse:
-                    ex      af, af'                 ;       else
-                    call    Player_Score
-                    ex      af, af'
-                    sub     c
-                    neg
-                    add     a, 128                  ;           A = 128 + (player steps to win) - (speccy steps to win)
 
-HeuristicMaxContinue:
+HeuristicMaxContinue:                    
                     pop     hl                      ;       restore candidate position
-                    call    Erase_hexagon           ;       BRAINIAC_undo
+                    call    Erase_Token             ;       BRAINIAC_undo
 
                     pop     de                      ;       restore alphaMax and betaMin
 
@@ -456,9 +433,9 @@ HeuristicMaxContinue:
                     ld      d, a                    ;       alphaMax = A
 
 HeuristicMaxNext:
-                    dec     iy
-                    ld      a, (iy+0)               ;       A is our next candidate
-                    and     a                       ;       repeat until no more candidates
+                    dec     ixl
+                    ld      a, (ix+0)               ;       A is our next candidate
+                    or      a                       ;       repeat until no more candidates
                     jr      nz, Heuristic_Max       ; }
 
                     ld      a, d                    ; return alphaMax
@@ -472,8 +449,8 @@ HeuristicMaxExit:
                     ld      d, a                    ; (discard remaining candidates)
                     xor     a
 HeuristicMaxSkip:
-                    dec     iy
-                    cp      (iy+0)
+                    dec     ixl
+                    cp      (ix+0)
                     jr      nz, HeuristicMaxSkip
                     ld      a, d
 
