@@ -17,7 +17,7 @@ SW_COLOR            equ     %00000011               ; BITs to be XORed to swap c
 ; -----------------------------------------------------------------------------
 ; Entry point of the program
 ; -----------------------------------------------------------------------------
-                    org 24000
+                    ent     $
 
                     ; set border/screen colors, print "HEX" header and draw empty board
 
@@ -401,29 +401,3 @@ String2_Indexes:
                     ld      c, a                    ; set row position
 
                     ret
-
-; -----------------------------------------------------------------------------
-; Strings
-; -----------------------------------------------------------------------------
-STR_HEADER          defm    " HEX \0"
-STR_FILLED          defm    "FILLED\0"
-STR_WINNER          defm    " WINS \0"
-
-; -----------------------------------------------------------------------------
-; Variables
-; -----------------------------------------------------------------------------
-TOKEN_COLOR         defb    0                       ; current token color (BLUE_TOKEN or RED_TOKEN)
-MOVE_NUMBER         defb    0                       ; current move number
-LAST_MOVE           defb    0                       ; last move for the player (0-48)
-PLAYER_MOVE         defb    0, 0, 0, 0              ; 4 bytes for input player move
-
-; -----------------------------------------------------------------------------
-BOARD_COORDINATES:
-                    defb    $00, $00, $00, $00, $00, $00, $00, $00
-                    defb    $00, $09, $0A, $0B, $0C, $0D, $0E, $0F
-                    defb    $00, $12, $13, $14, $15, $16, $17, $18
-                    defb    $00, $1B, $1C, $1D, $1E, $1F, $20, $21
-                    defb    $00, $24, $25, $26, $27, $28, $29, $2A
-                    defb    $00, $2D, $2E, $2F, $30, $31, $32, $33
-                    defb    $00, $36, $37, $38, $39, $3A, $3B, $3C
-                    defb    $00, $3F, $40, $41, $42, $43, $44, $45

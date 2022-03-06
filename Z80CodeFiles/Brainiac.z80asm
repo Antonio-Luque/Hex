@@ -458,9 +458,3 @@ HeuristicMaxSkip:
                     inc     (hl)                    ; (depth++)
 
                     ret
-
-; -----------------------------------------------------------------------------
-; Variables
-; -----------------------------------------------------------------------------
-AI_PLAYER           defb    0                       ; speccy side (FRIEND or ENEMY)
-AI_DEPTH            defb    0                       ; recursion depth level (0-4)

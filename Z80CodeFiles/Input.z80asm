@@ -287,28 +287,3 @@ InputEnd
                     pop     hl
 
                     ret
-
-; -----------------------------------------------------------------------------
-; Strings
-; -----------------------------------------------------------------------------
-STR_PLAYERS         defm    "One or two players? 1/2\0"
-STR_COLORS          defm    "Choose blue or red, b/r\0"
-STR_LEVEL           defm    "Select game level, 1-5 \0"
-STR_CLEAR           defm    "                       \0"
-STR_SPECCY          defm    "Speccy\0"
-STR_PLAYER          defm    "Player\0"
-STR_LEVELTEXT       defm    "Level\0"
-STR_NOLEVEL         defm    "       \0"
-
-; -----------------------------------------------------------------------------
-; 1 to 4 keys mapping
-; -----------------------------------------------------------------------------
-KEYS_MAP            defb    '1', '2', '3', '4', '5'
-
-; -----------------------------------------------------------------------------
-; Variables
-; -----------------------------------------------------------------------------
-NUM_PLAYERS         defb    0                       ; number of players selected (1 or 2)
-PLAYER_COLOR        defb    0                       ; player color selected (BLUE_TOKEN or RED_TOKEN)
-GAME_LEVEL          defb    0                       ; number of game level selected (1-4)
-CHAR_COUNT          defb    0                       ; number of current chars in input string

@@ -91,16 +91,3 @@ OpeningsLoop
                     djnz    OpeningsLoop            ; repeat until ends of opening book
 
                     ret
-
-; -----------------------------------------------------------------------------
-; Definition of a small "Opening Book" for speccy first moves
-;   1st byte - first blue move
-;   2nd byte - response red move
-; -----------------------------------------------------------------------------
-OPENINGS:
-                    defb    $1F, $30
-                    defb    $26, $2F
-                    defb    $27, $38
-                    defb    $28, $1F
-                    defb    $2F, $1E
-                    defb         $27                ; red player default response (center node)
