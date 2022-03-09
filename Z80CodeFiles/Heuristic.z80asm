@@ -16,9 +16,9 @@ ENEMY               EQU     $7E                     ; positions occupied by oppo
 DEFEAT              EQU     $FF                     ; return value if defeat
 VICTORY             EQU     $03                     ; internal value if victory
 WIN_CONDITION       EQU     $40+VICTORY             ; return value if victory
-BLUE_BOARD          EQU     $7200                   ; A 256-aligned memory area reserved for blue positions
-RED_BOARD           EQU     $7300                   ; A 256-aligned memory area reserved for red positions
-CANDIDATES          EQU     $7400                   ; A 256-aligned memory area reserved to store move candidates
+BLUE_BOARD          EQU     $7A00                   ; A 256-aligned memory area reserved for blue positions
+RED_BOARD           EQU     $7B00                   ; A 256-aligned memory area reserved for red positions
+CANDIDATES          EQU     $7C00                   ; A 256-aligned memory area reserved to store move candidates
 
 ; -----------------------------------------------------------------------------
 ; Return if current player is FRIEND or ENEMY from the perspective of the blue player
@@ -159,12 +159,12 @@ Blue_Distance_UpDown:
                     ld      hl, BLUE_BOARD+7
                     ld      de, BLUE_BOARD_UP_DOWN+7
                     call    Copy_Board              ; copy blue board to up-down blue board
-
+Blue_Bright_Path
                     ld      a, 1                    ; initialize increment between start positions
                     ld      (@startpos_increment+1), a
                     ld      a, 9                    ; initialize increment to edge positions
                     ld      (@edge_increment+1), a
-                    ld      hl, $70FF               ; H = MSB of vector table address to process blue adjacents
+                    ld      hl, $61FF               ; H = MSB of vector table address to process blue adjacents
                                                     ; L = LSB, initialize to DEFEAT
                     ld      (@vector_table+1), hl
                     ld      hl, BLUE_QUEUE_AREA
@@ -208,12 +208,12 @@ Red_Distance_LeftRight:
                     ld      hl, RED_BOARD+7
                     ld      de, RED_BOARD_LEFT_RIGHT+7
                     call    Copy_Board              ; copy red board to left-right red board
-
+Red_Bright_Path
                     ld      a, 9                    ; initialize increment between start positions
                     ld      (@startpos_increment+1), a
                     ld      a, 1                    ; initialize increment to edge positions
                     ld      (@edge_increment+1), a
-                    ld      hl, $71FF               ; H = MSB of vector table adress to process red adjacents
+                    ld      hl, $62FF               ; H = MSB of vector table adress to process red adjacents
                                                     ; L = LSB, initialize to DEFEAT
                     ld      (@vector_table+1), hl
                     ld      hl, RED_QUEUE_AREA
@@ -311,16 +311,16 @@ path_finder_neighbors
                     ld      a, FRIEND
                     cp      (hl)                    ; upper-left neighbor not visited yet?
                     call    nc, Update_Distance
-                    inc	    l
+                    inc     l
                     cp      (hl)                    ; upper-right neighbor not visited yet?
-                    call	nc, Update_Distance
+                    call    nc, Update_Distance
                     ld      de, WIDTH*2
                     add     hl, de
                     cp      (hl)                    ; lower-left neighbour not visited yet?
                     call    nc, Update_Distance
-                    inc	    l
+                    inc     l
                     cp      (hl)                    ; lower-right neighbour not visited yet?
-                    call	nc, Update_Distance
+                    call    nc, Update_Distance
                     pop     hl
                     ld      a, (@queue_tail+1)
                     cp      l                       ; empty queue?
@@ -677,9 +677,7 @@ Speccy_Score:
 ;           A = red heuristic result, otherwise
 ; Destroys: HL, BC, DE, A'
 ; -----------------------------------------------------------------------------
-Red_Score
-                    ld      (SCORE_SIDE), a         ; store score side for Search_Candidates routine 
-                   
+Red_Score                   
                     call    Red_Distance_LeftRight  ; calculate RED two-distance from LEFT to RIGHT edge
                     cp      WIN_CONDITION
                     ret     z                       ; if A = WIN_CONDITION, return A
@@ -729,8 +727,6 @@ Player_Score:
 ; Destroys: HL, BC, DE, A'
 ; -----------------------------------------------------------------------------
 Blue_Score
-                    ld      (SCORE_SIDE), a         ; store score side for Search_Candidates routine
-
                     call    Blue_Distance_UpDown    ; calculate BLUE two-distance from UP to DOWN edge
                     cp      WIN_CONDITION
                     ret     z                       ; if A = WIN_CONDITION, return A
@@ -904,7 +900,7 @@ potentials_next
                     dec     a
                     jp      nz, potentials_loop     ; repeat until end of boards
 @potentials
-                    ld      ($7100), bc             ; save attack mobility and board potential
+                    ld      (POTENTIALS), bc        ; save attack mobility and board potential
                     ret                    
 
 ; -----------------------------------------------------------------------------
@@ -922,34 +918,27 @@ Search_Candidates:
                     ld      hl, BLUE_BOARD_UP_DOWN+9    ; HL points to board potential
                     jp      Get_Candidates              ; get candidates
 
-                    ; entry point for BRANIAC first execution
-Victory_Candidates:
-                    ld      a, (SCORE_SIDE)         
-                    cp      FRIEND                      ; friend score has been processed?
-                    jr      z, blue_victory_candidates  ; yes, process candidates for blue victory
-                    jp      red_victory_candidates      ; no, process candidates for red victory
-
                     ; process candidates for defeated color
 defeat_candidates
-                    ld      a, (SCORE_SIDE)         
+                    ld      a, (AI_PLAYER)
                     cp      FRIEND                      ; friend score has been processed?
                     jr      z, blue_defeat_candidates   ; yes, process candidates for blue
 
                     ; if RED is defeated, candidates are chosen from blue board potentials
-
                     call    Blue_Distance_UpDown
-blue_victory_candidates
                     call    Blue_Distance_DownUp
+; entry point for BRAINIAC_best_move
+Blue_Victory_Candidates:
                     call    Blue_Potentials
                     ld      hl, BLUE_BOARD_UP_DOWN+9    ; HL points to board potential
                     jp      Get_Candidates              ; get candidates
 
                     ; if BLUE is defeated, candidates are chosen from red board potentials
-                    
 blue_defeat_candidates
                     call    Red_Distance_LeftRight
-red_victory_candidates
                     call    Red_Distance_RightLeft
+; entry point for BRAINIAC_best_move
+Red_Victory_Candidates:
                     call    Red_Potentials
                     ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to board potential  
 

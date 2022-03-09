@@ -9,7 +9,7 @@
 ; -----------------------------------------------------------------------------
 ; Circular queue
 ; -----------------------------------------------------------------------------
-BLUE_QUEUE_AREA     defs    256, $01                ; 256-aligned block reserved for circular queue
+BLUE_QUEUE_AREA     defs    256                     ; 256-aligned block reserved for circular queue
 
 ; -----------------------------------------------------------------------------
 ; These boards must be located immediately after Queue Area!
@@ -37,13 +37,14 @@ BLUE_BOARD_DOWN_UP
 ; -----------------------------------------------------------------------------
 ; Variables
 ; -----------------------------------------------------------------------------
+POTENTIALS:
 BLUE_POTENTIAL      defb    0                       ; blue board potential
 BLUE_MOBILITY       defb    0                       ; blue attack mobility
 RED_POTENTIAL       defb    0                       ; red board potential
 RED_MOBILITY        defb    0                       ; red attack mobility
-SCORE_SIDE          defb    0                       ; FRIEND or ENEMY score evaluation
 AI_PLAYER           defb    0                       ; speccy side (FRIEND or ENEMY)
 AI_DEPTH            defb    0                       ; recursion depth level (1-5)
+GAME_LEVEL          defb    0                       ; number of game level selected (1-5)
 
 ; -----------------------------------------------------------------------------
 ; Attributes/Screen look-up table for HEX board
@@ -81,7 +82,7 @@ PLAYER_COLOR        defb    0                       ; player color selected (BLU
 ; -----------------------------------------------------------------------------
 ; Circular queue
 ; -----------------------------------------------------------------------------
-RED_QUEUE_AREA      defs    256, $02                ; 256-aligned block reserved for circular queue
+RED_QUEUE_AREA      defs    256                     ; 256-aligned block reserved for circular queue
 
 ; -----------------------------------------------------------------------------
 ; These boards must be located immediately after Queue Area!
@@ -138,7 +139,7 @@ STR_PLAYERS         defm    "One or two players? 1/2\0"
 STR_COLORS          defm    "Choose blue or red, b/r\0"
 
 ; -----------------------------------------------------------------------------
-; Vector table of routines
+; Vector table of routines (must be aligned)
 ; -----------------------------------------------------------------------------
 BLUE_VECTOR_TABLE
                     defw    path_finder_BLUE_edge_0
@@ -167,7 +168,6 @@ KEYS_MAP            defb    '1', '2', '3', '4', '5'
 ; -----------------------------------------------------------------------------
 ; Variables
 ; -----------------------------------------------------------------------------
-GAME_LEVEL          defb    0                       ; number of game level selected (1-4)
 CHAR_COUNT          defb    0                       ; number of current chars in input string
 
 ; -----------------------------------------------------------------------------
@@ -182,7 +182,6 @@ STR_WINNER          defm    " WINS \0"
 ; -----------------------------------------------------------------------------
 TOKEN_COLOR         defb    0                       ; current token color (BLUE_TOKEN or RED_TOKEN)
 MOVE_NUMBER         defb    0                       ; current move number
-LAST_MOVE           defb    0                       ; last move for the player (0-48)
 PLAYER_MOVE         defb    0, 0, 0, 0              ; 4 bytes for input player move
 
 ; -----------------------------------------------------------------------------
@@ -216,7 +215,10 @@ OPENINGS:
                     defb    $2F, $1E
                     defb         $27                ; red player default response (center node)
 
-                    ORG     $6200
+                    ALIGN
+
+; -----------------------------------------------------------------------------
+; Vector table of routines (must be aligned)
 ; -----------------------------------------------------------------------------
 RED_VECTOR_TABLE
                     defw    path_finder_RED_edge_0
@@ -227,5 +229,9 @@ RED_VECTOR_TABLE
                     defw    path_finder_RED_edge_5
                     defw    path_finder_RED_edge_6
 
-ent $
-nop
+; -----------------------------------------------------------------------------
+; Based on "King" font https://spectrumcomputing.co.uk/entry/25245/ZX-Spectrum/ZX-ALFA
+; this font was designed by Einar Saukas for Hex game
+; -----------------------------------------------------------------------------
+FONT
+                    includebin "King+.bin"

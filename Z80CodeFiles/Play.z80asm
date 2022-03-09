@@ -23,17 +23,11 @@ Speccy_Move:
 
                     ; initialize BRAINIAC
 
-                    di
-                    push    iy
-
-                    ld      iy, $7900               ; intercept queue address 
+                    ld      ix, CANDIDATES          ; candidates list 
                     ld      a, (GAME_LEVEL)         ; get game level
                     ld      (AI_DEPTH), a           ; save recursion depth level
                     call    Friend_Or_Foe           ; get speccy side
                     call    BRAINIAC_best_move      ; get speccy best move
-
-                    pop     iy
-                    ei
 
                     ; return BRAINIAC move
 
@@ -59,9 +53,9 @@ FirstBlue_Move
 SetNodeIndex
                     ld      l, (hl)                 ; set node index in L
 UpdateBoardPos
-                    ld      h, hex_board_blue/256   ; HL points to board position       
+                    ld      h, BLUE_BOARD/256       ; HL points to board position       
                     call    Friend_Or_Foe
-                    call    Put_Hexagon             ; update board position
+                    call    Put_Token             ; update board position
 
                     ld      a, l                    ; return position in A
 
@@ -80,7 +74,7 @@ OpeningBook:
 OpeningsLoop
                     ld      a, (hl)                 ; get first opening move (blue move)
                     push    hl                      ; store opening book address
-                    ld      h, hex_board_blue/256           
+                    ld      h, BLUE_BOARD/256           
                     ld      l, a                    ; HL points to board position
                     ld      a, FRIEND
                     cp      (hl)                    ; has blue player done this move?
