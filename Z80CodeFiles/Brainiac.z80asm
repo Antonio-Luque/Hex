@@ -32,12 +32,18 @@ BRAINIAC_best_move:
                     ld      (AI_PLAYER), a          ; save speccy side
 
                     call    Speccy_Score            ; (solve one path just so we can find candidates)
-                    cp      WIN_CONDITION           ; if (speccy won)
-                    jr      nz, AI_candidates
-                    call    Victory_Candidates      ;       get candidates for speccy victory
-                    jp      AI_first_candidate                              
-AI_candidates                    
-                    call    Search_Candidates       ; find canditates
+                    cp      WIN_CONDITION           ; speccy won?
+                    jp      z, AI_win_candidates    ; yes, look for victory candidates
+                    call    Search_Candidates       ; no, look for candidates
+                    jp      AI_first_candidate
+AI_win_candidates
+                    ld      a, (AI_PLAYER)          ; recover speccy side
+                    cp      FRIEND                  ; search for candidates depending on color
+                    jr      z, AI_blue_candidates
+                    call    Red_Victory_Candidates  ; red candidates
+                    jp      AI_first_candidate
+AI_blue_candidates
+                    call    Blue_Victory_Candidates ; blue candidates
 AI_first_candidate
                     ld      a, (ix+0)               ; A is our first candidate
 
@@ -458,9 +464,3 @@ HeuristicMaxSkip:
                     inc     (hl)                    ; (depth++)
 
                     ret
-
-; -----------------------------------------------------------------------------
-; Variables
-; -----------------------------------------------------------------------------
-AI_PLAYER           defb    0                       ; speccy side (FRIEND or ENEMY)
-AI_DEPTH            defb    0                       ; recursion depth level (0-4)

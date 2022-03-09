@@ -17,7 +17,7 @@ SW_COLOR            equ     %00000011               ; BITs to be XORed to swap c
 ; -----------------------------------------------------------------------------
 ; Entry point of the program
 ; -----------------------------------------------------------------------------
-                    org 24000
+                    ent     $
 
                     ; set border/screen colors, print "HEX" header and draw empty board
 
@@ -40,21 +40,13 @@ SW_COLOR            equ     %00000011               ; BITs to be XORed to swap c
 ; Game (re)initialization - main loop
 ; -----------------------------------------------------------------------------
 GameInit
-                    ; initialize hex_board_blue and hex_board_red
+                    ; initialize boards
 
-                    ld      hl, hex_board_blue+9
-                    ld      c, 7                    ; 7 rows
-EraseBoardsRow
-                    ld      b, 7                    ; 7 columns
-EraseBoardsHex
-                    call    Erase_Hexagon           ; set boards position as EMPTY (1)
-                    dec     h
-                    inc     l                       ; HL points to the next board position
-                    djnz    EraseBoardsHex          ; repeat for each position in current row
-                    inc     l                       ; skip borders
-                    inc     l
-                    dec     c
-                    jr      nz, EraseBoardsRow      ; repeat for each row
+                    ld      hl, BLUE_BOARD
+                    ld      de, BLUE_BOARD+1
+                    ld      (hl), EMPTY
+                    ld      bc, 256*2-1
+                    ldir
 
                     ; initialize screen attributes and input game options
 
@@ -117,7 +109,7 @@ PlayerMove
                     ; check player move legality
 
                     call    Indexes2Board           ; get board position
-                    ld      h, hex_board_blue/256
+                    ld      h, BLUE_BOARD/256
                     ld      l, a                    ; HL points to move position on board
                     ld      a, EMPTY
                     cp      (hl)                    ; is node empty?
@@ -125,10 +117,8 @@ PlayerMove
 
                     ; update board position with player move
 
-                    ld      a, l                    ; save last player move (deprecated?)
-                    ld      (LAST_MOVE), a
                     call    Friend_Or_Foe           ; get player side (FRIEND or ENEMY)
-                    call    Put_Hexagon             ; update board position
+                    call    Put_Token               ; update board position
 DrawToken
                     call    Draw_Token              ; draw token (player or speccy) on the screen
                     ld      hl, TOKEN_FX            ; HL points to the sound fx for move
@@ -141,17 +131,16 @@ DrawToken
                     ld      a, (TOKEN_COLOR)        ; get current token color
                     rra                             ; is BLUE the current token color?
                     jr      c, GetBlueScore         ; yes, go for the score for blue player
-                    call    RedScore                ; get score for red player
-                    ld      hl, Board_Red+WIDTH     ; set parameters for Bright_Path routine
-                    ld      de, Path_Finder_Red
+                    call    Red_Distance_LeftRight  ; get score for red player
+                    ld      hl, RED_BOARD_LEFT_RIGHT+69
+                    ld      de, Red_Bright_Path     ; set parameters for Bright_Path routine
                     jr      CheckWinner             ; check victory condition
 GetBlueScore
-                    call    BlueScore               ; get score for blue player
-                    ld      hl, Board_Blue+WIDTH    ; set parameters for Bright_Path routine
-                    ld      de, Path_Finder_Blue
+                    call    Blue_Distance_UpDown    ; get score for blue player
+                    ld      hl, BLUE_BOARD_UP_DOWN+69
+                    ld      de, Blue_Bright_Path    ; set parameters for Bright_Path routine
 CheckWinner
-                    ld      a, VICTORY
-                    cp      c                       ; player/speccy won?
+                    cp      WIN_CONDITION           ; player/speccy won?
                     jr      z, GameOver             ; yes, there is a winner!
 
                     ld      a, (TOKEN_COLOR)        ; swap current token color
@@ -203,26 +192,26 @@ Bright_Path:
                     call    Prepare_Board  
                     pop     hl
 
-                    ; Find the start position of the victory path
+; Find the start position of the victory path
 
-                    ld      de, WIDTH-1             ; number of positions to add to jump to the next row (for Board_Red)
+                    ld      de, -8                  ; number of positions to add to jump to the next row (for Board_Red)
 FindStartPosition                                   ; for each position in first row/column {
                     ld      a, (hl)                 ;       get length of current position
                     cp      c                       ;       is it equal to victory path length?
                     jr      z, BrightPosition       ;       yes, exit and bright current position
-                    inc     l                       ;       move to next position inside 1st. row
+                    dec     l                       ;       move to next position inside 1st. row
                     ld      a, h 
-                    cp      Board_Blue/256          ;       are we searching in Board_Blue?
+                    cp      BLUE_BOARD_UP_DOWN/256  ;       are we searching in Board_Blue?
                     jr      z, FindStartPosition    ;       yes, continue searching
                     add     hl, de                  ;       move to next position inside 1st. column and continue searching
                     jr      FindStartPosition       ; }
 
 FindNextNeighbour
-                    dec     l                       ; left neighbour
+                    inc     l                       ; left neighbour
                     cp      (hl)
                     jr      z, BrightPosition
-                    inc     l
-                    inc     l                       ; right neighbour
+                    dec     l
+                    dec     l                       ; right neighbour
                     cp      (hl)
                     jr      z, BrightPosition
                     ld      a, l
@@ -231,7 +220,7 @@ FindNextNeighbour
                     ld      a, c
                     cp      (hl)
                     jr      z, BrightPosition
-                    dec     l                       ; upper-left neighbour
+                    inc     l                       ; upper-left neighbour
                     cp      (hl)
                     jr      z, BrightPosition
                     ld      a, l
@@ -240,7 +229,7 @@ FindNextNeighbour
                     ld      a, c
                     cp      (hl)
                     jr      z, BrightPosition
-                    dec     l                       ; lower-left neighbour
+                    inc     l                       ; lower-left neighbour
 BrightPosition
                     push    bc                      ; store victory path length and current position
                     push    hl
@@ -257,11 +246,10 @@ BrightPosition
                     ld      a, c
                     cp      VICTORY
                     jr      nz, FindNextNeighbour   ; repeat for each neighbour until reach VICTORY length
-
                     ret
 
 ; -----------------------------------------------------------------------------
-; Update 'Board_(color)', changing $84 to EMPTY, everything else to ENEMY. 
+; Update 'Board_(color)', changing WIN_CONDITION to EMPTY, everything else to ENEMY. 
 ; Immediately after 'Path_Finder_(color)' returned VICTORY, you can execute
 ; this routine, then execute 'Path_Finder_(color)' again to find a victory
 ; path.
@@ -272,22 +260,21 @@ BrightPosition
 ; Destroys:  B, HL, AF
 ; -----------------------------------------------------------------------------
 Prepare_Board:
-                    ld      a, $84
+                    ld      a, WIN_CONDITION
                     ld      c, 7                    ; 7 rows
-
 PrepareBoardNextRow
                     ld      b, 7                    ; 7 columns
 PrepareBoardNextCol
                     cp      (hl)
-                    ld      (hl), EMPTY
+                    ld      (hl), 1
                     jr      z, PrepareBoardSkip
                     ld      (hl), ENEMY
 PrepareBoardSkip
-                    inc     l
+                    dec     l
                     djnz    PrepareBoardNextCol
 
-                    inc     l                       ; skip borders
-                    inc     l
+                    dec     l                       ; skip borders
+                    dec     l
                     dec     c
                     jr      nz, PrepareBoardNextRow
 
@@ -401,29 +388,3 @@ String2_Indexes:
                     ld      c, a                    ; set row position
 
                     ret
-
-; -----------------------------------------------------------------------------
-; Strings
-; -----------------------------------------------------------------------------
-STR_HEADER          defm    " HEX \0"
-STR_FILLED          defm    "FILLED\0"
-STR_WINNER          defm    " WINS \0"
-
-; -----------------------------------------------------------------------------
-; Variables
-; -----------------------------------------------------------------------------
-TOKEN_COLOR         defb    0                       ; current token color (BLUE_TOKEN or RED_TOKEN)
-MOVE_NUMBER         defb    0                       ; current move number
-LAST_MOVE           defb    0                       ; last move for the player (0-48)
-PLAYER_MOVE         defb    0, 0, 0, 0              ; 4 bytes for input player move
-
-; -----------------------------------------------------------------------------
-BOARD_COORDINATES:
-                    defb    $00, $00, $00, $00, $00, $00, $00, $00
-                    defb    $00, $09, $0A, $0B, $0C, $0D, $0E, $0F
-                    defb    $00, $12, $13, $14, $15, $16, $17, $18
-                    defb    $00, $1B, $1C, $1D, $1E, $1F, $20, $21
-                    defb    $00, $24, $25, $26, $27, $28, $29, $2A
-                    defb    $00, $2D, $2E, $2F, $30, $31, $32, $33
-                    defb    $00, $36, $37, $38, $39, $3A, $3B, $3C
-                    defb    $00, $3F, $40, $41, $42, $43, $44, $45

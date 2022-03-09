@@ -11,8 +11,8 @@
     <DisassAnn Include="Rom\ZxSpectrum48.disann" />
   </ItemGroup>
   <ItemGroup>
-    <Z80Asm Include="Z80CodeFiles\Braniac.z80asm" />
-    <Z80Asm Include="Z80CodeFiles\Font.z80asm" />
+    <Z80Asm Include="Z80CodeFiles\Brainiac.z80asm" />
+    <Z80Asm Include="Z80CodeFiles\Data.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Draw.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Frame.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Heuristic.z80asm" />
@@ -20,7 +20,6 @@
     <Z80Asm Include="Z80CodeFiles\Main.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Hex.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Output.z80asm" />
-    <Z80Asm Include="Z80CodeFiles\PathFinder.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Play.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Sound.z80asm" />
   </ItemGroup>
@@ -30,10 +29,10 @@
     <None Include="Z80CodeFiles\King+.bin" />
   </ItemGroup>
   <ItemGroup>
-    <Tzx Include="TapeFiles\Hex.tzx" />
+    <Tap Include="TapeFiles\Hex.tap" />
   </ItemGroup>
   <ItemGroup>
-    <Tap Include="TapeFiles\Hex.tap" />
+    <Tzx Include="TapeFiles\Hex.tzx" />
   </ItemGroup>
   <Import Project="$(CustomProjectExtensionsPath)Spect.Net.CodeDiscover.targets" />
 </Project>

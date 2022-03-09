@@ -5,16 +5,16 @@
 ; Build file
 ; -----------------------------------------------------------------------------
 
+                    #include "Data.z80asm"
                     #include "Main.z80asm"
                     #include "Draw.z80asm"
-                    #include "Output.z80asm"
                     #include "Input.z80asm"
+                    #include "Output.z80asm"
                     #include "Play.z80asm"
                     #include "Brainiac.z80asm"
+                    #include "Heuristic.z80asm"
                     #include "Sound.z80asm"
-                    #include "Font.z80asm"
                     #include "Frame.z80asm"
-                    #include "PathFinder.z80asm"
 
 ; -----------------------------------------------------------------------------
 ; Credits and acknowledgements:
@@ -23,6 +23,7 @@
 ;   https://spectrumcomputing.co.uk/entry/28178/ZX-Spectrum/PATHFINDERloading, loading screen, "King+" font and TOKEN graphics
 ;
 ; - Greg Surma article: https://towardsdatascience.com/hex-creating-intelligent-adversaries-part-2-heuristics-dijkstras-algorithm-597e4dcacf93 
+; - Jack van Rijswijck's thesis: https://webdocs.cs.ualberta.ca/~hayward/theses/jackmsc.pdf
 ; - ChibiAkumas lessons: https://www.chibiakumas.com/z80/simplesamples.php#LessonS2
 ; - Santiago Romero assembler course: https://wiki.speccy.org/cursos/ensamblador/gfx4_fuentes
 ;
