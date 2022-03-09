@@ -37,11 +37,12 @@ BLUE_BOARD_DOWN_UP
 ; -----------------------------------------------------------------------------
 ; Variables
 ; -----------------------------------------------------------------------------
-POTENTIALS:
+POTENTIALS:                                         ; the next 4 bytes must be in a 256-byte boundary
 BLUE_POTENTIAL      defb    0                       ; blue board potential
 BLUE_MOBILITY       defb    0                       ; blue attack mobility
 RED_POTENTIAL       defb    0                       ; red board potential
 RED_MOBILITY        defb    0                       ; red attack mobility
+
 AI_PLAYER           defb    0                       ; speccy side (FRIEND or ENEMY)
 AI_DEPTH            defb    0                       ; recursion depth level (1-5)
 GAME_LEVEL          defb    0                       ; number of game level selected (1-5)
@@ -203,19 +204,15 @@ TOKEN_FX            defw    1, 200, 1000, 0, 128
 WINNER_FX           defw    5, 5000, 200, 100, 128
 
 ; -----------------------------------------------------------------------------
-; Definition of a small "Opening Book" for speccy first moves
-;   1st byte - first blue move
-;   2nd byte - response red move
+; Definition of a small "Opening Book" for speccy first move
 ; -----------------------------------------------------------------------------
 OPENINGS:
-                    defb    $1F, $30
-                    defb    $26, $2F
-                    defb    $27, $38
-                    defb    $28, $1F
-                    defb    $2F, $1E
-                    defb         $27                ; red player default response (center node)
+                    defb    $0F, $14, $16, $17, $18, $1C, $1D
+                    defb    $1E, $1F, $20, $24, $25, $26, $27
+                    defb    $28, $29, $2A, $2E, $2F, $30, $31
+                    defb    $32, $36, $37, $38, $3A, $3F
 
-                    ALIGN
+FILLER              defs    13                      ; filler space to align vector table
 
 ; -----------------------------------------------------------------------------
 ; Vector table of routines (must be aligned)

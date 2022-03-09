@@ -16,9 +16,9 @@ ENEMY               EQU     $7E                     ; positions occupied by oppo
 DEFEAT              EQU     $FF                     ; return value if defeat
 VICTORY             EQU     $03                     ; internal value if victory
 WIN_CONDITION       EQU     $40+VICTORY             ; return value if victory
-BLUE_BOARD          EQU     $7A00                   ; A 256-aligned memory area reserved for blue positions
-RED_BOARD           EQU     $7B00                   ; A 256-aligned memory area reserved for red positions
-CANDIDATES          EQU     $7C00                   ; A 256-aligned memory area reserved to store move candidates
+BLUE_BOARD          EQU     $7C00                   ; A 256-aligned memory area reserved for blue positions
+RED_BOARD           EQU     $7D00                   ; A 256-aligned memory area reserved for red positions
+CANDIDATES          EQU     $7E00                   ; A 256-aligned memory area reserved to store move candidates
 
 ; -----------------------------------------------------------------------------
 ; Return if current player is FRIEND or ENEMY from the perspective of the blue player
