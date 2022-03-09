@@ -164,9 +164,9 @@ Blue_Bright_Path
                     ld      (@startpos_increment+1), a
                     ld      a, 9                    ; initialize increment to edge positions
                     ld      (@edge_increment+1), a
-                    ld      hl, $61FF               ; H = MSB of vector table address to process blue adjacents
-                                                    ; L = LSB, initialize to DEFEAT
-                    ld      (@vector_table+1), hl
+                    ld      hl, BLUE_VECTOR_TABLE+$FF
+                                                    ; H = MSB of vector table address to process blue adjacents
+                    ld      (@vector_table+1), hl   ; L = LSB, initialize to DEFEAT
                     ld      hl, BLUE_QUEUE_AREA
                     ld      (@queue_tail+1), hl     ; initialize blue queue area
                     ld      hl, BLUE_BOARD_UP_DOWN+9
@@ -213,9 +213,9 @@ Red_Bright_Path
                     ld      (@startpos_increment+1), a
                     ld      a, 1                    ; initialize increment to edge positions
                     ld      (@edge_increment+1), a
-                    ld      hl, $62FF               ; H = MSB of vector table adress to process red adjacents
-                                                    ; L = LSB, initialize to DEFEAT
-                    ld      (@vector_table+1), hl
+                    ld      hl, RED_VECTOR_TABLE+$FF
+                                                    ; H = MSB of vector table adress to process red adjacents
+                    ld      (@vector_table+1), hl   ; L = LSB, initialize to DEFEAT
                     ld      hl, RED_QUEUE_AREA
                     ld      (@queue_tail+1), hl     ; initialize red queue area                                
                     ld      hl, RED_BOARD_LEFT_RIGHT+9
