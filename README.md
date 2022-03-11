@@ -14,4 +14,4 @@ I use [SpectNet IDE](https://dotneteer.github.io/spectnetide/) for developing, b
 - ChibiAkumas [lessons](https://www.chibiakumas.com/z80/simplesamples.php#LessonS2).
 - Santiago Romero [assembler course](https://wiki.speccy.org/cursos/ensamblador/indice).
  
-- Special thanks to my wife Sonia.
+- Special thanks to my wife Sonia
