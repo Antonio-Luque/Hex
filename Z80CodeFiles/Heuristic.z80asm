@@ -162,13 +162,18 @@ Blue_Distance_UpDown:
 Blue_Bright_Path
                     ld      a, 1                    ; initialize increment between start positions
                     ld      (@startpos_increment+1), a
+
                     ld      a, 9                    ; initialize increment to edge positions
                     ld      (@edge_increment+1), a
+
                     ld      hl, BLUE_VECTOR_TABLE+$FF
                                                     ; H = MSB of vector table address to process blue adjacents
                     ld      (@vector_table+1), hl   ; L = LSB, initialize to DEFEAT
+
                     ld      hl, BLUE_QUEUE_AREA
                     ld      (@queue_tail+1), hl     ; initialize blue queue area
+                    push    hl                      ; store Queue Tail/Head
+
                     ld      hl, BLUE_BOARD_UP_DOWN+9
                     jp      Path_Finder             ; calculate blue two-distance (up-down)
 
@@ -189,8 +194,12 @@ Blue_Distance_DownUp:
                     ld      a, -1                   ; initialize increment between start positions
                     ld      (@startpos_increment+1), a
                     ld      (@vector_table+1), a    ; initialize to DEFEAT
+
                     ld      a, -9
                     ld      (@edge_increment+1), a  ; initialize increment to edge positions
+
+                    ld      hl, (@queue_tail+1)
+                    push    hl                      ; store Queue Tail/Head
                     ex      de, hl                  ; restore HL from DE at end of down-up blue board
                     dec     l                       ; adjust position
                     jp      Path_Finder             ; calculate blue two-distance (down-up)
@@ -216,8 +225,11 @@ Red_Bright_Path
                     ld      hl, RED_VECTOR_TABLE+$FF
                                                     ; H = MSB of vector table adress to process red adjacents
                     ld      (@vector_table+1), hl   ; L = LSB, initialize to DEFEAT
+
                     ld      hl, RED_QUEUE_AREA
-                    ld      (@queue_tail+1), hl     ; initialize red queue area                                
+                    ld      (@queue_tail+1), hl     ; initialize red queue area
+                    push    hl
+
                     ld      hl, RED_BOARD_LEFT_RIGHT+9
                     jp      Path_Finder             ; calculate red two-distance (left-right)
 
@@ -240,6 +252,9 @@ Red_Distance_RightLeft:
                     ld      a, -1
                     ld      (@edge_increment+1), a  ; initialize increment to edge positions
                     ld      (@vector_table+1), a    ; initialize to DEFEAT
+
+                    ld      hl, (@queue_tail+1)
+                    push    hl                      ; store Queue Tail/Head
                     ex      de, hl                  ; restore HL from DE at end of right-left blue board
                     dec     l                       ; adjust position         
 ; -----------------------------------------------------------------------------
@@ -254,8 +269,6 @@ Red_Distance_RightLeft:
 ; Destroys: HL, BC, DE, A'
 ; -----------------------------------------------------------------------------
 Path_Finder:
-                    ld      de, (@queue_tail+1)
-                    push    de                      ; store Queue Tail/Head                 
                     ld      c, VICTORY              ; initialize current two-distance
                     ld      a, 7                    ; number of start hexagons (loop counter)
 
