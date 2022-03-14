@@ -390,7 +390,7 @@ path_finder_RED_edge_0
                     ld      de, 9
                     add     hl, de
                     cp      (hl)                    ; check adjacent of edge number 6
-                    call    nc, Update_Distance                                      
+                    call    nc, Update_Distance
                     jp      path_finder_neighbors   ; continue processing neighbors
 
 path_finder_RED_edge_1
