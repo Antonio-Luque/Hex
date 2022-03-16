@@ -220,8 +220,10 @@ Red_Distance_LeftRight:
 Red_Bright_Path
                     ld      a, 9                    ; initialize increment between start positions
                     ld      (@startpos_increment+1), a
+
                     ld      a, 1                    ; initialize increment to edge positions
                     ld      (@edge_increment+1), a
+
                     ld      hl, RED_VECTOR_TABLE+$FF
                                                     ; H = MSB of vector table adress to process red adjacents
                     ld      (@vector_table+1), hl   ; L = LSB, initialize to DEFEAT
@@ -255,8 +257,8 @@ Red_Distance_RightLeft:
 
                     ld      hl, (@queue_tail+1)
                     push    hl                      ; store Queue Tail/Head
-                    ex      de, hl                  ; restore HL from DE at end of right-left blue board
-                    dec     l                       ; adjust position         
+                    ex      de, hl                  ; restore HL from DE at end of right-left red board
+                    dec     l                       ; adjust position
 ; -----------------------------------------------------------------------------
 ; Calculate two-distance metric
 ;
@@ -297,20 +299,20 @@ path_finder_loop
                     ld      l, (hl)                 ; retrieve next position to be checked
                     inc     h
                     ld      c, (hl)                 ; retrieve two-distance from this position to start
+                    ld      b, l                    ; store current position in B
 
                     ; look for adjacent hexagons
-                    ld      a, l                    ; store position below
-                    ld      (path_finder_neighbors+1), a
+                    ld      a, l
 @edge_increment
                     add     a, 0                    ; check for an edge neighbor (increment setted up above)
                     ld      l, a
                     bit     7, (hl)                 ; if it is an edge, process adjacent positions 
                     jr      nz, path_finder_adjacent
+                    ld      a, FRIEND
+                    ld      l, b                    ; restore current position to be checked
 
                     ; process neighbors
 path_finder_neighbors
-                    ld      l, 0                    ; restore current position to be checked
-                    ld      a, FRIEND
                     inc     l
                     cp      (hl)                    ; right neighbor not visited yet?
                     call    nc, Update_Distance
@@ -318,10 +320,8 @@ path_finder_neighbors
                     dec     l
                     cp      (hl)                    ; left neighbor not visited yet?
                     call    nc, Update_Distance
-                    ld      a, l
-                    sub     WIDTH
-                    ld      l, a
-                    ld      a, FRIEND
+                    ld      de, -WIDTH
+                    add     hl, de
                     cp      (hl)                    ; upper-left neighbor not visited yet?
                     call    nc, Update_Distance
                     inc     l
@@ -351,11 +351,12 @@ path_finder_neighbors
 ;
 ; Input:    HL = points to current edge position. A flag in 7th bit indicates an edge
 ;                position and the lowest 3 bits the edge number
+;           B  = current position
 ;           C  = current two-distance (with a flag at 6th bit that indicates a friendly 
 ;                position)
 ; Output:   A  = WIN_CONDITION, if there is a chain of connected tokens of the same
 ;                color between the two edges
-;           A  = X, otherwise
+;           A  = FRIEND, otherwise
 ; Destroys: HL, B, DE
 ; -----------------------------------------------------------------------------
 path_finder_adjacent
@@ -367,9 +368,8 @@ path_finder_adjacent
                     add     a, a                    ; update vector table index
                     ld      (@vector_table+1), a    ; (the initialized value of DEFEAT is changed,
                                                     ; meaning that edge has been reached)
-                    ld      a, (path_finder_neighbors+1)
-                    ld      l, a                    ; restore current position
                     ld      a, FRIEND
+                    ld      l, b                    ; restore current position
                     ex      de, hl                  ; store pointer to current position
 @vector_table
                     ld      hl, ($0000)             ; this address is setted up above and correspond
@@ -404,6 +404,8 @@ path_finder_RED_edge_0
                     add     hl, de
                     cp      (hl)                    ; check adjacent of edge number 6
                     call    nc, Update_Distance
+                    ld      de, -9*6                ; restore pointer to current position
+                    add     hl, de
                     jp      path_finder_neighbors   ; continue processing neighbors
 
 path_finder_RED_edge_1
@@ -423,7 +425,9 @@ path_finder_RED_edge_1
                     ld      de, 9
                     add     hl, de
                     cp      (hl)                    ; check adjacent of edge number 6
-                    call    nc, Update_Distance                                         
+                    call    nc, Update_Distance
+                    ld      de, -9*5                ; restore pointer to current position
+                    add     hl, de
                     jp      path_finder_neighbors   ; continue processing neighbors
 
 path_finder_RED_edge_2
@@ -443,7 +447,9 @@ path_finder_RED_edge_2
                     ld      de, -9*6
                     add     hl, de
                     cp      (hl)                    ; check adjacent of edge number 0
-                    call    nc, Update_Distance    
+                    call    nc, Update_Distance
+                    ld      de, 9*2                 ; restore pointer to current position
+                    add     hl, de
                     jp      path_finder_neighbors   ; continue processing neighbors
 
 path_finder_RED_edge_3
@@ -464,6 +470,8 @@ path_finder_RED_edge_3
                     add     hl, de
                     cp      (hl)                    ; check adjacent of edge number 6
                     call    nc, Update_Distance
+                    ld      de, -9*3                ; restore pointer to current position
+                    add     hl, de
                     jp      path_finder_neighbors   ; continue processing neighbors
 
 path_finder_RED_edge_4
@@ -483,7 +491,9 @@ path_finder_RED_edge_4
                     ld      de, 9
                     add     hl, de
                     cp      (hl)                    ; check adjacent of edge number 2
-                    call    nc, Update_Distance                    
+                    call    nc, Update_Distance
+                    ld      de, 9*2                 ; restore pointer to current position
+                    add     hl, de
                     jp      path_finder_neighbors   ; continue processing neighbors
 
 path_finder_RED_edge_5
@@ -504,6 +514,8 @@ path_finder_RED_edge_5
                     add     hl, de
                     cp      (hl)                    ; check adjacent of edge number 3
                     call    nc, Update_Distance
+                    ld      de, 9*2                 ; restore pointer to current position
+                    add     hl, de
                     jp      path_finder_neighbors   ; continue processing neighbors
 
 path_finder_RED_edge_6
@@ -528,6 +540,8 @@ path_finder_RED_edge_6
                     add     hl, de
                     cp      (hl)                    ; check adjacent of edge number 4
                     call    nc, Update_Distance
+                    ld      de, 9*2                ; restore pointer to current position
+                    add     hl, de
                     jp      path_finder_neighbors   ; continue processing neighbors
                     
 ; -----------------------------------------------------------------------------
@@ -551,6 +565,8 @@ path_finder_BLUE_edge_0
                     inc     l
                     cp      (hl)                    ; check adjacent of edge number 6
                     call    nc, Update_Distance
+                    ld      de, -6                  ; restore pointer to current position
+                    add     hl, de
                     jp      path_finder_neighbors   ; continue processing neighbors
 
 path_finder_BLUE_edge_1
@@ -568,6 +584,11 @@ path_finder_BLUE_edge_1
                     inc     l
                     cp      (hl)                    ; check adjacent of edge number 6
                     call    nc, Update_Distance
+                    dec     l                       ; restore pointer to current position
+                    dec     l
+                    dec     l
+                    dec     l
+                    dec     l
                     jp      path_finder_neighbors   ; continue processing neighbors
 
 path_finder_BLUE_edge_2
@@ -587,7 +608,11 @@ path_finder_BLUE_edge_2
                     call    nc, Update_Distance
                     inc     l
                     cp      (hl)                    ; check adjacent of edge number 6
-                    call    nc, Update_Distance                       
+                    call    nc, Update_Distance
+                    dec     l                       ; restore pointer to current position
+                    dec     l
+                    dec     l
+                    dec     l
                     jp      path_finder_neighbors   ; continue processing neighbors
 
 path_finder_BLUE_edge_3
@@ -609,6 +634,9 @@ path_finder_BLUE_edge_3
                     inc     l
                     cp      (hl)                    ; check adjacent of edge number 6
                     call    nc, Update_Distance
+                    dec     l                       ; restore pointer to current position
+                    dec     l
+                    dec     l
                     jp      path_finder_neighbors   ; continue processing neighbors
 
 path_finder_BLUE_edge_4
@@ -629,6 +657,10 @@ path_finder_BLUE_edge_4
                     dec     l
                     cp      (hl)                    ; check adjacent of edge number 0
                     call    nc, Update_Distance
+                    inc     l                       ; restore pointer to current position
+                    inc     l
+                    inc     l
+                    inc     l
                     jp      path_finder_neighbors   ; continue processing neighbors
 
 path_finder_BLUE_edge_5
@@ -646,6 +678,11 @@ path_finder_BLUE_edge_5
                     dec     l
                     cp      (hl)                    ; check adjacent of edge number 0
                     call    nc, Update_Distance
+                    inc     l                       ; restore pointer to current position
+                    inc     l
+                    inc     l
+                    inc     l
+                    inc     l
                     jp      path_finder_neighbors   ; continue processing neighbors
 
 path_finder_BLUE_edge_6
@@ -666,6 +703,8 @@ path_finder_BLUE_edge_6
                     dec     l
                     cp      (hl)                    ; check adjacent of edge number 0
                     call    nc, Update_Distance
+                    ld      de, 6
+                    add     hl, de
                     jp      path_finder_neighbors   ; continue processing neighbors
 
 ; -----------------------------------------------------------------------------
