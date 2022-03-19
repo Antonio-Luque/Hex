@@ -180,13 +180,13 @@ GameOver
 ; -----------------------------------------------------------------------------
 ; Bright_Path: highlight the hexagons included in shortest path when game ends
 ;
-; Input:    HL = address of 'Board_(Color)' + 9
-;           DE = address of 'Path_Finder_(Color)'
+; Input:    HL = address of BLUE_BOARD_XX_YY or RED_BOARD_XX_YY
+;           DE = address of '(Color)_Bright_Path'
 ; Output:   -
 ; Destroys: BC, HL, DE, AF
 ; -----------------------------------------------------------------------------
 Bright_Path:
-                    ; Prepare 'Board_(Color)' and call 'Path_Finder_(Color)' to find victory path
+                    ; Prepare (Color)_BOARD_XX_YY and call '(Color)_Bright_Path' to find victory path
 
                     push    hl
                     call    Prepare_Board  

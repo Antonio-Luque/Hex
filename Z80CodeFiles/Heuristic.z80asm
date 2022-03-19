@@ -114,7 +114,7 @@ Update_Distance:
                     ld      b, (hl)
                     djnz    update_EMPTY            ; if distance is EMPTY, update empty distance
 ; if (HL) is not EMPTY or FRIEND, then set (HL) = C+1 and insert HL at Queue Tail
-update_increment
+Update_Increment:
                     ld      (hl), c
                     inc     (hl)                    ; set (HL) = C+1
                     res     6, (hl)                 ; delete friendly token flag (if set)
@@ -141,7 +141,7 @@ update_friendly
 ; if (HL) = EMPTY, then set (HL) = C+1 if current two-distance is friendly, otherwise set (HL) = 1
 update_EMPTY
                     bit     6, c                    ; is current two-distance friendly?
-                    jr      nz, update_increment    ; yes, set (HL) = C+1 and store position in queue
+                    jr      nz, Update_Increment    ; yes, set (HL) = C+1 and store position in queue
                     inc     (hl)                    ; no, set (HL) = 1 and skip this position to find
                                                     ; the second lowest distance
                     ret
@@ -156,25 +156,48 @@ update_EMPTY
 ; Destroys: HL, BC, DE, A'
 ; -----------------------------------------------------------------------------
 Blue_Distance_UpDown:
+                    ; copy blue board to up-down blue board
                     ld      hl, BLUE_BOARD+7
                     ld      de, BLUE_BOARD_UP_DOWN+7
-                    call    Copy_Board              ; copy blue board to up-down blue board
-Blue_Bright_Path
-                    ld      a, 1                    ; initialize increment between start positions
-                    ld      (@startpos_increment+1), a
+                    call    Copy_Board
 
-                    ld      a, 9                    ; initialize increment to edge positions
+; entry point for Bright_Path
+Blue_Bright_Path:
+                    ; initialize increment to edge positions
+                    ld      a, 9                    
                     ld      (@edge_increment+1), a
 
-                    ld      hl, BLUE_VECTOR_TABLE+$FF
-                                                    ; H = MSB of vector table address to process blue adjacents
-                    ld      (@vector_table+1), hl   ; L = LSB, initialize to DEFEAT
-
-                    ld      hl, BLUE_QUEUE_AREA
-                    ld      (@queue_tail+1), hl     ; initialize blue queue area
+                    ; initialize vector table
+                    ld      hl, BLUE_VECTOR_TABLE+DEFEAT
+                    ld      (@vector_table+1), hl   ; H = MSB of vector table address to process blue adjacents
+                                                    ; L = LSB of vector table address (initialize to DEFEAT)
+                    ; initialize blue queue area
+                    ld      h, BLUE_QUEUE_AREA/256
+                    ld      (@queue_tail+1), hl     
                     push    hl                      ; store Queue Tail/Head
 
+                    ; update two-distances of start positions
                     ld      hl, BLUE_BOARD_UP_DOWN+9
+                    ld      c, VICTORY              ; initialize current two-distance
+                    ld      a, 7                    ; number of start hexagons (loop counter)
+Blue_UpDown_Start
+                    ex      af, af'                 ; save loop counter
+                    xor     a
+                    cp      (hl)                    ; if (distance = 0) {
+                    jr      nz, Blue_UpDown_Check_Start
+                    call    Update_Increment        ;       (HL) = C+1 and insert HL at Queue Tail
+                    jp      Blue_UpDown_Next_Start  ; }
+Blue_UpDown_Check_Start                             ; else {
+                    ld      a, FRIEND
+                    cp      (hl)                    ;       check start position distance
+                    call    nc, Update_Distance     ; }
+Blue_UpDown_Next_Start
+                    inc     l                       ; move to next start position
+                    ex      af, af'                 ; restore loop counter
+                    dec     a
+                    jp      nz, Blue_UpDown_Start   ; repeat for each start position
+
+                    pop     hl                      ; restore Queue Tail/Head
                     jp      Path_Finder             ; calculate blue two-distance (up-down)
 
 ; -----------------------------------------------------------------------------
@@ -187,21 +210,46 @@ Blue_Bright_Path
 ; Destroys: HL, BC, DE, A'
 ; -----------------------------------------------------------------------------
 Blue_Distance_DownUp:
+                    ; copy blue board to down-up blue board
                     ld      hl, BLUE_BOARD+7
                     ld      de, BLUE_BOARD_DOWN_UP-1
-                    call    Copy_Board              ; copy blue board to down-up blue board
+                    call    Copy_Board
 
-                    ld      a, -1                   ; initialize increment between start positions
-                    ld      (@startpos_increment+1), a
-                    ld      (@vector_table+1), a    ; initialize to DEFEAT
-
+                    ; initialize increment to edge positions
                     ld      a, -9
-                    ld      (@edge_increment+1), a  ; initialize increment to edge positions
+                    ld      (@edge_increment+1), a
 
+                    ; initialize vector table
+                    ld      a, DEFEAT
+                    ld      (@vector_table+1), a
+
+                    ; initialize blue queue area
                     ld      hl, (@queue_tail+1)
                     push    hl                      ; store Queue Tail/Head
-                    ex      de, hl                  ; restore HL from DE at end of down-up blue board
-                    dec     l                       ; adjust position
+
+                    ; update two-distances of start positions
+                    ex      de, hl
+                    dec     l                       ; HL = BLUE_BOARD_DOWN_UP+61
+                    ld      c, VICTORY              ; initialize current two-distance
+                    ld      a, 7                    ; number of start hexagons (loop counter)
+Blue_DownUp_Start
+                    ex      af, af'                 ; save loop counter
+                    xor     a
+                    cp      (hl)                    ; if (distance = 0) {
+                    jr      nz, Blue_DownUp_Check_Start
+                    call    Update_Increment        ;       (HL) = C+1 and insert HL at Queue Tail
+                    jp      Blue_DownUp_Next_Start  ; }
+Blue_DownUp_Check_Start                             ; else {
+                    ld      a, FRIEND
+                    cp      (hl)                    ;       check start position distance
+                    call    nc, Update_Distance     ; }
+Blue_DownUp_Next_Start
+                    dec     l                       ; move to next start position
+                    ex      af, af'                 ; restore loop counter
+                    dec     a
+                    jp      nz, Blue_DownUp_Start   ; repeat for each start position
+
+                    pop     hl                      ; restore Queue Tail/Head
                     jp      Path_Finder             ; calculate blue two-distance (down-up)
 
 ; -----------------------------------------------------------------------------
@@ -214,25 +262,50 @@ Blue_Distance_DownUp:
 ; Destroys: HL, BC, DE, A'
 ; -----------------------------------------------------------------------------  
 Red_Distance_LeftRight:
+                    ; copy red board to left-right red board
                     ld      hl, RED_BOARD+7
                     ld      de, RED_BOARD_LEFT_RIGHT+7
-                    call    Copy_Board              ; copy red board to left-right red board
-Red_Bright_Path
-                    ld      a, 9                    ; initialize increment between start positions
-                    ld      (@startpos_increment+1), a
+                    call    Copy_Board
 
-                    ld      a, 1                    ; initialize increment to edge positions
+; entry point for Bright_Path
+Red_Bright_Path
+                    ; initialize increment to edge positions
+                    ld      a, 1
                     ld      (@edge_increment+1), a
 
-                    ld      hl, RED_VECTOR_TABLE+$FF
-                                                    ; H = MSB of vector table adress to process red adjacents
-                    ld      (@vector_table+1), hl   ; L = LSB, initialize to DEFEAT
-
-                    ld      hl, RED_QUEUE_AREA
-                    ld      (@queue_tail+1), hl     ; initialize red queue area
+                    ; initialize vector table
+                    ld      hl, RED_VECTOR_TABLE+DEFEAT
+                    ld      (@vector_table+1), hl   ; H = MSB of vector table adress to process red adjacents
+                                                    ; L = LSB of vector table address (initialize to DEFEAT)
+                    ; initialize red queue area
+                    ld      h, RED_QUEUE_AREA/256
+                    ld      (@queue_tail+1), hl
                     push    hl
 
+                    ; update two-distances of start positions
                     ld      hl, RED_BOARD_LEFT_RIGHT+9
+                    ld      c, VICTORY              ; initialize current two-distance
+                    ld      a, 7                    ; number of start hexagons (loop counter)
+Red_LeftRight_Start
+                    ex      af, af'                 ; save loop counter
+                    xor     a
+                    cp      (hl)                    ; if (distance = 0) {
+                    jr      nz, Red_LeftRight_Check_Start
+                    call    Update_Increment        ;       (HL) = C+1 and insert HL at Queue Tail }
+                    jp      Red_LeftRight_Next_Start
+Red_LeftRight_Check_Start                           ; else {
+                    ld      a, FRIEND
+                    cp      (hl)                    ;       check start position distance
+                    call    nc, Update_Distance     ; }
+Red_LeftRight_Next_Start
+                    ld      a, l                    ; move to next start position
+                    add     a, 9
+                    ld      l, a
+                    ex      af, af'                 ; restore loop counter
+                    dec     a
+                    jp      nz, Red_LeftRight_Start ; repeat for each start position
+
+                    pop     hl                      ; restore Queue Tail/Head
                     jp      Path_Finder             ; calculate red two-distance (left-right)
 
 ; -----------------------------------------------------------------------------
@@ -245,55 +318,60 @@ Red_Bright_Path
 ; Destroys: HL, BC, DE, A'
 ; -----------------------------------------------------------------------------  
 Red_Distance_RightLeft:
+                    ; copy red board to right-left red board
                     ld      hl, RED_BOARD+7
                     ld      de, RED_BOARD_RIGHT_LEFT-1
-                    call    Copy_Board              ; copy red board to right-left red board
+                    call    Copy_Board
 
-                    ld      a, -9                   ; initialize increment between start positions
-                    ld      (@startpos_increment+1), a
+                    ; initialize increment to edge positions
                     ld      a, -1
-                    ld      (@edge_increment+1), a  ; initialize increment to edge positions
-                    ld      (@vector_table+1), a    ; initialize to DEFEAT
+                    ld      (@edge_increment+1), a
 
+                    ; initialize vector table
+                    ld      (@vector_table+1), a
+
+                    ; initialize red queue area
                     ld      hl, (@queue_tail+1)
                     push    hl                      ; store Queue Tail/Head
-                    ex      de, hl                  ; restore HL from DE at end of right-left red board
-                    dec     l                       ; adjust position
+
+                    ; update two-distances of start positions
+                    ex      de, hl
+                    dec     l                       ; HL = RED_BOARD_RIGHT_LEFT+61
+                    ld      c, VICTORY              ; initialize current two-distance
+                    ld      a, 7                    ; number of start hexagons (loop counter)
+Red_RightLeft_Start
+                    ex      af, af'                 ; save loop counter
+                    xor     a
+                    cp      (hl)                    ; if (distance = 0) {
+                    jr      nz, Red_RightLeft_Check_Start
+                    call    Update_Increment        ;       (HL) = C+1 and insert HL at Queue Tail }
+                    jp      Red_RightLeft_Next_Start
+Red_RightLeft_Check_Start                           ; else {
+                    ld      a, FRIEND
+                    cp      (hl)                    ;       check start position distance
+                    call    nc, Update_Distance     ; }
+Red_RightLeft_Next_Start
+                    ld      a, l                    ; move to next start position
+                    add     a, -9
+                    ld      l, a
+                    ex      af, af'                 ; restore loop counter
+                    dec     a
+                    jp      nz, Red_RightLeft_Start ; repeat for each start position
+
+                    pop     hl                      ; restore Queue Tail/Head
+
 ; -----------------------------------------------------------------------------
 ; Calculate two-distance metric
 ;
 ; The algorithm is implemented running PATHFINDER, starting at the corresponding side of the input board
 ;
-; Input:    HL = address of (Color)_BOARD_XX_YY
+; Input:    HL = points to BLUE or RED Queue Head
 ; Output:   A  = DEFEAT, if corresponding edge couldn't be reached
 ;           A  = WIN_CONDITION, if there is chain of connected (color) tokens between the two edges
 ;           A  = X, otherwise
 ; Destroys: HL, BC, DE, A'
 ; -----------------------------------------------------------------------------
 Path_Finder:
-                    ld      c, VICTORY              ; initialize current two-distance
-                    ld      a, 7                    ; number of start hexagons (loop counter)
-
-                    ; update two-distances of start positions  
-path_finder_start
-                    ex      af, af'                 ; save loop counter
-                    ld      a, (hl)                 ; get start position distance
-                    or      a                       ; if (distance = 0)
-                    jr      nz, $+3                 ; {
-                    inc     (hl)                    ;    start position distance = 1 }
-                    ld      a, FRIEND           
-                    cp      (hl)                    ; check start position distance
-                    call    nc, Update_Distance
-                    ld      a, l                    ; get current position
-@startpos_increment
-                    add     a, 0                    ; move to next start position (increment setted up above)
-                    ld      l, a
-                    ex      af, af'                 ; restore loop counter
-                    dec     a                       
-                    jp      nz, path_finder_start   ; repeat for each start position
-
-                    pop     hl                      ; restore Queue Tail/Head
-path_finder_loop
                     inc     l                       ; move Queue Head
                     push    hl                      ; preserve Queue Head
                     ld      l, (hl)                 ; retrieve next position to be checked
@@ -337,7 +415,7 @@ path_finder_neighbors
                     pop     hl
                     ld      a, (@queue_tail+1)
                     cp      l                       ; empty queue?
-                    jp      nz, path_finder_loop
+                    jp      nz, Path_Finder
                     ld      a, (@vector_table+1)    ; return A = DEFEAT, if the edge couldn't be reached
                                                     ; return A = X, otherwise
                     ret
