@@ -11,9 +11,6 @@
     <DisassAnn Include="Rom\ZxSpectrum48.disann" />
   </ItemGroup>
   <ItemGroup>
-    <Tap Include="TapeFiles\Hex.tap" />
-  </ItemGroup>
-  <ItemGroup>
     <Tzx Include="TapeFiles\Hex.tzx" />
   </ItemGroup>
   <ItemGroup>
@@ -35,6 +32,9 @@
     <Z80Asm Include="Z80CodeFiles\Output.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Play.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Sound.z80asm" />
+  </ItemGroup>
+  <ItemGroup>
+    <Tap Include="TapeFiles\Hex.tap" />
   </ItemGroup>
   <Import Project="$(CustomProjectExtensionsPath)Spect.Net.CodeDiscover.targets" />
 </Project>

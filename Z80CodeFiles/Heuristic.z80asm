@@ -197,8 +197,7 @@ Blue_UpDown_Next_Start
                     dec     a
                     jp      nz, Blue_UpDown_Start   ; repeat for each start position
 
-                    pop     hl                      ; restore Queue Tail/Head
-                    jp      Path_Finder             ; calculate blue two-distance (up-down)
+                    jp      path_finder_first       ; calculate blue two-distance (up-down)
 
 ; -----------------------------------------------------------------------------
 ; Set up Path_Finder routine to calculate BLUE two-distance from DOWN to UP edge
@@ -249,8 +248,7 @@ Blue_DownUp_Next_Start
                     dec     a
                     jp      nz, Blue_DownUp_Start   ; repeat for each start position
 
-                    pop     hl                      ; restore Queue Tail/Head
-                    jp      Path_Finder             ; calculate blue two-distance (down-up)
+                    jp      path_finder_first       ; calculate blue two-distance (down-up)
 
 ; -----------------------------------------------------------------------------
 ; Set up Path_Finder routine to calculate RED two-distance from LEFT to RIGHT edge
@@ -305,8 +303,7 @@ Red_LeftRight_Next_Start
                     dec     a
                     jp      nz, Red_LeftRight_Start ; repeat for each start position
 
-                    pop     hl                      ; restore Queue Tail/Head
-                    jp      Path_Finder             ; calculate red two-distance (left-right)
+                    jp      path_finder_first       ; calculate red two-distance (left-right)
 
 ; -----------------------------------------------------------------------------
 ; Set up Path_Finder routine to calculate RED two-distance from RIGHT to LEFT edge
@@ -358,7 +355,7 @@ Red_RightLeft_Next_Start
                     dec     a
                     jp      nz, Red_RightLeft_Start ; repeat for each start position
 
-                    pop     hl                      ; restore Queue Tail/Head
+                    jp      path_finder_first       ; calculate red two-distance (right-left)
 
 ; -----------------------------------------------------------------------------
 ; Calculate two-distance metric
@@ -412,7 +409,8 @@ path_finder_neighbors
                     inc     l
                     cp      (hl)                    ; lower-right neighbour not visited yet?
                     call    nc, Update_Distance
-                    pop     hl
+path_finder_first
+                    pop     hl                      ; restore Queue Tail
                     ld      a, (@queue_tail+1)
                     cp      l                       ; empty queue?
                     jp      nz, Path_Finder
