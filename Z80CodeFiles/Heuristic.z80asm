@@ -1078,32 +1078,39 @@ Red_Victory_Candidates:
 ;            B = attack mobility
 ;            C = board potential
 ; Output:   IX = points to first candidate
-; Destroys: HL, B, E, A, A'
+; Destroys: HL, B, DE, A, A'
 ; -----------------------------------------------------------------------------
 Get_Candidates:
                     ld      (ix+0), 0               ; candidates endmarker
+                    ld      e, ixl                  ; store candidates position
+                    ld      d, b                    ; store attack mobility
+                    ld      a, c
+                    ex      af, af'                 ; store board potential
+search_second_best
+                    ld      l, 9                    ; HL points to start of board potential
                     inc     c                       ; increment board potential
-                    ld      a, 61                   ; number of cells to be checked (loop counter)
-second_best_candidates
-                    ex      af, af'                 ; save loop counter
-                    ld      a, (hl)                 ; get potential
-                    cp      c                       ; is it equal to board potential + 1?
-                    jp      nz, second_candidates_next
-                    inc     ixl                     ; yes, move candidates position
-                    ld      (ix+0), l               ; insert candidate
-second_candidates_next
+                    ld      a, c                    ; A = board potential
+                    ld      b, 61                   ; number of cells to be checked (loop counter)
+second_best_loop
+                    cp      (hl)                    ; is it equal to incremented board potential?
+                    jp      nz, second_best_next    ; no, next potential
+                    inc     ixl                     ; yes, insert candidate
+                    ld      (ix+0), l
+second_best_next
                     inc     l                       ; move to next potential
-                    ex      af, af'                 ; restore loop counter
-                    dec     a                       ; repeat for each cell
-                    jp      nz, second_best_candidates
-                    dec     c                       ; restore board potential
+                    djnz    second_best_loop        ; repeat for each cell
+                    ld      a, ixl
+                    cp      e                       ; new candidates inserted?
+                    jr      z, search_second_best   ; no, repeat until new candidates inserted
+
                     ld      l, 8                    ; HL points to start of board potential
-best_candidates_loop
-                    inc     l                       ; move to next potential
-                    ld      a, (hl)                 ; get potential
-                    cp      c                       ; is it equal to board potential?
-                    jp      nz, best_candidates_loop
-                    inc     ixl                     ; yes, move candidates position
-                    ld      (ix+0), l               ; insert candidate
-                    djnz    best_candidates_loop    ; repeat for each lowest board potential
+                    ld      b, d                    ; restore attack mobility (loop counter)
+                    ex      af, af'                 ; restore board potential
+best_candidate_loop
+                    inc     l
+                    cp      (hl)                    ; is it equal to board potential?
+                    jp      nz, best_candidate_loop ; no, next potential
+                    inc     ixl                     ; yes, insert candidate
+                    ld      (ix+0), l
+                    djnz    best_candidate_loop     ; repeat for each lowest board potential
                     ret
