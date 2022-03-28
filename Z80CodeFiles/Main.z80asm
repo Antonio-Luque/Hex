@@ -129,16 +129,12 @@ DrawToken
                     ; check win condition
 
                     ld      a, (TOKEN_COLOR)        ; get current token color
-                    rra                             ; is BLUE the current token color?
-                    jr      c, GetBlueScore         ; yes, go for the score for blue player
+                    cp      BLUE_TOKEN              ; is BLUE the current token color?
+                    jr      z, GetBlueScore         ; yes, go for the score for blue player
                     call    Red_Distance_LeftRight  ; get score for red player
-                    ld      hl, RED_BOARD_LEFT_RIGHT+69
-                    ld      de, Red_Bright_Path     ; set parameters for Bright_Path routine
                     jr      CheckWinner             ; check victory condition
 GetBlueScore
                     call    Blue_Distance_UpDown    ; get score for blue player
-                    ld      hl, BLUE_BOARD_UP_DOWN+69
-                    ld      de, Blue_Bright_Path    ; set parameters for Bright_Path routine
 CheckWinner
                     cp      WIN_CONDITION           ; player/speccy won?
                     jr      z, GameOver             ; yes, there is a winner!
@@ -180,32 +176,35 @@ GameOver
 ; -----------------------------------------------------------------------------
 ; Bright_Path: highlight the hexagons included in shortest path when game ends
 ;
-; Input:    HL = address of BLUE_BOARD_XX_YY or RED_BOARD_XX_YY
-;           DE = address of '(Color)_Bright_Path'
+; Input:    B = current position
 ; Output:   -
 ; Destroys: BC, HL, DE, AF
 ; -----------------------------------------------------------------------------
 Bright_Path:
-                    ; Prepare (Color)_BOARD_XX_YY and call '(Color)_Bright_Path' to find victory path
+                    push    bc                      ; store current position
 
-                    push    hl
-                    call    Prepare_Board  
-                    pop     hl
+                    ld      a, (TOKEN_COLOR)
+                    cp      BLUE_TOKEN              ; check current token color
+                    jr      z, Prepare_Blue_Board
 
-; Find the start position of the victory path
+                    ld      hl, RED_BOARD_LEFT_RIGHT+69
+                    call    Prepare_Board           ; prepare RED board 
+                    call    Red_Bright_Path         ; find RED victory path
+                    jp      Bright_Path_Start
+Prepare_Blue_Board
+                    ld      hl, BLUE_BOARD_UP_DOWN+69
+                    call    Prepare_Board           ; prepare BLUE board
+                    call    Blue_Bright_Path        ; find BLUE victory path
 
-                    ld      de, -8                  ; number of positions to add to jump to the next row (for Board_Red)
-FindStartPosition                                   ; for each position in first row/column {
-                    ld      a, (hl)                 ;       get length of current position
-                    cp      c                       ;       is it equal to victory path length?
-                    jr      z, BrightPosition       ;       yes, exit and bright current position
-                    dec     l                       ;       move to next position inside 1st. row
-                    ld      a, h 
-                    cp      BLUE_BOARD_UP_DOWN/256  ;       are we searching in Board_Blue?
-                    jr      z, FindStartPosition    ;       yes, continue searching
-                    add     hl, de                  ;       move to next position inside 1st. column and continue searching
-                    jr      FindStartPosition       ; }
+Bright_Path_Start
+                    pop     bc                      ; restore current position
 
+                    ; get the start position of the victory path
+                    inc     h
+                    ld      l, b
+                    ld      a, (hl)
+                    ld      c, a
+                    jp      BrightPosition
 FindNextNeighbour
                     inc     l                       ; left neighbour
                     cp      (hl)
@@ -249,15 +248,13 @@ BrightPosition
                     ret
 
 ; -----------------------------------------------------------------------------
-; Update 'Board_(color)', changing WIN_CONDITION to EMPTY, everything else to ENEMY. 
-; Immediately after 'Path_Finder_(color)' returned VICTORY, you can execute
-; this routine, then execute 'Path_Finder_(color)' again to find a victory
-; path.
+; Update '(Color)_BOARD_XX_YY', changing WIN_CONDITION to EMPTY, everything else to ENEMY. 
+; Immediately after 'Path_Finder_(color)' returned VICTORY, you can execute this routine, 
+; then execute 'Path_Finder_(color)' again to find a victory path.
 ;
-; Input:    HL = address of 'Board_(Color)' + 9
-;           DE = address of 'Path_Finder_(Color)'
-; Output:    C = victory path length
-; Destroys:  B, HL, AF
+; Input:    HL = address of 'Board_(Color)' + 69
+; Output:    -
+; Destroys:  BC, HL, AF
 ; -----------------------------------------------------------------------------
 Prepare_Board:
                     ld      a, WIN_CONDITION
@@ -278,8 +275,7 @@ PrepareBoardSkip
                     dec     c
                     jr      nz, PrepareBoardNextRow
 
-                    ex      de, hl
-                    jp      (hl)                    ; simulate a call to Path_Finder_(Color)
+                    ret
 
 ; -----------------------------------------------------------------------------
 ; Convert a XY indexes of the hexagon in screen into a board position

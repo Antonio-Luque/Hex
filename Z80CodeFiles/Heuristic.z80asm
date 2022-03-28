@@ -453,7 +453,7 @@ path_finder_adjacent
                     jp      (hl)                    ; jump to the path_finder_(color)_edge_N routine
 path_finder_abort
                     pop     de                      ; discard queue pointer to return to (color)_Score
-                    ret                             ; return A = WIN_CONDITION
+                    ret                             ; return A = WIN_CONDITION, B = current position
 
 ; -----------------------------------------------------------------------------
 ;  Check two-distance of RED adjacents
