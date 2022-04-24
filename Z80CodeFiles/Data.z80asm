@@ -124,6 +124,8 @@ STR_WAIT            defm    "WAIT\0"
 STR_EMPTY4          defm    "    \0"
 STR_EMPTY6          defm    "      \0"
 STR_MOVE            defb    0, '-', 0, 0, 0
+STR_PLAYERS         defm    "One or two players? 1/2\0"
+STR_COLORS          defm    "Choose blue or red, b/r\0"
 
 ; -----------------------------------------------------------------------------
 ; Variables
@@ -132,12 +134,6 @@ CHAR_ATTR           defb    %00101000               ; default char attribute: br
 MOVE_POSXY:
 MOVE_POSX           defb    0                       ; current player X input/output screen location
 MOVE_POSY           defb    0                       ; current player Y input/output screen location
-
-; -----------------------------------------------------------------------------
-; Strings
-; -----------------------------------------------------------------------------
-STR_PLAYERS         defm    "One or two players? 1/2\0"
-STR_COLORS          defm    "Choose blue or red, b/r\0"
 
 ; -----------------------------------------------------------------------------
 ; Vector table of routines (must be aligned)
@@ -160,30 +156,29 @@ STR_SPECCY          defm    "Speccy\0"
 STR_PLAYER          defm    "Player\0"
 STR_LEVELTEXT       defm    "Level\0"
 STR_NOLEVEL         defm    "       \0"
-
-; -----------------------------------------------------------------------------
-; 1 to 5 keys mapping
-; -----------------------------------------------------------------------------
-KEYS_MAP            defb    '1', '2', '3', '4', '5'
+STR_HEADER          defm    " HEX \0"
+STR_FILLED          defm    "FILLED\0"
 
 ; -----------------------------------------------------------------------------
 ; Variables
 ; -----------------------------------------------------------------------------
 CHAR_COUNT          defb    0                       ; number of current chars in input string
-
-; -----------------------------------------------------------------------------
-; Strings
-; -----------------------------------------------------------------------------
-STR_HEADER          defm    " HEX \0"
-STR_FILLED          defm    "FILLED\0"
-STR_WINNER          defm    " WINS \0"
-
-; -----------------------------------------------------------------------------
-; Variables
-; -----------------------------------------------------------------------------
 TOKEN_COLOR         defb    0                       ; current token color (BLUE_TOKEN or RED_TOKEN)
+
+; -----------------------------------------------------------------------------
+; Interrupt entry point: must be allocated at $6469
+; -----------------------------------------------------------------------------
+INTERRUPT:
+                    defb    $C3                     ; 'jp' opcode
+                    defw    Timer
+
+; -----------------------------------------------------------------------------
+; Variables and strings
+; -----------------------------------------------------------------------------
 MOVE_NUMBER         defb    0                       ; current move number
+KEYS_MAP            defb    '1', '2', '3', '4', '5' ; 1 to 5 keys mapping
 PLAYER_MOVE         defb    0, 0, 0, 0              ; 4 bytes for input player move
+STR_WINNER          defm    " WINS \0"              ; 'WINS' string
 
 ; -----------------------------------------------------------------------------
 BOARD_COORDINATES:
@@ -212,7 +207,7 @@ OPENINGS:
                     defb    $28, $29, $2A, $2E, $2F, $30, $31
                     defb    $32, $36, $37, $38, $3A, $3F
 
-FILLER              defs    13                      ; filler space to align vector table
+FILLER              defs    10                      ; filler space to align vector table
 
 ; -----------------------------------------------------------------------------
 ; Vector table of routines (must be aligned)

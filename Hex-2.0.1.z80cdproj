@@ -31,10 +31,10 @@
     <Z80Asm Include="Z80CodeFiles\Sound.z80asm" />
   </ItemGroup>
   <ItemGroup>
-    <Tzx Include="TapeFiles\Hex.tzx" />
+    <Tap Include="TapeFiles\Hex.tap" />
   </ItemGroup>
   <ItemGroup>
-    <Tap Include="TapeFiles\Hex.tap" />
+    <Tzx Include="TapeFiles\Hex.tzx" />
   </ItemGroup>
   <Import Project="$(CustomProjectExtensionsPath)Spect.Net.CodeDiscover.targets" />
 </Project>

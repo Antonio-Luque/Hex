@@ -384,3 +384,6 @@ String2_Indexes:
                     ld      c, a                    ; set row position
 
                     ret
+
+Timer:
+                    ret
