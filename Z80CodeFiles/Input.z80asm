@@ -177,11 +177,11 @@ Input_String:
                     xor     a
                     ld      (CHAR_COUNT), a         ; char counter = 0
 InputStart
-                    ld      a, CYAN_FLASH1          ; set attributes for cursor (flash)
+                    ld      a, WHITE_FLASH1         ; set attributes for cursor (flash)
                     ld      (CHAR_ATTR), a
                     ld      a, '_'                  ; text input cursor
                     call    Print_Char              ; print cursor
-                    ld      a, CYAN_FLASH0          ; restore attributes (no flash)
+                    ld      a, WHITE_FLASH0         ; restore attributes (no flash)
                     ld      (CHAR_ATTR), a
                     xor     a
                     ld      (LAST_K), a             ; clear last key pressed

@@ -1,5 +1,0 @@
-{
-  "DefaultTapeFile": null,
-  "DefaultAnnotationFile": "Annotations.disann",
-  "DefaultCodeFile": "Z80CodeFiles\\Hex.z80asm"
-}

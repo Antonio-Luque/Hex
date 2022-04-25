@@ -6,7 +6,6 @@
   </PropertyGroup>
   <Import Project="$(CustomProjectExtensionsPath)Spect.Net.CodeDiscover.props" />
   <ItemGroup>
-    <DisassAnn Include="Annotations.disann" />
     <SpConf Include="Rom\ZxSpectrum.spconf" />
     <ProjConf Include="Spectrum.projconf" />
     <Rom Include="Rom\ZxSpectrum48.rom" />

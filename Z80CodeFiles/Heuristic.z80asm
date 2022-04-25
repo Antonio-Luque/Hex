@@ -805,7 +805,7 @@ Speccy_Score:
 ;           A = red heuristic result, otherwise
 ; Destroys: HL, BC, DE, A'
 ; -----------------------------------------------------------------------------
-Red_Score                   
+Red_Score
                     call    Red_Distance_LeftRight  ; calculate RED two-distance from LEFT to RIGHT edge
                     cp      WIN_CONDITION
                     ret     z                       ; if A = WIN_CONDITION, return A
