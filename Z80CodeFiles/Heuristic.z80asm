@@ -1,0 +1,1116 @@
+; -----------------------------------------------------------------------------
+; Heuristic.z80asm
+; Coded by Einar Saukas and Antonio Luque
+;
+; Based on chapter 5 of Jack van Rijswijck's thesis - https://webdocs.cs.ualberta.ca/~hayward/theses/jackmsc.pdf
+; and implemented with PATHFINDER - https://spectrumcomputing.co.uk/entry/28178/ZX-Spectrum/PATHFINDER
+; Adapted by Einar Saukas and Antonio Luque to be used as heuristic in Hex game.
+; -----------------------------------------------------------------------------
+
+BLUE                EQU     $01                     ; blue side
+RED                 EQU     $02                     ; red side
+WIDTH               EQU     $08                     ; distance to up-left/down-right neighbour
+EMPTY               EQU     $00                     ; empty positions on the board
+FRIEND              EQU     $02                     ; positions occupied by friendly tokens on the board
+ENEMY               EQU     $7E                     ; positions occupied by opponent tokens on the board
+DEFEAT              EQU     $FF                     ; return value if defeat
+VICTORY             EQU     $03                     ; internal value if victory
+WIN_CONDITION       EQU     $40+VICTORY             ; return value if victory
+BLUE_BOARD          EQU     $7C00                   ; A 256-aligned memory area reserved for blue positions
+RED_BOARD           EQU     $7D00                   ; A 256-aligned memory area reserved for red positions
+CANDIDATES          EQU     $7E00                   ; A 256-aligned memory area reserved to store move candidates
+
+; -----------------------------------------------------------------------------
+; Return if current player is FRIEND or ENEMY from the perspective of the blue player
+;
+; Input:    TOKEN_COLOR (BLUE_TOKEN or RED_TOKEN)
+; Output:   A = FRIEND if current player color is blue, ENEMY if current player color is red
+; Destroys: -
+; -----------------------------------------------------------------------------
+Friend_Or_Foe:
+                    ld      a, (TOKEN_COLOR)        ; set current player color in A
+                    rra                             ; is current player color BLUE?
+                    ld      a, FRIEND               ; set FRIEND in A
+                    ret     c                       ; yes, return FRIEND 
+                    xor     $7C                     ; no, return ENEMY
+                    ret
+
+; -----------------------------------------------------------------------------
+; Put a token on both blue and red boards
+;
+; Input:    HL = address of token position on blue board
+;           A  = either FRIEND or ENEMY from the perspective of blue player
+; Output:   HL = address of token position on red board
+;           A  = either ENEMY or FRIEND from the perspective of red player
+; -----------------------------------------------------------------------------
+Put_Token:
+                    ld      (hl), a
+                    inc     h                       ; go to red board
+                    xor     $7C                     ; invert side
+                    ld      (hl), a
+                    ret
+
+; -----------------------------------------------------------------------------
+; Erase a token from both blue and red boards
+;
+; Input:    HL = address of token position on blue board
+; Output:   HL = address of token position on red board
+; -----------------------------------------------------------------------------
+Erase_Token:
+                    ld      (hl), EMPTY
+                    inc     h
+                    ld      (hl), EMPTY
+                    ret
+
+; -----------------------------------------------------------------------------
+; Copy from '(color)_BOARD' to its corresponding '(Color)_BOARD_XX_YY'
+;
+; Input:    HL = address of '(color)_BOARD'
+;           DE = address of '(Color)_BOARD_XX_YY'
+; Output:   -
+; Destroys: BC, HL, DE
+; -----------------------------------------------------------------------------
+Copy_Board:
+                    ld      bc, 7*7                 ; number of positions to be copied
+copy_board_loop
+                    inc     l                       ; skip borders
+                    inc     e
+                    inc     l
+                    inc     e
+                    ldi                             ; copy a row of 7 positions
+                    ldi
+                    ldi
+                    ldi
+                    ldi
+                    ldi
+                    ldi
+                    jp      pe, copy_board_loop     ; repeat for each row
+                    ret
+
+; -----------------------------------------------------------------------------
+; Update current board position during heuristic function evaluation.
+;
+; This is an approach to Jack van Rijswijck's "two-distance" metric. The two-distance is defined as "one more
+; than the second lowest distance of p’s neighbours to q, with the proviso that the two-distance equals 1 if p
+; and q are directly adjacent".
+;
+; The position will be updated with a number that indicates two-distance from goal (stored in lowest 6 bits),
+; and a flag that indicates a position occupied by a friendly token (stored in 6th bit). Therefore this position
+; is updated as follows, depending on current content:
+;
+; * EMPTY (0):  1, if current two-distance is not friendly
+;               1 + two-distance of neighbour closest to goal, if current two-distance is friendly
+; * FRIEND (2): 64 + two-distance of neighbour closest to goal
+; * OTHERWISE:  1 + two-distance of neighbour closest to goal
+;
+; Input:    HL = points to current position (on either BLUE_BOARD_XX_YY or RED_BOARD_XX_YY)
+;           C  = current two-distance (also with a flag at 6th bit that indicates a friendly position)
+;           Z  = flag set when (HL) is FRIEND
+; Output:   -
+; Destroys: B, DE
+; -----------------------------------------------------------------------------
+Update_Distance:
+                    jr      z, update_friendly      ; if Z flag is set, update friend distance
+                    ld      b, (hl)
+                    djnz    update_EMPTY            ; if distance is EMPTY, update empty distance
+; if (HL) is not EMPTY or FRIEND, then set (HL) = C+1 and insert HL at Queue Tail
+Update_Increment:
+                    ld      (hl), c
+                    inc     (hl)                    ; set (HL) = C+1
+                    res     6, (hl)                 ; delete friendly token flag (if set)
+                    ex      de, hl                  ; save HL, put current position in E
+@queue_tail
+                    ld      hl, $0000               ; queue tail address
+                    inc     l                       ; move Queue Tail
+                    ld      (hl), e                 ; store position into Queue Tail
+                    ld      (@queue_tail+1), hl     ; update Queue Tail
+                    ex      de, hl                  ; restore HL
+                    ret
+; if (HL) = FRIEND, then set (HL) = C+64 and insert HL at Queue Head
+update_friendly
+                    ld      (hl), c
+                    set     6, (hl)                 ; set (HL) = C+64
+                    ld      b, l                    ; save current position in B
+                    pop     de                      ; preserve RET address
+                    ex      (sp), hl                ; retrieve Queue Head
+                    ld      (hl), b                 ; push this position into Queue Head
+                    dec     l                       ; move Queue Head
+                    ex      (sp), hl                ; update Queue Head
+                    push    de                      ; restore RET address
+                    ret
+; if (HL) = EMPTY, then set (HL) = C+1 if current two-distance is friendly, otherwise set (HL) = 1
+update_EMPTY
+                    bit     6, c                    ; is current two-distance friendly?
+                    jr      nz, Update_Increment    ; yes, set (HL) = C+1 and store position in queue
+                    inc     (hl)                    ; no, set (HL) = 1 and skip this position to find
+                                                    ; the second lowest distance
+                    ret
+
+; -----------------------------------------------------------------------------
+; Set up Path_Finder routine to calculate BLUE two-distance from UP to DOWN edge
+;
+; Input:    -
+; Output:   A = DEFEAT, if down edge couldn't be reached
+;           A = WIN_CONDITION, if there is chain of connected blue tokens between the two edges
+;           A = X, otherwise
+; Destroys: HL, BC, DE, A'
+; -----------------------------------------------------------------------------
+Blue_Distance_UpDown:
+                    ; copy blue board to up-down blue board
+                    ld      hl, BLUE_BOARD+7
+                    ld      de, BLUE_BOARD_UP_DOWN+7
+                    call    Copy_Board
+
+; entry point for Bright_Path
+Blue_Bright_Path:
+                    ; initialize increment to edge positions
+                    ld      a, 9                    
+                    ld      (@edge_increment+1), a
+
+                    ; initialize vector table
+                    ld      hl, BLUE_VECTOR_TABLE+DEFEAT
+                    ld      (@vector_table+1), hl   ; H = MSB of vector table address to process blue adjacents
+                                                    ; L = LSB of vector table address (initialize to DEFEAT)
+                    ; initialize blue queue area
+                    ld      h, BLUE_QUEUE_AREA/256
+                    ld      (@queue_tail+1), hl     
+                    push    hl                      ; store Queue Tail/Head
+
+                    ; update two-distances of start positions
+                    ld      hl, BLUE_BOARD_UP_DOWN+9
+                    ld      c, VICTORY              ; initialize current two-distance
+                    ld      a, 7                    ; number of start hexagons (loop counter)
+Blue_UpDown_Start
+                    ex      af, af'                 ; save loop counter
+                    xor     a
+                    cp      (hl)                    ; if (distance = 0) {
+                    jr      nz, Blue_UpDown_Check_Start
+                    call    Update_Increment        ;       (HL) = C+1 and insert HL at Queue Tail
+                    jp      Blue_UpDown_Next_Start  ; }
+Blue_UpDown_Check_Start                             ; else {
+                    ld      a, FRIEND
+                    cp      (hl)                    ;       check start position distance
+                    call    nc, Update_Distance     ; }
+Blue_UpDown_Next_Start
+                    inc     l                       ; move to next start position
+                    ex      af, af'                 ; restore loop counter
+                    dec     a
+                    jp      nz, Blue_UpDown_Start   ; repeat for each start position
+
+                    jp      path_finder_first       ; calculate blue two-distance (up-down)
+
+; -----------------------------------------------------------------------------
+; Set up Path_Finder routine to calculate BLUE two-distance from DOWN to UP edge
+;
+; Input:    -
+; Output:   A = DEFEAT, if down edge couldn't be reached
+;           A = WIN_CONDITION, if there is chain of connected blue tokens between the two edges
+;           A = X, otherwise
+; Destroys: HL, BC, DE, A'
+; -----------------------------------------------------------------------------
+Blue_Distance_DownUp:
+                    ; copy blue board to down-up blue board
+                    ld      hl, BLUE_BOARD+7
+                    ld      de, BLUE_BOARD_DOWN_UP-1
+                    call    Copy_Board
+
+                    ; initialize increment to edge positions
+                    ld      a, -9
+                    ld      (@edge_increment+1), a
+
+                    ; initialize vector table
+                    ld      a, DEFEAT
+                    ld      (@vector_table+1), a
+
+                    ; initialize blue queue area
+                    ld      hl, (@queue_tail+1)
+                    push    hl                      ; store Queue Tail/Head
+
+                    ; update two-distances of start positions
+                    ex      de, hl
+                    dec     l                       ; HL = BLUE_BOARD_DOWN_UP+61
+                    ld      c, VICTORY              ; initialize current two-distance
+                    ld      a, 7                    ; number of start hexagons (loop counter)
+Blue_DownUp_Start
+                    ex      af, af'                 ; save loop counter
+                    xor     a
+                    cp      (hl)                    ; if (distance = 0) {
+                    jr      nz, Blue_DownUp_Check_Start
+                    call    Update_Increment        ;       (HL) = C+1 and insert HL at Queue Tail
+                    jp      Blue_DownUp_Next_Start  ; }
+Blue_DownUp_Check_Start                             ; else {
+                    ld      a, FRIEND
+                    cp      (hl)                    ;       check start position distance
+                    call    nc, Update_Distance     ; }
+Blue_DownUp_Next_Start
+                    dec     l                       ; move to next start position
+                    ex      af, af'                 ; restore loop counter
+                    dec     a
+                    jp      nz, Blue_DownUp_Start   ; repeat for each start position
+
+                    jp      path_finder_first       ; calculate blue two-distance (down-up)
+
+; -----------------------------------------------------------------------------
+; Set up Path_Finder routine to calculate RED two-distance from LEFT to RIGHT edge
+;
+; Input:    -
+; Output:   A = DEFEAT, if down edge couldn't be reached
+;           A = WIN_CONDITION, if there is chain of connected red tokens between the two edges
+;           A = X, otherwise
+; Destroys: HL, BC, DE, A'
+; -----------------------------------------------------------------------------  
+Red_Distance_LeftRight:
+                    ; copy red board to left-right red board
+                    ld      hl, RED_BOARD+7
+                    ld      de, RED_BOARD_LEFT_RIGHT+7
+                    call    Copy_Board
+
+; entry point for Bright_Path
+Red_Bright_Path
+                    ; initialize increment to edge positions
+                    ld      a, 1
+                    ld      (@edge_increment+1), a
+
+                    ; initialize vector table
+                    ld      hl, RED_VECTOR_TABLE+DEFEAT
+                    ld      (@vector_table+1), hl   ; H = MSB of vector table adress to process red adjacents
+                                                    ; L = LSB of vector table address (initialize to DEFEAT)
+                    ; initialize red queue area
+                    ld      h, RED_QUEUE_AREA/256
+                    ld      (@queue_tail+1), hl
+                    push    hl
+
+                    ; update two-distances of start positions
+                    ld      hl, RED_BOARD_LEFT_RIGHT+9
+                    ld      c, VICTORY              ; initialize current two-distance
+                    ld      a, 7                    ; number of start hexagons (loop counter)
+Red_LeftRight_Start
+                    ex      af, af'                 ; save loop counter
+                    xor     a
+                    cp      (hl)                    ; if (distance = 0) {
+                    jr      nz, Red_LeftRight_Check_Start
+                    call    Update_Increment        ;       (HL) = C+1 and insert HL at Queue Tail }
+                    jp      Red_LeftRight_Next_Start
+Red_LeftRight_Check_Start                           ; else {
+                    ld      a, FRIEND
+                    cp      (hl)                    ;       check start position distance
+                    call    nc, Update_Distance     ; }
+Red_LeftRight_Next_Start
+                    ld      a, l                    ; move to next start position
+                    add     a, 9
+                    ld      l, a
+                    ex      af, af'                 ; restore loop counter
+                    dec     a
+                    jp      nz, Red_LeftRight_Start ; repeat for each start position
+
+                    jp      path_finder_first       ; calculate red two-distance (left-right)
+
+; -----------------------------------------------------------------------------
+; Set up Path_Finder routine to calculate RED two-distance from RIGHT to LEFT edge
+;
+; Input:    -
+; Output:   A = DEFEAT, if down edge couldn't be reached
+;           A = WIN_CONDITION, if there is chain of connected red tokens between the two edges
+;           A = X, otherwise
+; Destroys: HL, BC, DE, A'
+; -----------------------------------------------------------------------------  
+Red_Distance_RightLeft:
+                    ; copy red board to right-left red board
+                    ld      hl, RED_BOARD+7
+                    ld      de, RED_BOARD_RIGHT_LEFT-1
+                    call    Copy_Board
+
+                    ; initialize increment to edge positions
+                    ld      a, -1
+                    ld      (@edge_increment+1), a
+
+                    ; initialize vector table
+                    ld      (@vector_table+1), a
+
+                    ; initialize red queue area
+                    ld      hl, (@queue_tail+1)
+                    push    hl                      ; store Queue Tail/Head
+
+                    ; update two-distances of start positions
+                    ex      de, hl
+                    dec     l                       ; HL = RED_BOARD_RIGHT_LEFT+61
+                    ld      c, VICTORY              ; initialize current two-distance
+                    ld      a, 7                    ; number of start hexagons (loop counter)
+Red_RightLeft_Start
+                    ex      af, af'                 ; save loop counter
+                    xor     a
+                    cp      (hl)                    ; if (distance = 0) {
+                    jr      nz, Red_RightLeft_Check_Start
+                    call    Update_Increment        ;       (HL) = C+1 and insert HL at Queue Tail }
+                    jp      Red_RightLeft_Next_Start
+Red_RightLeft_Check_Start                           ; else {
+                    ld      a, FRIEND
+                    cp      (hl)                    ;       check start position distance
+                    call    nc, Update_Distance     ; }
+Red_RightLeft_Next_Start
+                    ld      a, l                    ; move to next start position
+                    add     a, -9
+                    ld      l, a
+                    ex      af, af'                 ; restore loop counter
+                    dec     a
+                    jp      nz, Red_RightLeft_Start ; repeat for each start position
+
+                    jp      path_finder_first       ; calculate red two-distance (right-left)
+
+; -----------------------------------------------------------------------------
+; Calculate two-distance metric
+;
+; The algorithm is implemented running PATHFINDER, starting at the corresponding side of the input board
+;
+; Input:    HL = points to BLUE or RED Queue Head
+; Output:   A  = DEFEAT, if corresponding edge couldn't be reached
+;           A  = WIN_CONDITION, if there is chain of connected (color) tokens between the two edges
+;           A  = X, otherwise
+; Destroys: HL, BC, DE, A'
+; -----------------------------------------------------------------------------
+Path_Finder:
+                    inc     l                       ; move Queue Head
+                    push    hl                      ; preserve Queue Head
+                    ld      l, (hl)                 ; retrieve next position to be checked
+                    inc     h
+                    ld      c, (hl)                 ; retrieve two-distance from this position to start
+                    ld      b, l                    ; store current position in B
+
+                    ; look for adjacent hexagons
+                    ld      a, l
+@edge_increment
+                    add     a, 0                    ; check for an edge neighbor (increment setted up above)
+                    ld      l, a
+                    bit     7, (hl)                 ; if it is an edge, process adjacent positions 
+                    jr      nz, path_finder_adjacent
+                    ld      a, FRIEND
+                    ld      l, b                    ; restore current position to be checked
+
+                    ; process neighbors
+path_finder_neighbors
+                    inc     l
+                    cp      (hl)                    ; right neighbor not visited yet?
+                    call    nc, Update_Distance
+                    dec     l
+                    dec     l
+                    cp      (hl)                    ; left neighbor not visited yet?
+                    call    nc, Update_Distance
+                    ld      de, -WIDTH
+                    add     hl, de
+                    cp      (hl)                    ; upper-left neighbor not visited yet?
+                    call    nc, Update_Distance
+                    inc     l
+                    cp      (hl)                    ; upper-right neighbor not visited yet?
+                    call    nc, Update_Distance
+                    ld      de, WIDTH*2
+                    add     hl, de
+                    cp      (hl)                    ; lower-left neighbour not visited yet?
+                    call    nc, Update_Distance
+                    inc     l
+                    cp      (hl)                    ; lower-right neighbour not visited yet?
+                    call    nc, Update_Distance
+path_finder_first
+                    pop     hl                      ; restore Queue Tail
+                    ld      a, (@queue_tail+1)
+                    cp      l                       ; empty queue?
+                    jp      nz, Path_Finder
+                    ld      a, (@vector_table+1)    ; return A = DEFEAT, if the edge couldn't be reached
+                                                    ; return A = X, otherwise
+                    ret
+
+; -----------------------------------------------------------------------------
+; Check adjacent hexagons. 
+;
+; This is an approach to update the two-distance of adjacent hexagons. As explained
+; in Jack van Rijswijck's thesis: "two cells are adjacent if they share a common edge
+; on the board."
+;
+; Input:    HL = points to current edge position. A flag in 7th bit indicates an edge
+;                position and the lowest 3 bits the edge number
+;           B  = current position
+;           C  = current two-distance (with a flag at 6th bit that indicates a friendly 
+;                position)
+; Output:   A  = WIN_CONDITION, if there is a chain of connected tokens of the same
+;                color between the two edges
+;           A  = FRIEND, otherwise
+; Destroys: HL, B, DE
+; -----------------------------------------------------------------------------
+path_finder_adjacent
+                    ld      a, WIN_CONDITION
+                    cp      c                       ; is current two-distance friendly and victory?
+                    jr      z, path_finder_abort    ; yes, abort path_finder
+                    ld      a, (hl)
+                    and     %00000111               ; get edge number
+                    add     a, a                    ; update vector table index
+                    ld      (@vector_table+1), a    ; (the initialized value of DEFEAT is changed,
+                                                    ; meaning that edge has been reached)
+                    ld      a, FRIEND
+                    ld      l, b                    ; restore current position
+                    ex      de, hl                  ; store pointer to current position
+@vector_table
+                    ld      hl, ($0000)             ; this address is setted up above and correspond
+                                                    ; to BLUE_VECTOR_TABLE or RED_VECTOR_TABLE
+                    jp      (hl)                    ; jump to the path_finder_(color)_edge_N routine
+path_finder_abort
+                    pop     de                      ; discard queue pointer to return to (color)_Score
+                    ret                             ; return A = WIN_CONDITION, B = current position
+
+; -----------------------------------------------------------------------------
+;  Check two-distance of RED adjacents
+; -----------------------------------------------------------------------------
+path_finder_RED_edge_0
+                    ex      de, hl                  ; restore pointer to current position
+                    ld      de, 9*2
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 2
+                    call    nc, Update_Distance
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 3
+                    call    nc, Update_Distance
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 4
+                    call    nc, Update_Distance
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 5
+                    call    nc, Update_Distance
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 6
+                    call    nc, Update_Distance
+                    ld      de, -9*6                ; restore pointer to current position
+                    add     hl, de
+                    jp      path_finder_neighbors   ; continue processing neighbors
+
+path_finder_RED_edge_1
+                    ex      de, hl                  ; restore pointer to current position
+                    ld      de, 9*2
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 3
+                    call    nc, Update_Distance
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 4
+                    call    nc, Update_Distance
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 5
+                    call    nc, Update_Distance
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 6
+                    call    nc, Update_Distance
+                    ld      de, -9*5                ; restore pointer to current position
+                    add     hl, de
+                    jp      path_finder_neighbors   ; continue processing neighbors
+
+path_finder_RED_edge_2
+                    ex      de, hl                  ; restore pointer to current position
+                    ld      de, 9*2
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 4
+                    call    nc, Update_Distance
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 5
+                    call    nc, Update_Distance
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 6
+                    call    nc, Update_Distance                     
+                    ld      de, -9*6
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 0
+                    call    nc, Update_Distance
+                    ld      de, 9*2                 ; restore pointer to current position
+                    add     hl, de
+                    jp      path_finder_neighbors   ; continue processing neighbors
+
+path_finder_RED_edge_3
+                    ex      de, hl                  ; restore pointer to current position
+                    ld      de, -9*3
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 0
+                    call    nc, Update_Distance
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 1
+                    call    nc, Update_Distance
+                    ld      de, 9*4
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 5
+                    call    nc, Update_Distance
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 6
+                    call    nc, Update_Distance
+                    ld      de, -9*3                ; restore pointer to current position
+                    add     hl, de
+                    jp      path_finder_neighbors   ; continue processing neighbors
+
+path_finder_RED_edge_4
+                    ex      de, hl                  ; restore pointer to current position
+                    ld      de, 9*2
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 6
+                    call    nc, Update_Distance
+                    ld      de, -9*6
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 0
+                    call    nc, Update_Distance
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 1
+                    call    nc, Update_Distance
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 2
+                    call    nc, Update_Distance
+                    ld      de, 9*2                 ; restore pointer to current position
+                    add     hl, de
+                    jp      path_finder_neighbors   ; continue processing neighbors
+
+path_finder_RED_edge_5
+                    ex      de, hl                  ; restore pointer to current position
+                    ld      de, -9*5
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 0
+                    call    nc, Update_Distance 
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 1
+                    call    nc, Update_Distance
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 2
+                    call    nc, Update_Distance 
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 3
+                    call    nc, Update_Distance
+                    ld      de, 9*2                 ; restore pointer to current position
+                    add     hl, de
+                    jp      path_finder_neighbors   ; continue processing neighbors
+
+path_finder_RED_edge_6
+                    ex      de, hl                  ; restore pointer to current position
+                    ld      de, -9*6
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 0
+                    call    nc, Update_Distance
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 1
+                    call    nc, Update_Distance
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 2
+                    call    nc, Update_Distance 
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 3
+                    call    nc, Update_Distance   
+                    ld      de, 9
+                    add     hl, de
+                    cp      (hl)                    ; check adjacent of edge number 4
+                    call    nc, Update_Distance
+                    ld      de, 9*2                ; restore pointer to current position
+                    add     hl, de
+                    jp      path_finder_neighbors   ; continue processing neighbors
+                    
+; -----------------------------------------------------------------------------
+;  Check two-distance of BLUE adjacents
+; -----------------------------------------------------------------------------
+path_finder_BLUE_edge_0
+                    ex      de, hl                  ; restore pointer to current position
+                    inc     l
+                    inc     l
+                    cp      (hl)                    ; check adjacent of edge number 2 
+                    call    nc, Update_Distance
+                    inc     l
+                    cp      (hl)                    ; check adjacent of edge number 3
+                    call    nc, Update_Distance
+                    inc     l
+                    cp      (hl)                    ; check adjacent of edge number 4
+                    call    nc, Update_Distance
+                    inc     l
+                    cp      (hl)                    ; check adjacent of edge number 5
+                    call    nc, Update_Distance
+                    inc     l
+                    cp      (hl)                    ; check adjacent of edge number 6
+                    call    nc, Update_Distance
+                    ld      de, -6                  ; restore pointer to current position
+                    add     hl, de
+                    jp      path_finder_neighbors   ; continue processing neighbors
+
+path_finder_BLUE_edge_1
+                    ex      de, hl                  ; restore pointer to current position
+                    inc     l
+                    inc     l
+                    cp      (hl)                    ; check adjacent of edge number 3
+                    call    nc, Update_Distance
+                    inc     l
+                    cp      (hl)                    ; check adjacent of edge number 4
+                    call    nc, Update_Distance
+                    inc     l
+                    cp      (hl)                    ; check adjacent of edge number 5
+                    call    nc, Update_Distance
+                    inc     l
+                    cp      (hl)                    ; check adjacent of edge number 6
+                    call    nc, Update_Distance
+                    dec     l                       ; restore pointer to current position
+                    dec     l
+                    dec     l
+                    dec     l
+                    dec     l
+                    jp      path_finder_neighbors   ; continue processing neighbors
+
+path_finder_BLUE_edge_2
+                    ex      de, hl                  ; restore pointer to current position
+                    dec     l
+                    dec     l
+                    cp      (hl)                    ; check adjacent of edge number 0
+                    call    nc, Update_Distance
+                    inc     l
+                    inc     l
+                    inc     l
+                    inc     l
+                    cp      (hl)                    ; check adjacent of edge number 4
+                    call    nc, Update_Distance
+                    inc     l
+                    cp      (hl)                    ; check adjacent of edge number 5
+                    call    nc, Update_Distance
+                    inc     l
+                    cp      (hl)                    ; check adjacent of edge number 6
+                    call    nc, Update_Distance
+                    dec     l                       ; restore pointer to current position
+                    dec     l
+                    dec     l
+                    dec     l
+                    jp      path_finder_neighbors   ; continue processing neighbors
+
+path_finder_BLUE_edge_3
+                    ex      de, hl                  ; restore pointer to current position
+                    dec     l
+                    dec     l
+                    dec     l
+                    cp      (hl)                    ; check adjacent of edge number 0
+                    call    nc, Update_Distance
+                    inc     l
+                    cp      (hl)                    ; check adjacent of edge number 1
+                    call    nc, Update_Distance
+                    inc     l
+                    inc     l
+                    inc     l
+                    inc     l
+                    cp      (hl)                    ; check adjacent of edge number 5
+                    call    nc, Update_Distance
+                    inc     l
+                    cp      (hl)                    ; check adjacent of edge number 6
+                    call    nc, Update_Distance
+                    dec     l                       ; restore pointer to current position
+                    dec     l
+                    dec     l
+                    jp      path_finder_neighbors   ; continue processing neighbors
+
+path_finder_BLUE_edge_4
+                    ex      de, hl                  ; restore pointer to current position
+                    inc     l
+                    inc     l
+                    cp      (hl)                    ; check adjacent of edge number 6
+                    call    nc, Update_Distance
+                    dec     l
+                    dec     l
+                    dec     l
+                    dec     l
+                    cp      (hl)                    ; check adjacent of edge number 2
+                    call    nc, Update_Distance
+                    dec     l
+                    cp      (hl)                    ; check adjacent of edge number 1
+                    call    nc, Update_Distance
+                    dec     l
+                    cp      (hl)                    ; check adjacent of edge number 0
+                    call    nc, Update_Distance
+                    inc     l                       ; restore pointer to current position
+                    inc     l
+                    inc     l
+                    inc     l
+                    jp      path_finder_neighbors   ; continue processing neighbors
+
+path_finder_BLUE_edge_5
+                    ex      de, hl                  ; restore pointer to current position
+                    dec     l
+                    dec     l
+                    cp      (hl)                    ; check adjacent of edge number 3
+                    call    nc, Update_Distance
+                    dec     l                    
+                    cp      (hl)                    ; check adjacent of edge number 2
+                    call    nc, Update_Distance
+                    dec     l
+                    cp      (hl)                    ; check adjacent of edge number 1
+                    call    nc, Update_Distance
+                    dec     l
+                    cp      (hl)                    ; check adjacent of edge number 0
+                    call    nc, Update_Distance
+                    inc     l                       ; restore pointer to current position
+                    inc     l
+                    inc     l
+                    inc     l
+                    inc     l
+                    jp      path_finder_neighbors   ; continue processing neighbors
+
+path_finder_BLUE_edge_6
+                    ex      de, hl                  ; restore pointer to current position
+                    dec     l
+                    dec     l
+                    cp      (hl)                    ; check adjacent of edge number 4
+                    call    nc, Update_Distance
+                    dec     l                    
+                    cp      (hl)                    ; check adjacent of edge number 3
+                    call    nc, Update_Distance
+                    dec     l
+                    cp      (hl)                    ; check adjacent of edge number 2
+                    call    nc, Update_Distance
+                    dec     l
+                    cp      (hl)                    ; check adjacent of edge number 1
+                    call    nc, Update_Distance
+                    dec     l
+                    cp      (hl)                    ; check adjacent of edge number 0
+                    call    nc, Update_Distance
+                    ld      de, 6
+                    add     hl, de
+                    jp      path_finder_neighbors   ; continue processing neighbors
+
+; -----------------------------------------------------------------------------
+; Calculate SPECCY score depending on speccy color
+;
+; Input:    AI_PLAYER
+; Output:   A = DEFEAT, if speccy can't reach his opposite edge
+;           A = WIN_CONDITION, if player can't reach his opposite edge
+;           A = speccy heuristic result, otherwise
+; Destroys: HL, BC, DE, A'
+; -----------------------------------------------------------------------------
+Speccy_Score:
+                    ld      a, (AI_PLAYER)
+                    cp      FRIEND                  ; if speccy is FRIEND, calculate BLUE score
+                    jr      z, Blue_Score
+; -----------------------------------------------------------------------------
+; Calculate RED score
+;
+; Input:    A = FRIEND or ENEMY
+; Output:   A = DEFEAT, if RED can't reach his opposite edge
+;           A = WIN_CONDITION, if BLUE can't reach his opposite edge
+;           A = red heuristic result, otherwise
+; Destroys: HL, BC, DE, A'
+; -----------------------------------------------------------------------------
+Red_Score                   
+                    call    Red_Distance_LeftRight  ; calculate RED two-distance from LEFT to RIGHT edge
+                    cp      WIN_CONDITION
+                    ret     z                       ; if A = WIN_CONDITION, return A
+                    push    af                      ; save result
+                    call    Red_Distance_RightLeft  ; calculate RED two-distance from RIGHT to LEFT edge
+                    ld      b, a                    ; store second result in B
+                    pop     af                      ; restore first result
+                    add     a, b                    ; add both results
+                    cp      -2                      ; are both DEFEAT?
+                    ld      a, b
+                    ret     z                       ; yes, return A = DEFEAT
+                    
+                    call    Blue_Distance_UpDown    ; calculate BLUE two-distance from UP to DOWN edge
+                    push    af                      ; save result
+                    call    Blue_Distance_DownUp    ; calculate BLUE two-distance from DOWN to UP edge
+                    ld      b, a                    ; store second result in B
+                    pop     af                      ; restore first result
+                    add     a, b                    ; add both results
+                    cp      -2                      ; are both DEFEAT?
+                    ld      a, WIN_CONDITION
+                    ret     z                       ; yes, return A = WIN_CONDITION
+
+                    call    Red_Potentials          ; calculate RED potentials
+                    call    Blue_Potentials         ; calculate BLUE potentials
+                    jp      red_evaluation          ; calculate RED evaluation
+
+; -----------------------------------------------------------------------------
+; Calculate PLAYER score depending on speccy color
+;
+; Input:    AI_PLAYER
+; Output:   A = DEFEAT, if player can't reach his opposite edge
+;           A = WIN_CONDITION, if speccy can't reach his opposite edge
+;           A = player heuristic result, otherwise
+; Destroys: HL, BC, DE, A'
+; -----------------------------------------------------------------------------
+Player_Score:
+                    ld      a, (AI_PLAYER)
+                    cp      FRIEND                  ; if speccy is FRIEND, calculate RED score
+                    jr      z, Red_Score
+; -----------------------------------------------------------------------------
+; Calculate blue score
+;
+; Input:    A = FRIEND or ENEMY
+; Output:   A = DEFEAT, if BLUE can't reach his opposite edge
+;           A = WIN_CONDITION, if RED can't reach his opposite edge
+;           A = blue heuristic result, otherwise
+; Destroys: HL, BC, DE, A'
+; -----------------------------------------------------------------------------
+Blue_Score
+                    call    Blue_Distance_UpDown    ; calculate BLUE two-distance from UP to DOWN edge
+                    cp      WIN_CONDITION
+                    ret     z                       ; if A = WIN_CONDITION, return A
+                    push    af                      ; save result
+                    call    Blue_Distance_DownUp    ; calculate BLUE two-distance from DOWN to UP edge
+                    ld      b, a                    ; store second result in B
+                    pop     af                      ; restore first result
+                    add     a, b                    ; add both results
+                    cp      -2                      ; are both DEFEAT?
+                    ld      a, b               
+                    ret     z                       ; yes, return A = DEFEAT
+
+                    call    Red_Distance_LeftRight  ; calculate RED two-distance from LEFT to RIGHT edge
+                    push    af                      ; save result
+                    call    Red_Distance_RightLeft  ; calculate RED two-distance from RIGHT to LEFT edge
+                    ld      b, a                    ; store second result in B
+                    pop     af                      ; restore first result
+                    add     a, b                    ; add both results
+                    cp      -2                      ; are both DEFEAT?
+                    ld      a, WIN_CONDITION
+                    ret     z                       ; yes, return A = WIN_CONDITION
+
+                    call    Blue_Potentials         ; calculate BLUE potentials
+                    call    Red_Potentials          ; calculate RED potentials
+
+                    ; Calculate board evaluation from BLUE point of view
+
+                    ld      hl, BLUE_MOBILITY
+                    ld      de, RED_MOBILITY
+                    jp      Board_Evaluation
+red_evaluation
+                    ; Calculate board evaluation from RED point of view
+                    
+                    ld      hl, RED_MOBILITY
+                    ld      de, BLUE_MOBILITY 
+; -----------------------------------------------------------------------------
+; Calculate heuristic evaluation.
+;
+; The evaluation function uses the concepts of board potential and attack mobility:
+; * A cell’s Blue potential is defined as the sum of its Blue two-distance to both blue edges; its Red
+;   potential is the sum of its Red two-distance to both red edges. The board potential is defined as the
+;   lowest potential that occurs on the board.
+; * The attack mobility is defined for each player as the number of cells that realize that player’s board
+;   potential.
+;
+; The original evaluation function, as described in Jack van Rijswijck's thesis is:
+;
+;                               e = M (pB − pR) − (aB − aR)
+; where
+;
+;  pB = blue board potential
+;  pR = red board potential
+;  aB = blue attack mobility
+;  aR = red attack mobility
+;   M = a large number
+;
+; This implementation uses an "inverse" evaluation to fit BRAINIAC process of maximizing score for speccy
+; move and minimizing it for player move.
+;
+; Input:    HL = address of BLUE_MOBILITY
+;           DE = address of RED_MOBILITY, for calculate BLUE evaluation
+;       or
+;           HL = address of RED_MOBILITY
+;           DE = address of BLUE_MOBILITY, for calculate RED evaluation
+; Output:    A = heuristic result
+; Destroys: HL, DE, B
+; -----------------------------------------------------------------------------
+Board_Evaluation:
+                    ld      a, (de)                 ; get attack mobility
+                    sub     (hl)                    ; subtract attack mobilities -> (aB - aR)
+                    ld      b, a                    ; save the result in B
+                    dec     e                       ; move to board potential
+                    ld      a, (de)                 ; get board potential
+                    dec     l                       ; move to the other board potential
+                    sub     (hl)                    ; subtract potentials -> (pB - pR)
+                    add     a, a                    ; multiply by 8 -> M (pB - pR)
+                    add     a, a
+                    add     a, a
+                    add     a, 128                  ; add 128 -> 128 + 8 (pB - pR)
+                    sub     b                       ; subtract result of attack mobilities subtraction
+                    ret                             ; return A = (128 + 8 (pB − pR)) − (aB − aR)
+
+; -----------------------------------------------------------------------------
+; Set up Calculate_Potentials routine for BLUE potentials
+;
+; Input:    -
+; Output:   B = blue attack mobility
+;           C = blue board potential
+; Update:   BLUE_MOBILITY 
+;           BLUE_POTENTIAL
+; Destroys: A, A', HL, DE
+; -----------------------------------------------------------------------------
+Blue_Potentials:
+                    ld      a, BLUE_POTENTIAL%256   ; initialize LSB of BLUE_POTENTIAL address
+                    ld      (@potentials+2), a
+                    ld      hl, BLUE_BOARD_UP_DOWN+9
+                    ld      de, BLUE_BOARD_DOWN_UP+1
+                    jp      Calculate_Potentials    ; calculate blue board potentials
+
+; -----------------------------------------------------------------------------
+; Set up Calculate_Potentials routine for RED potentials
+;
+; Input:    -
+; Output:   B = red attack mobility
+;           C = red board potential
+; Update:   RED_MOBILITY 
+;           RED_POTENTIAL
+; Destroys: A, A', HL, DE
+; -----------------------------------------------------------------------------
+Red_Potentials:
+                    ld      a, RED_POTENTIAL%256    ; initialize LSB of RED_POTENTIAL address
+                    ld      (@potentials+2), a
+                    ld      hl, RED_BOARD_LEFT_RIGHT+9
+                    ld      de, RED_BOARD_RIGHT_LEFT+1
+                    jp      Calculate_Potentials    ; calculate red board potentials
+
+; -----------------------------------------------------------------------------
+; Set up Calculate_Potentials routine for Total potentials
+;
+; Input:    -
+; Output:   B = total attack mobility
+;           C = total board potential
+; Update:   RED_MOBILITY 
+;           RED_POTENTIAL
+; Destroys: A, A', HL, DE
+; -----------------------------------------------------------------------------
+Total_Potentials:
+                    ld      hl, BLUE_BOARD_UP_DOWN+9
+                    ld      de, RED_BOARD_LEFT_RIGHT+9
+; -----------------------------------------------------------------------------    
+; Calculate potentials
+;
+; Input:    HL = address of BLUE_BOARD_XX_YY or RED_BOARD_XX_YY
+;           DE = address of BLUE_BOARD_XX_YY or RED_BOARD_XX_YY
+; Output:   B = attack mobility
+;           C = board potential
+; Update:   BLUE_MOBILITY 
+;           BLUE_POTENTIAL
+;           RED_MOBILITY 
+;           RED_POTENTIAL
+; Destroys: A, A', HL, DE
+; -----------------------------------------------------------------------------
+Calculate_Potentials:
+                    ld      bc, $00FF               ; initialize attack mobility and board potential
+                    ld      a, 61                   ; number of cells to be checked (loop counter)                    
+potentials_loop
+                    ex      af, af'                 ; save loop counter
+                    ld      a, (hl)                 ; get cell's two-distance pointed by HL
+                    cp      $40                     ; if (friendly or edge or border) skip to next cell
+                    jr      nc, potentials_next
+                    cp      $04                     ; if (cell distance was not updated)
+                    jr      nc, $+4                 ; {
+                    ld      (hl), $30               ;    set cell potential as "infinite" }
+                    ld      a, (de)                 ; get cell's two-distance pointed by DE
+                    cp      $04                     ; if (cell distance was not updated)
+                    jr      nc, $+4                 ; {
+                    ld      a, $30                  ;    set cell potential as "infinite" }
+                    add     a, (hl)                 ; sum both two-distances (calculate cell potential)
+                    ld      (hl), a                 ; save potential in the cell pointed by HL
+                    cp      c                       ; is the new potential >= board potential?
+                    jr      nc, increment_mobility  ; yes, check attack mobility
+                    ld      c, a                    ; no, board potential = new potential
+                    ld      b, 1                    ; restart attack mobility
+increment_mobility
+                    jr      nz, potentials_next     ; if (potential <> last potential) skip to next cell
+                    inc     b                       ; else, increment attack mobility
+potentials_next
+                    inc     e                       ; move to next cells of each board
+                    inc     l
+                    ex      af, af'                 ; restore loop counter
+                    dec     a
+                    jp      nz, potentials_loop     ; repeat until end of boards
+@potentials
+                    ld      (POTENTIALS), bc        ; save attack mobility and board potential
+                    ret                    
+
+; -----------------------------------------------------------------------------
+; Search candidates based on color score result and boards potentials
+;
+; Input:     A = WIN_CONDITION or DEFEAT or heuristic result
+;           IX = address of CANDIDATES vector
+; Output:   IX = points to first candidate
+; Destroys: HL, BC, DE, A, A'
+; -----------------------------------------------------------------------------
+Search_Candidates:
+                    inc     a                           ; A = DEFEAT?
+                    jr      z, defeat_candidates        ; yes, process candidates for defeated color
+                    call    Total_Potentials            ; no, process candidates from total potentials
+                    ld      hl, BLUE_BOARD_UP_DOWN+9    ; HL points to board potential
+                    jp      Get_Candidates              ; get candidates
+
+                    ; process candidates for defeated color
+defeat_candidates
+                    ld      a, (AI_PLAYER)
+                    cp      FRIEND                      ; friend score has been processed?
+                    jr      z, blue_defeat_candidates   ; yes, process candidates for blue
+
+                    ; if RED is defeated, candidates are chosen from blue board potentials
+                    call    Blue_Distance_UpDown
+                    call    Blue_Distance_DownUp
+; entry point for BRAINIAC_best_move
+Blue_Victory_Candidates:
+                    call    Blue_Potentials
+                    ld      hl, BLUE_BOARD_UP_DOWN+9    ; HL points to board potential
+                    jp      Get_Candidates              ; get candidates
+
+                    ; if BLUE is defeated, candidates are chosen from red board potentials
+blue_defeat_candidates
+                    call    Red_Distance_LeftRight
+                    call    Red_Distance_RightLeft
+; entry point for BRAINIAC_best_move
+Red_Victory_Candidates:
+                    call    Red_Potentials
+                    ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to board potential  
+
+; -----------------------------------------------------------------------------
+; Fill CANDIDATES vector with second and best candidates from calculated potentials
+;
+; Input:    IX = address of CANDIDATES vector
+;           HL = address of BLUE or RED board potentials
+;            B = attack mobility
+;            C = board potential
+; Output:   IX = points to first candidate
+; Destroys: HL, B, DE, A, A'
+; -----------------------------------------------------------------------------
+Get_Candidates:
+                    ld      (ix+0), 0               ; candidates endmarker
+                    ld      e, ixl                  ; store candidates position
+                    ld      d, b                    ; store attack mobility
+                    ld      a, c
+                    ex      af, af'                 ; store board potential
+search_second_best
+                    ld      l, 9                    ; HL points to start of board potential
+                    inc     c                       ; increment board potential
+                    ld      a, c                    ; A = board potential
+                    ld      b, 61                   ; number of cells to be checked (loop counter)
+second_best_loop
+                    cp      (hl)                    ; is it equal to incremented board potential?
+                    jp      nz, second_best_next    ; no, next potential
+                    inc     ixl                     ; yes, insert candidate
+                    ld      (ix+0), l
+second_best_next
+                    inc     l                       ; move to next potential
+                    djnz    second_best_loop        ; repeat for each cell
+                    ld      a, ixl
+                    cp      e                       ; new candidates inserted?
+                    jr      z, search_second_best   ; no, repeat until new candidates inserted
+
+                    ld      l, 8                    ; HL points to start of board potential
+                    ld      b, d                    ; restore attack mobility (loop counter)
+                    ex      af, af'                 ; restore board potential
+best_candidate_loop
+                    inc     l
+                    cp      (hl)                    ; is it equal to board potential?
+                    jp      nz, best_candidate_loop ; no, next potential
+                    inc     ixl                     ; yes, insert candidate
+                    ld      (ix+0), l
+                    djnz    best_candidate_loop     ; repeat for each lowest board potential
+                    ret

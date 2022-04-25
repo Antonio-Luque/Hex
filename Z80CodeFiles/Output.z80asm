@@ -1,0 +1,147 @@
+﻿; -----------------------------------------------------------------------------
+; Output.z80asm
+; Coded by Antonio Luque
+; -----------------------------------------------------------------------------
+
+CHARS               equ     FONT-256                ; Address of charset data
+CYAN_FLASH1         equ     %10101000               ; Attributes: flash 1, paper 5, ink 0
+
+; -----------------------------------------------------------------------------
+; Print_Alert: prints an alert message below the current player input/output screen location
+;
+; Input:    HL - address of the string with the alert message    
+;           MOVE_POSXY - current player input/output screen location
+; Output:   BC - screen location of printed alert message
+; Destroys: A, HL, DE 
+; -----------------------------------------------------------------------------
+Print_Alert:
+                    ld      a, CYAN_FLASH1          ; set alert message attributes
+                    ld      (CHAR_ATTR), a
+                    ld      bc, (MOVE_POSXY)        ; get current player input/output screen location
+
+                    ; put message below current move location
+
+                    dec     b                       ; X = X - 1
+                    ld      a, c                   
+                    add     a, 8                    ; Y = Y + 8
+                    ld      c, a
+                    jp      Print_String
+
+; -----------------------------------------------------------------------------
+; Clear_Alert: clears an alert message
+;
+; Input:    BC - screen location of alert message to clear
+; Output:   -
+; Destroys: A, HL, DE 
+; -----------------------------------------------------------------------------
+Clear_Alert:
+                    ld      hl, STR_EMPTY6          ; HL points to a 6 blanks string
+                    ld      a, CYAN_FLASH0          ; set clear attributes
+                    ld      (CHAR_ATTR), a
+                    ld      bc, (MOVE_POSXY)        ; get current player input/output screen location
+
+                    ; put string below current move location
+
+                    dec     b                       ; X = X - 1
+                    ld      a, c                   
+                    add     a, 8                    ; Y = Y + 8
+                    ld      c, a
+                    jp      Print_String
+
+; -----------------------------------------------------------------------------
+; Print_Wait: prints "WAIT" message at current player input/output screen location 
+;
+; Input:    MOVE_POSXY - current player input/output screen location
+; Output:   -
+; Destroys: A, HL, DE 
+; -----------------------------------------------------------------------------
+Print_Wait:
+                    ld      a, CYAN_FLASH1          ; set wait message attributes
+                    ld      (CHAR_ATTR), a
+                    ld      hl, STR_WAIT            ; HL points to "WAIT" string
+                    jp      GetPosXY
+
+; -----------------------------------------------------------------------------
+; Clear_Move: clears a printed player move at current player input/output screen location 
+;
+; Input:    MOVE_POSXY - current player input/output screen location
+; Output:   -
+; Destroys: A, HL, DE 
+; -----------------------------------------------------------------------------
+Clear_Move:
+                    ld      hl, STR_EMPTY4          ; HL points to a 4 blanks string        
+                    jp      GetPosXY
+
+; -----------------------------------------------------------------------------
+; Print_Move: prints a formatted move at current player input/output screen location 
+;
+; Input:    MOVE_POSXY - current player input/output screen location
+; Output:   -
+; Destroys: A, HL, DE 
+; -----------------------------------------------------------------------------
+Print_Move:
+                    ld      hl, STR_MOVE            ; HL points to current player formatted move
+GetPosXY
+                    ld      bc, (MOVE_POSXY)        ; get current player XY input/output screen location
+
+; -----------------------------------------------------------------------------
+; PrintString: prints a text string on screen
+; Based on assembler course by sromero: https://wiki.speccy.org/cursos/ensamblador/gfx4_fuentes
+;
+; Input:    BC - XY screen position to print the string
+;           HL - pointer to text string (ending with 0)
+; Output:   -
+; Destroys: A, HL
+; -----------------------------------------------------------------------------
+Print_String:
+                    push    bc                      ; stores XY current player input/output screen location
+GetChar
+                    ld      a, (hl)                 ; get string char
+                    or      a                       ; is it 0? (end of string)
+                    jr      z ,ExitPrint            ; yes, return
+                    inc     hl                      ; next char
+                    call    Print_Char              ; prints char
+                    inc     b                       ; increments X (column)
+                    jp      GetChar                 ; repeat until end of string
+ExitPrint
+                    pop     bc                      ; restores XY current player input/output screen location
+
+                    ret 
+
+; -----------------------------------------------------------------------------
+; PrintChar: prints a character on the screen
+; Based on assembler course by sromero: https://wiki.speccy.org/cursos/ensamblador/gfx4_fuentes
+;
+; Input:    BC - XY screen position where to print the character
+;            A - ASCII code (index) of character to be print
+; Output:   -
+; Destroys: A, DE
+; -----------------------------------------------------------------------------
+Print_Char:
+                    push    hl                      ; stores registers 
+                    push    bc
+
+                    ld      de, CHARS               ; DE points to font address
+                    ld      h, 0                    ; set character index
+                    ld      l, a                  
+                    add     hl, hl                  ; a chararcter is 8 bytes long
+                    add     hl, hl
+                    add     hl, hl
+                    add     hl, de                  ; HL points to the address of character in font array
+                    call    GetXY_ATTR              ; get Attr memory address and char address
+                    ld      a, (CHAR_ATTR)          ; get color
+                    ld      (de), a                 ; set color
+                    call    GetXY_Screen            ; get screen memory address
+
+                    ld      b, 8                    ; number of lines
+ChrNextLine
+                    ld      a, (hl)                 ; source char
+                    ld      (de), a                 ; screen destination
+                    inc     hl                      ; increment source tile address
+                    call    GetNext_Line            ; screen next line
+                    djnz    ChrNextLine             ; repeat for next char line
+                  
+                    pop     bc                      ; restores registers
+                    pop     hl                  
+ 
+                    ret
