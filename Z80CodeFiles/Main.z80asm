@@ -3,36 +3,39 @@
 ; Coded by Antonio Luque
 ; -----------------------------------------------------------------------------
 
-CL_ALL              equ     $0DAF                   ; ROM address of CL_ALL subroutine
-BORDER              equ     $229B                   ; ROM address of BORDER+7 command routine
-ATTR_P              equ     $5C8D                   ; RAM address of permanent attributes system variable
 RED_XY              equ     $02A8                   ; XY RED input/output screen location
 BLUE_XY             equ     $1A30                   ; XY BLUE input/output screen location
-CYAN_FLASH0         equ     %00101000               ; Attributes: bright 0, flash 0, paper 5, ink 0
-CYAN_REVERSE        equ     %00000101               ; Attributes: bright 0, flash 0, paper 0, ink 5
-BLUE_TOKEN          equ     %00111001               ; Attributes: bright 0, flash 0, paper 7, ink 1
-RED_TOKEN           equ     %00111010               ; Attributes: bright 0, flash 0, paper 7, ink 2
-SW_COLOR            equ     %00000011               ; BITs to be XORed to swap current player color
+WHITE_FLASH0        equ     %00000111               ; Attributes: bright 0, flash 0, paper 0, ink 7
+WHITE_REVERSE       equ     %00111000               ; Attributes: bright 0, flash 0, paper 7, ink 0
+BLUE_TOKEN          equ     %00000101               ; Attributes: bright 0, flash 0, paper 0, ink 5
+RED_TOKEN           equ     %00000010               ; Attributes: bright 0, flash 0, paper 0, ink 2
+SW_COLOR            equ     %00000111               ; BITs to be XORed to swap current player color
 
 ; -----------------------------------------------------------------------------
 ; Entry point of the program
 ; -----------------------------------------------------------------------------
                     ent     $
 
-                    ; set border/screen colors, print "HEX" header and draw empty board
+                    ; clear screen and set border color
+                    xor     a
+                    ld      hl, $4000               ; HL points to screen memory address
+                    ld      de, $4001               ; DE points to screen memory address + 1
+                    ld      bc, 6144                ; screen area length
+                    ld      (hl), a                 ; clear first pixel-byte
+                    ldir                            ; clear rest of pixel-bytes
+                    ld      bc, 767                 ; attribute area length - 1
+                    ld      (hl), a                 ; set first attribute byte
+                    ldir                            ; set rest of attribute bytes
+                    out     ($FE), a                ; set border color
+                    ld      (BORDCR), a             ; update border color system variable
 
-                    ld      a, 5                    ; set border 5 (cyan)
-                    call    BORDER
-                    ld      a, CYAN_FLASH0          ; set screen color: paper 5, ink 0
-                    ld      (ATTR_P), a
-                    call    CL_ALL                  ; clear screen
+                    ; print "HEX" header and draw empty board
 
                     ld      hl, STR_HEADER          ; HL points to header string
                     ld      bc, $0A08               ; set string position
-                    ld      a, CYAN_REVERSE         ; set header attributes
+                    ld      a, WHITE_REVERSE        ; set header attributes
                     ld      (CHAR_ATTR), a
                     call    Print_String
-
                     call    Draw_Frame              ; draw board frame
                     call    Draw_Board              ; draw an empty hexagons board
 
@@ -50,7 +53,7 @@ GameInit
 
                     ; initialize screen attributes and input game options
 
-                    ld      a, CYAN_FLASH0          ; set clear attributes
+                    ld      a, WHITE_FLASH0         ; set clear attributes
                     ld      (CHAR_ATTR), a
                     call    Input_Options
                     ld      a, 1                    ; initialize move number
@@ -88,7 +91,7 @@ StorePosXY
 
                     push    bc                      ; store XY hexagon board indexes
                     call    Format_Move             ; format string move ("a-nn")
-                    ld      a, CYAN_FLASH0          ; restore message color
+                    ld      a, WHITE_FLASH0         ; restore message color
                     ld      (CHAR_ATTR), a
                     call    Print_Move              ; print Speccy move
                     pop     bc                      ; restore XY hexagon board indexes

@@ -4,7 +4,7 @@
 ; -----------------------------------------------------------------------------
 
 CHARS               equ     FONT-256                ; Address of charset data
-CYAN_FLASH1         equ     %10101000               ; Attributes: flash 1, paper 5, ink 0
+WHITE_FLASH1        equ     %10000111               ; Attributes: flash 1, paper 5, ink 0
 
 ; -----------------------------------------------------------------------------
 ; Print_Alert: prints an alert message below the current player input/output screen location
@@ -15,7 +15,7 @@ CYAN_FLASH1         equ     %10101000               ; Attributes: flash 1, paper
 ; Destroys: A, HL, DE 
 ; -----------------------------------------------------------------------------
 Print_Alert:
-                    ld      a, CYAN_FLASH1          ; set alert message attributes
+                    ld      a, WHITE_FLASH1         ; set alert message attributes
                     ld      (CHAR_ATTR), a
                     ld      bc, (MOVE_POSXY)        ; get current player input/output screen location
 
@@ -36,7 +36,7 @@ Print_Alert:
 ; -----------------------------------------------------------------------------
 Clear_Alert:
                     ld      hl, STR_EMPTY6          ; HL points to a 6 blanks string
-                    ld      a, CYAN_FLASH0          ; set clear attributes
+                    ld      a, WHITE_FLASH0         ; set clear attributes
                     ld      (CHAR_ATTR), a
                     ld      bc, (MOVE_POSXY)        ; get current player input/output screen location
 
@@ -56,7 +56,7 @@ Clear_Alert:
 ; Destroys: A, HL, DE 
 ; -----------------------------------------------------------------------------
 Print_Wait:
-                    ld      a, CYAN_FLASH1          ; set wait message attributes
+                    ld      a, WHITE_FLASH1         ; set wait message attributes
                     ld      (CHAR_ATTR), a
                     ld      hl, STR_WAIT            ; HL points to "WAIT" string
                     jp      GetPosXY
