@@ -3,7 +3,7 @@
 ; Coded by Antonio Luque
 ; -----------------------------------------------------------------------------
 
-WHITE_BLACK         equ     %00111000               ; Attributes: bright 0, flash 0, paper 7, ink 0
+WHITE_BLACK         equ     %00000111               ; Attributes: bright 0, flash 0, paper 0, ink 7
 
 ; -----------------------------------------------------------------------------
 ; Draw_Board: draw an empty 7x7 hexagons board in the screen
@@ -28,6 +28,35 @@ NextRow
                     ret
 
 ; -----------------------------------------------------------------------------
+; Draw_Token: animate hexagon sprite and draw a token on the screen
+;
+; Input:     BC - hexagon board indexes: B = column, C = row
+; Output:    -
+; Destroys:  A, DE
+; -----------------------------------------------------------------------------
+Draw_Token:
+                    ld      hl, HEXAGON_SPRITE
+                    ld      a, (TOKEN_COLOR)
+                    ex      af, af'
+                    ld      a, WHITE_BLACK          ; set empty hexagon color in A
+                    ld      (TOKEN_COLOR), a        ; store hexagon color
+                    ld      a, 6
+sprite_loop
+                    push    af
+                    cp      4
+                    jr      nz, draw_sprite
+                    ex      af, af'
+                    ld      (TOKEN_COLOR), a          
+draw_sprite
+                    call    Draw_Process
+                    ld      a, 12
+                    call    Delay
+                    pop     af
+                    dec     a
+                    jr      nz, sprite_loop
+                    ret
+
+; -----------------------------------------------------------------------------
 ; Draw_Hexagon: draw an empty hexagon on the screen
 ;
 ; Input:     BC - hexagon board indexes: B = column, C = row
@@ -36,21 +65,13 @@ NextRow
 ; -----------------------------------------------------------------------------
 Draw_Hexagon:
                     ld      hl, HEXAGON             ; HL points to the hexagon address
-                    jr      DrawProcess             ; continue to draw process
-
-; -----------------------------------------------------------------------------
-; Draw_Token: entry point to draw a token instead of an hexagon
-; -----------------------------------------------------------------------------
-Draw_Token:
-                    ld      hl, TOKEN               ; HL points to the token address
-DrawProcess
+Draw_Process:
                     push    bc                      ; store BC register
                     call    GetHEX_Color            ; get the attr memory address of an hexagon in screen
                     call    SetHEX_Color            ; set the color of the hexagon
                     call    GetHEX_Screen           ; get the screen memory address of an hexagon in screen
                     call    Draw_Graphic            ; draw the hexagon/token in screen
                     pop     bc                      ; restore BC register
-
                     ret
 
 ; -----------------------------------------------------------------------------

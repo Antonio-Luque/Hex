@@ -10,221 +10,401 @@
 ; Output:    -
 ; Destroys:  A, BC, HL, DE, IX
 ; -----------------------------------------------------------------------------
-Draw_Frame:
-                    ld      ix, FRAME_MAP           ; IX points to frame map
-                    ld      b, 120                  ; number of tiles definition in frame map
-NextTile
-                    push    bc                      ; store loop counter
-                    ld      b, (ix+0)               ; get the X row location of the screen (in bytes)
-                    ld      c, (ix+1)               ; get the Y col location of the screen (in pixels) 
+Draw_Frame:                  
+                    ld      hl, $4566
+                    call    Draw_Letters_Row
+                    ld      hl, $516D
+                    call    Draw_Letters_Row
 
-                    ld      de, TILE_SET            ; DE points to the tile set array
-                    ld      h, 0                    ; set tile index
-                    ld      l, (ix+2)
-                    add     hl, hl                  ; a tile is 8 bytes long
+                    call    Draw_Numbers
+                    call    Vertical_Bars
+                    call    Draw_Tokens
+                    call    Draw_Timer_MinSec
+
+                    ld      ix, FRAME_MAP
+                    ld      hl, $4000
+                    ld      c, 32
+                    call    Draw_Frame_Loop
+                    ld      hl, $50E0
+                    ld      c, 32
+Draw_Frame_Loop:
+                    ld      a, (ix+0)
+                    cp      -1
+                    jr      z, draw_frame_next
+                    push    hl
+                    ld      h, 0
+                    ld      l, a
                     add     hl, hl
                     add     hl, hl
-                    add     hl, de                  ; HL points to the address of the tile in the array
-                    call    GetXY_ATTR              ; get attribute screen memory address of XY location
-
-                    ld      a, (ix+3)               ; get tile color
-                    ld      (de), a                 ; set tile color
-                    call    GetXY_Screen            ; get pixel screen memory address of XY location
-
-                    ld      b, 8                    ; number of lines of tile
-NextTileLn
-                    ld      a, (hl)                 ; source tile line
-                    ld      (de), a                 ; screen line destination
-                    inc     hl                      ; increment source tile line address
-                    call    GetNext_Line            ; screen next line
-                    djnz    NextTileLn              ; repeat for next tile line
-
-                    ld      bc, 4                   ; length of a tile definition
-                    add     ix, bc                  ; IX points to next tile definition
-
-                    pop     bc                      ; restore loop counter
-                    djnz    NextTile                ; process next tile
-
+                    add     hl, hl
+                    ld      de, FRAME_TILES
+                    add     hl, de
+                    ex      de, hl
+                    pop     hl
+                    call    Draw_Tile
+draw_frame_next
+                    inc     l
+                    inc     ix
+                    dec     c
+                    jr      nz, Draw_Frame_Loop
                     ret
 
 ; -----------------------------------------------------------------------------
-; FRAME_MAP: tiles definition for the board frame
-;
-; For each row:
-;   Byte 4 - X screen location (in bytes)
-;   Byte 3 - Y screen location (in pixels)
-;   Byte 2 - tile index in tile set
-;   Byte 1 - color bits: F B P2 P1 P0 I2 I1 I0 (F-Flash, B-Bright, P-Paper, I-Ink)
-; -----------------------------------------------------------------------------
-FRAME_MAP:
-; UP (a - g)
-                    defb      3,  32,  8, %00101010
-                    defb      4,  32, 10, %00001010
-                    defb      5,  32,  0, %00001111
-                    defb      6,  32,  1, %00001111
-                    defb      7,  32,  0, %00001111
-                    defb      8,  32,  2, %00001111
-                    defb      9,  32,  0, %00001111
-                    defb     10,  32,  3, %00001111
-                    defb     11,  32,  0, %00001111
-                    defb     12,  32,  4, %00001111
-                    defb     13,  32,  0, %00001111
-                    defb     14,  32,  5, %00001111
-                    defb     15,  32,  0, %00001111
-                    defb     16,  32,  6, %00001111
-                    defb     17,  32,  0, %00001111
-                    defb     18,  32,  7, %00001111
-                    defb     19,  32,  0, %00001111
-                    defb     20,  32,  9, %00001010
-                    defb     21,  32, 10, %00101010
-; RIGHT (1 - 7)
-                    defb     20,  40,  8, %00111010
-                    defb     21,  40, 12, %00101010
-                    defb     20,  48,  9, %00111010
-                    defb     21,  48, 13, %00101010
-                    defb     22,  48, 10, %00101010
-                    defb     21,  56,  8, %00111010
-                    defb     22,  56, 14, %00101010
-                    defb     21,  64,  9, %00111010
-                    defb     22,  64, 15, %00101010
-                    defb     23,  64, 10, %00101010
-                    defb     22,  72,  8, %00111010
-                    defb     23,  72, 16, %00101010
-                    defb     22,  80,  9, %00111010
-                    defb     23,  80, 17, %00101010
-                    defb     24,  80, 10, %00101010
-                    defb     23,  88,  8, %00111010
-                    defb     24,  88, 18, %00101010
-                    defb     23,  96,  9, %00111010
-                    defb     24,  96, 19, %00101010
-                    defb     25,  96, 10, %00101010
-                    defb     24, 104,  8, %00111010
-                    defb     25, 104, 20, %00101010
-                    defb     24, 112,  9, %00111010
-                    defb     25, 112, 17, %00101010
-                    defb     26, 112, 10, %00101010
-                    defb     25, 120,  8, %00111010
-                    defb     26, 120, 21, %00101010
-                    defb     25, 128,  9, %00111010
-                    defb     26, 128, 22, %00101010
-                    defb     27, 128, 10, %00101010
-                    defb     26, 136,  8, %00111010
-                    defb     27, 136, 23, %00101010
-                    defb     26, 144,  9, %00111010
-                    defb     27, 144, 13, %00101010
-                    defb     28, 144, 10, %00101010
-; LEFT (1 -7)
-                    defb      3,  40,  9, %00101010
-                    defb      4,  40, 24, %00101010
-                    defb      5,  40, 10, %00111010
-                    defb      4,  48, 25, %00101010
-                    defb      5,  48, 11, %00111010
-                    defb      4,  56,  9, %00101010
-                    defb      5,  56, 26, %00101010
-                    defb      6,  56, 10, %00111010
-                    defb      5,  64, 27, %00101010
-                    defb      6,  64, 11, %00111010
-                    defb      5,  72,  9, %00101010
-                    defb      6,  72, 28, %00101010
-                    defb      7,  72, 10, %00111010
-                    defb      6,  80, 29, %00101010
-                    defb      7,  80, 11, %00111010
-                    defb      6,  88,  9, %00101010
-                    defb      7,  88, 30, %00101010
-                    defb      8,  88, 10, %00111010
-                    defb      7,  96, 25, %00101010
-                    defb      8,  96, 11, %00111010
-                    defb      7, 104,  9, %00101010
-                    defb      8, 104, 31, %00101010
-                    defb      9, 104, 10, %00111010
-                    defb      8, 112, 29, %00101010
-                    defb      9, 112, 11, %00111010
-                    defb      8, 120,  9, %00101010
-                    defb      9, 120, 32, %00101010
-                    defb     10, 120, 10, %00111010
-                    defb      9, 128, 33, %00101010
-                    defb     10, 128, 11, %00111010
-                    defb      9, 136,  9, %00101010
-                    defb     10, 136, 34, %00101010
-                    defb     11, 136, 10, %00111010
-                    defb     10, 144, 35, %00101010
-                    defb     11, 144, 11, %00111010
-; DOWN (a - g)
-                    defb     10, 152,  9, %00101010
-                    defb     11, 152, 10, %00001010
-                    defb     12, 152,  0, %00001111
-                    defb     13, 152,  1, %00001111
-                    defb     14, 152,  0, %00001111
-                    defb     15, 152,  2, %00001111
-                    defb     16, 152,  0, %00001111
-                    defb     17, 152,  3, %00001111
-                    defb     18, 152,  0, %00001111
-                    defb     19, 152,  4, %00001111
-                    defb     20, 152,  0, %00001111
-                    defb     21, 152,  5, %00001111
-                    defb     22, 152,  0, %00001111
-                    defb     23, 152,  6, %00001111
-                    defb     24, 152,  0, %00001111
-                    defb     25, 152,  7, %00001111
-                    defb     26, 152,  0, %00001111
-                    defb     27, 152,  9, %00001010
-                    defb     28, 152, 11, %00101010
-; BLUE token
-                    defb     27,  40,  0, %00101001
-                    defb     28,  40,  0, %00101001
-                    defb     27,  28, 36, %00101001
-                    defb     28,  28, 37, %00101001
-                    defb     27,  36, 38, %00101001
-                    defb     28,  36, 39, %00101001
-; RED token
-                    defb      3, 160,  0, %00101010
-                    defb      4, 160,  0, %00101010
-                    defb      3, 148, 36, %00101010
-                    defb      4, 148, 37, %00101010
-                    defb      3, 156, 38, %00101010
-                    defb      4, 156, 39, %00101010
+Draw_Letters_Row:
+                    ld      de, LETTERS
+                    ld      c, 7
+Draw_Letter_Loop
+                    ld      b, 10
+                    call    Draw_Item
+                    inc     l
+                    inc     l
+                    dec     c
+                    jr      nz, Draw_Letter_Loop
+                    ret
 
 ; -----------------------------------------------------------------------------
-; Tiles
+Draw_Numbers:
+                    ld      ix, NUMBERS_MAP
+                    ld      c, 7
+draw_numbers_loop
+                    ld      l, (ix+0)
+                    ld      h, (ix+1)
+                    ld      b, 10
+                    push    de
+                    call    Draw_Item
+                    pop     de
+                    ld      a, l
+                    add     a, 15
+                    ld      l, a
+                    ld      b, 10
+                    call    Draw_Item
+                    inc     ix
+                    inc     ix
+                    dec     c
+                    jr      nz, draw_numbers_loop
+                    ret
+
 ; -----------------------------------------------------------------------------
-TILE_SET:
-                    defb      0,   0,   0,   0,   0,   0,   0,   0 ; 00 Empty
-                    defb      0,   0,  56,   8,  56,  40,  56,   0 ; 01 Letter_a
-                    defb      0,  16,  16,  24,  20,  20,  24,   0 ; 02 Letter_b
-                    defb      0,   0,   0,  24,  32,  32,  24,   0 ; 03 Letter_c
-                    defb      0,   8,   8,  24,  40,  40,  24,   0 ; 04 Letter_d
-                    defb      0,   0,   8,  20,  28,  16,  12,   0 ; 05 Letter_e
-                    defb      0,  12,  16,  24,  16,  16,  16,   0 ; 06 Letter_f
-                    defb      0,   0,  12,  20,  20,  12,   4,  24 ; 07 Letter_g
-                    defb    255, 255, 127, 127,  63,  63,  31,  31 ; 08 RBorder1
-                    defb     15,  15,   7,   7,   3,   3,   1,   1 ; 09 RBorder2
-                    defb    128, 128, 192, 192, 224, 224, 240, 240 ; 10 LBorder1
-                    defb    248, 248, 252, 252, 254, 254, 255, 255 ; 11 LBorder2
-                    defb    248, 248, 252, 252, 254, 190,  63, 191 ; 12 RBorder_1a
-                    defb    191, 191, 191, 255, 255, 255, 255, 255 ; 13 RBorder_1-7b
-                    defb    248, 248, 252, 252, 254, 190,  95, 223 ; 14 RBorder_2a
-                    defb    191, 127,  31, 255, 255, 255, 255, 255 ; 15 RBorder_2b
-                    defb    248, 248, 252, 252, 254,  62, 223, 191 ; 16 RBorder_3a
-                    defb    223, 223,  63, 255, 255, 255, 255, 255 ; 17 RBorder_3-5b
-                    defb    248, 248, 252, 252, 254,  94,  95,  31 ; 18 RBorder_4a
-                    defb    223, 223, 223, 255, 255, 255, 255, 255 ; 19 RBorder_4b
-                    defb    248, 248, 252, 252, 254,  30, 127,  63 ; 20 RBorder_5a
-                    defb    248, 248, 252, 252, 254, 158, 127,  63 ; 21 RBorder_6a
-                    defb     95,  95, 191, 255, 255, 255, 255, 255 ; 22 RBorder_6b
-                    defb    248, 248, 252, 252, 254,  30, 223, 223 ; 23 RBorder_7a
-                    defb    255, 255, 255, 255, 255, 254, 252, 254 ; 24 LBorder_1a
-                    defb    254, 254, 126, 127,  63,  63,  31,  31 ; 25 LBorder_1-4b
-                    defb    255, 255, 255, 255, 255, 253, 250, 254 ; 26 LBorder_2a
-                    defb    253, 251, 120, 127,  63,  63,  31,  31 ; 27 LBorder_2b
-                    defb    255, 255, 255, 255, 255, 249, 254, 253 ; 28 LBorder_3a
-                    defb    254, 254, 121, 127,  63,  63,  31,  31 ; 29 LBorder_3-5b
-                    defb    255, 255, 255, 255, 255, 250, 250, 248 ; 30 LBorder_4a
-                    defb    255, 255, 255, 255, 255, 248, 251, 249 ; 31 LBorder_5a
-                    defb    255, 255, 255, 255, 255, 252, 251, 249 ; 32 LBorder_6a
-                    defb    250, 250, 125, 127,  63,  63,  31,  31 ; 33 LBorder_6b
-                    defb    255, 255, 255, 255, 255, 248, 254, 254 ; 34 LBorder_7a
-                    defb    253, 253, 125, 127,  63,  63,  31,  31 ; 35 LBorder_7b
-                    defb      7,  31,  56, 115, 103, 111, 111, 111 ; 36 LToken_Up
-                    defb    224, 248,  28, 206, 230, 118, 182, 182 ; 37 RToken_Up
-                    defb    111, 111, 111, 103, 115,  56,  31,   7 ; 38 LToken_Down
-                    defb    246, 246, 246, 230, 206,  28, 248, 224 ; 39 RToken_Down
+Draw_Tokens:
+                    ld      hl, $44BA
+                    ld      de, TOKEN
+                    ld      b, 16
+                    call    Draw_Item
+
+                    inc     l
+                    ld      b, 16
+                    call    Draw_Item
+
+                    ld      hl, $5424
+                    ld      de, TOKEN
+                    ld      b, 16
+                    call    Draw_Item
+
+                    inc     l
+                    ld      b, 16
+
+; -----------------------------------------------------------------------------
+; Draw item
+;
+; Input:    HL = pixel-byte screen address
+;           DE = sprite graph address
+;           B  = item lenght
+; Output:   B  = 0
+; Destroys: A, DE
+; -----------------------------------------------------------------------------
+Draw_Item:
+                    push    hl
+Draw_Item_Loop
+                    ld      a, (de)                 ; set sprite tile on screen
+                    ld      (hl), a
+                    inc     de                      ; next sprite tile
+                    inc     h                       ; move to the next line
+                    ld      a, h                
+                    and     %00000111
+                    jr      nz, Draw_Item_EOL  ; check EOL 1st third
+                    ld      a, l
+                    add     a, 32
+                    ld      l, a
+                    jr      c, Draw_Item_EOL   ; check EOL 2nd third
+                    ld      a, h
+                    sub     8
+                    ld      h, a
+Draw_Item_EOL
+                    djnz    Draw_Item_Loop     ; repeat until full height
+                    pop     hl
+                    ret
+
+; -----------------------------------------------------------------------------
+Vertical_Bars:
+                    ld      hl, $4020
+                    ld      c, 7
+                    call    Draw_Vertical_Bars
+                    ld      hl, $4800
+                    ld      c, 8
+                    call    Draw_Vertical_Bars
+                    ld      hl, $5000
+                    ld      c, 7
+Draw_Vertical_Bars:
+                    ld      de, FRAME_TILES+72
+                    push    de
+                    call    Draw_Tile
+                    ld      de, 31
+                    add     hl, de
+                    pop     de
+                    call    Draw_Tile
+                    inc     l
+                    dec     c
+                    jr      nz, Draw_Vertical_Bars
+                    ret
+
+; -----------------------------------------------------------------------------
+Draw_Tile:
+                    push    hl
+                    ld      b, 8
+draw_tile_loop
+                    ld      a, (de)
+                    ld      (hl), a
+                    inc     de
+                    inc     h
+                    djnz    draw_tile_loop
+                    pop     hl
+                    ret
+
+; -----------------------------------------------------------------------------
+Draw_Timer_MinSec:
+                    ld      hl, $407A
+                    ld      (hl), 4
+                    inc     h
+                    ld      (hl), 4
+                    ld      hl, $407D
+                    ld      (hl), 10
+                    inc     h
+                    ld      (hl), 10
+                    ld      hl, $48E4
+                    ld      (hl), 4
+                    inc     h
+                    ld      (hl), 4
+                    ld      hl, $48E7
+                    ld      (hl), 10
+                    inc     h
+                    ld      (hl), 10
+                    ret
+
+; -----------------------------------------------------------------------------
+Color_Frame:
+                    ld      hl, $5801
+                    ld      b, 6
+color_frame_loop1
+                    ld      (hl), a
+                    inc     l
+                    djnz    color_frame_loop1
+                    ld      hl, $5812
+                    ld      b, 13
+color_frame_loop2
+                    ld      (hl), a
+                    inc     l
+                    djnz    color_frame_loop2
+                    ld      hl, $5800
+                    ld      de, 31
+                    ld      c, 3
+color_frame_third
+                    ld      b, 8
+color_frame_loop3
+                    ld      (hl), a
+                    add     hl, de
+                    ld      (hl), a
+                    inc     l
+                    djnz    color_frame_loop3
+                    inc     h
+                    dec     c
+                    jr      nz, color_frame_third
+                    ld      hl, $5AE1
+                    ld      b, 16
+color_frame_loop4
+                    ld      (hl), a
+                    inc     l
+                    djnz    color_frame_loop4
+                    ld      hl, $5AF6
+                    ld      b, 9
+color_frame_loop5
+                    ld      (hl), a
+                    inc     l
+                    djnz    color_frame_loop5
+                    ret
+
+; -----------------------------------------------------------------------------
+Color_Static_Items:
+                    ld      hl, $5807
+                    ld      (hl), 8
+                    inc     l
+                    ld      (hl), 71
+
+                    ld      hl, $5810
+                    ld      (hl), 71
+                    inc     l
+                    ld      (hl), 8
+
+                    ld      hl, $5866
+                    ld      de, 32
+                    ld      b, 7
+                    call    Color_Letters_Row
+                    ld      hl, $5A6D
+                    ld      b, 7
+                    call    Color_Letters_Row
+
+                    ld      hl, $58A5
+                    ld      b, 7
+color_numbers
+                    ld      (hl), 2
+                    ld      de, 15
+                    add     hl, de
+                    ld      (hl), 2
+                    ld      de, 17
+                    add     hl, de
+                    ld      (hl), 2
+                    ld      de, 15
+                    add     hl, de
+                    ld      (hl), 2
+                    ld      de, 18
+                    add     hl, de
+                    djnz    color_numbers
+
+                    ld      b, 3
+                    ld      hl, $58BA
+                    ld      de, 32  
+color_token_blue
+                    push    hl
+                    ld      (hl), 5
+                    inc     l
+                    ld      (hl), 5
+                    pop     hl
+                    add     hl, de
+                    djnz    color_token_blue
+
+                    ld      b, 3
+                    ld      hl, $5A24
+                    ld      de, 32  
+color_token_red
+                    push    hl
+                    ld      (hl), 2
+                    inc     l
+                    ld      (hl), 2
+                    pop     hl
+                    add     hl, de
+                    djnz    color_token_red
+
+                    ld      hl, $5898
+                    ld      b, 6
+color_player_blue
+                    ld      (hl), 5
+                    inc     l
+                    djnz    color_player_blue
+
+                    ld      hl, $5A02
+                    ld      b, 6
+color_player_red
+                    ld      (hl), 2
+                    inc     l
+                    djnz    color_player_red
+
+                    ld      hl, $5878
+                    ld      b, 6
+color_minsec_blue
+                    ld      (hl), 7
+                    inc     l
+                    djnz    color_minsec_blue
+
+                    ld      hl, $59E2
+                    ld      b, 6
+color_minsec_red
+                    ld      (hl), 7
+                    inc     l
+                    djnz    color_minsec_red
+
+                    ld      hl, $5918
+                    ld      b, 6
+color_message_blue
+                    ld      (hl), 71
+                    inc     l
+                    djnz    color_message_blue
+
+                    ld      hl, $5A82
+                    ld      b, 6
+color_message_red
+                    ld      (hl), 71
+                    inc     l
+                    djnz    color_message_red
+                    
+                    ld      hl, $5AF1
+                    ld      b, 5
+color_level_mark
+                    ld      (hl), 1
+                    inc     l
+                    djnz    color_level_mark
+                    ret
+
+; -----------------------------------------------------------------------------
+Color_Letters_Row:
+                    push    hl
+                    ld      (hl), 5
+                    add     hl, de
+                    ld      (hl), 5
+                    pop     hl
+                    inc     l
+                    inc     l
+                    djnz    Color_Letters_Row
+                    ret
+
+; -----------------------------------------------------------------------------
+FRAME_MAP:
+                    defb      0,   1,   1,   1,   1,   1,   2,   3
+                    defb      4,  -1,  -1,  -1,  -1,  -1,  -1,  -1
+                    defb      5,   6,   7,   1,   1,   1,   1,   1
+                    defb      1,   1,   1,   1,   1,   1,   1,   8
+                    defb     10,   1,   1,   1,   1,   1,   1,   1
+                    defb      1,   1,   1,   1,   1,   1,   1,   1
+                    defb     11,   6,  14,  14,  14,   3,  12,   1
+                    defb      1,   1,   1,   1,   1,   1,   1,  13
+
+; -----------------------------------------------------------------------------
+NUMBERS_MAP:
+                    defw    $43A5, $43E6, $4B27, $4B68, $4BA9, $4BEA, $532B
+
+; -----------------------------------------------------------------------------
+FRAME_TILES:
+                    defb    $00, $00, $1F, $3F, $3F, $3F, $3C, $3C              ; 00: up-left corner
+                    defb    $00, $00, $FF, $FF, $FF, $FF, $00, $00              ; 01: horizontal bar
+                    defb    $00, $00, $FF, $FE, $FE, $FF, $00, $00              ; 02: concave left
+                    defb    $03, $07, $0F, $0F, $0F, $0F, $07, $03              ; 03: end frame 1
+                    defb    $00, $01, $03, $03, $03, $03, $01, $00              ; 04: level left
+                    defb    $00, $80, $C0, $C0, $C0, $C0, $80, $00              ; 05: level right
+                    defb    $C0, $E0, $F0, $F0, $F0, $F0, $E0, $C0              ; 06: end frame 2
+                    defb    $00, $00, $FF, $7F, $7F, $FF, $00, $00              ; 07: concave right
+                    defb    $00, $00, $F8, $FC, $FC, $FC, $3C, $3C              ; 08: up-right corner
+                    defb    $3C, $3C, $3C, $3C, $3C, $3C, $3C, $3C              ; 09: vertical bar
+                    defb    $3C, $3C, $3F, $3F, $3F, $1F, $00, $00              ; 10: bottom-left corner
+                    defb    $00, $00, $FE, $FF, $FF, $FE, $00, $00              ; 11: convex left
+                    defb    $00, $00, $7F, $FF, $FF, $7F, $00, $00              ; 12: convex right
+                    defb    $3C, $3C, $FC, $FC, $FC, $F8, $00, $00              ; 13: bottom-right corner
+                    defb    $00, $00, $38, $7C, $7C, $38, $00, $00              ; 14: level marks
+
+; -----------------------------------------------------------------------------
+LETTERS:
+                    defb    $3C, $7E, $FF, $C3, $F3, $C3, $D3, $C3, $7E, $3C    ; a
+                    defb    $3C, $7E, $CF, $CF, $C3, $CB, $CB, $C3, $7E, $3C    ; b
+                    defb    $3C, $7E, $FF, $E3, $CF, $CF, $CF, $E3, $7E, $3C    ; c
+                    defb    $3C, $7E, $F3, $F3, $C3, $D3, $D3, $C3, $7E, $3C    ; d
+                    defb    $3C, $7E, $FF, $E3, $CB, $C3, $CF, $E3, $7E, $3C    ; e
+                    defb    $3C, $7E, $E3, $CF, $C7, $CF, $CF, $CF, $7E, $3C    ; f
+                    defb    $3C, $7E, $FF, $E3, $D3, $D3, $E3, $F3, $46, $3C    ; g
+
+; -----------------------------------------------------------------------------
+NUMBERS:
+                    defb    $3C, $7E, $E7, $C7, $E7, $E7, $E7, $E7, $7E, $3C    ; 1
+                    defb    $3C, $7E, $E7, $D3, $F3, $E7, $CF, $C3, $7E, $3C    ; 2
+                    defb    $3C, $7E, $C7, $F3, $E3, $F3, $F3, $C7, $7E, $3C    ; 3
+                    defb    $3C, $7E, $D3, $D3, $C3, $F3, $F3, $F3, $7E, $3C    ; 4
+                    defb    $3C, $7E, $C3, $CF, $C7, $F3, $F3, $C7, $7E, $3C    ; 5
+                    defb    $3C, $7E, $E3, $CF, $C3, $CB, $CB, $C3, $7E, $3C    ; 6
+                    defb    $3C, $7E, $C3, $F3, $F3, $E7, $E7, $E7, $7E, $3C    ; 7
+

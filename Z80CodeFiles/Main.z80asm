@@ -17,6 +17,7 @@ SW_COLOR            equ     %00000111               ; BITs to be XORed to swap c
                     ent     $
 
                     ; clear screen and set border color
+
                     xor     a
                     ld      hl, $4000               ; HL points to screen memory address
                     ld      de, $4001               ; DE points to screen memory address + 1
@@ -29,26 +30,47 @@ SW_COLOR            equ     %00000111               ; BITs to be XORed to swap c
                     out     ($FE), a                ; set border color
                     ld      (BORDCR), a             ; update border color system variable
 
-                    ; print "HEX" header and draw empty board
+                    ld      (GAME_LEVEL), a         ; initialize game level
 
-                    ld      hl, STR_HEADER          ; HL points to header string
-                    ld      bc, $0A08               ; set string position
-                    ld      a, WHITE_REVERSE        ; set header attributes
-                    ld      (CHAR_ATTR), a
-                    call    Print_String
+                    ;  draw empty board and print "Level" header
+
                     call    Draw_Frame              ; draw board frame
                     call    Draw_Board              ; draw an empty hexagons board
+
+                    ld      a, %01111000            ; set header attributes
+                    ld      (CHAR_ATTR), a
+                    ld      hl, STR_LEVELTEXT       ; HL points to header string
+                    ld      bc, $0900               ; set string position
+                    call    Print_String
+
+                    call    Color_Static_Items
 
 ; -----------------------------------------------------------------------------
 ; Game (re)initialization - main loop
 ; -----------------------------------------------------------------------------
 GameInit
+                    ; increase game level
+
+                    ld      a, %01111000            ; set level number attribute
+                    ld      (CHAR_ATTR), a
+                    ld      hl, GAME_LEVEL
+                    inc     (hl)
+                    ld      a, $30
+                    add     a, (hl)
+                    ld      bc, $0F00
+                    call    Print_Char
+
+                    ld      a, %0001111
+                    call    Color_Frame             ; color frame
+
+                    ; TODO: update color of level mark
+
                     ; initialize boards
 
                     ld      hl, BLUE_BOARD
                     ld      de, BLUE_BOARD+1
                     ld      (hl), EMPTY
-                    ld      bc, 256*2-1
+                    ld      bc, (256*2)-1
                     ldir
 
                     ; initialize screen attributes and input game options
@@ -154,14 +176,8 @@ HexFilled
                     call    Print_Alert             ; print string
                     ld      hl, FILLED_FX           ; HL points to filled hexagon sound fx
                     call    SoundFX                 ; play sound fx
-
-                    ; delay
                     ld      a, 80                   ; set delay counter
-Delay
-                    halt
-                    dec     a
-                    jr      nz, Delay
-
+                    call    Delay
                     call    Clear_Alert             ; clear alert message
                     jr      PlayerMove              ; repeat player input until move is legal
 
@@ -388,5 +404,22 @@ String2_Indexes:
 
                     ret
 
+; -----------------------------------------------------------------------------
+;
+; -----------------------------------------------------------------------------
+Delay:
+                    ld      e, 10
+delay_loop2
+                    ld      d, 0
+delay_loop1
+                    dec     d
+                    jr      nz, delay_loop1
+                    dec     e
+                    jr      nz, delay_loop2
+                    dec     a
+                    jr      nz, Delay
+                    ret
+
+;
 Timer:
                     ret

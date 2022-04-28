@@ -24,15 +24,15 @@
     <Tzx Include="TapeFiles\Hex.tzx" />
   </ItemGroup>
   <ItemGroup>
-    <Tap Include="TapeFiles\Hex.tap" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include=".gitattributes" />
     <None Include="hex-ingame.png" />
     <None Include="hex-load.png" />
     <None Include="README.md" />
     <None Include="Z80CodeFiles\.gitattributes" />
     <None Include="Z80CodeFiles\King+.bin" />
+  </ItemGroup>
+  <ItemGroup>
+    <Tap Include="TapeFiles\Hex.tap" />
   </ItemGroup>
   <Import Project="$(CustomProjectExtensionsPath)Spect.Net.CodeDiscover.targets" />
 </Project>
