@@ -1,0 +1,416 @@
+﻿; ----------------------------------------------------------------------------------------------------------------------
+; Screen.z80asm
+; Coded by Antonio Luque
+; ----------------------------------------------------------------------------------------------------------------------
+
+WHITE_COLOR             equ     %00000111                   ; Attributes: flash 0, bright 0, paper 0, ink 7
+BLUE_COLOR              equ     %00000001                   ; Attributes: flash 0, bright 0, paper 0, ink 1
+BLUE_PAPER              equ     %00001000                   ; Attributes: flash 0, bright 0, paper 1, ink 0
+MAGENTA_FLASH           equ     %10011000                   ; Attributes: flash 1, bright 0, paper 4, ink 0
+BRIGHT                  equ     %01000000                   ; mask to apply bright to color
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Screen_Clear: clear the whole screen area and attributes area
+;
+; Input:    A = 0
+; Output:   A = 0
+; Destroys: HL, DE, BC
+; ----------------------------------------------------------------------------------------------------------------------
+Screen_Clear:
+                        ld      hl, $4000                   ; HL points to screen memory address
+                        ld      de, $4001                   ; DE points to screen memory address + 1
+                        ld      bc, 6144                    ; screen area length
+                        ld      (hl), a                     ; clear first pixel-byte
+                        ldir                                ; clear rest of pixel-bytes
+                        ld      bc, 767                     ; attribute area length - 1
+                        ld      (hl), a                     ; clear first attribute byte
+                        ldir                                ; clear rest of attribute bytes
+                        ret
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Screen_Letters: draw the two rows of letters (a-g)
+;
+; Input:    -
+; Output:   BC - 0
+; Destroys: HL, DE, IX, A
+; ----------------------------------------------------------------------------------------------------------------------
+Screen_Letters:
+                        ld      hl, $4566                   ; HL points to first letter screen location (up row)
+                        ld      ix, $5866                   ; IX points to first letter attribute location (up row)
+                        call    Screen_Letters_Row          ; draw letters at up row
+                        ld      hl, $516D                   ; HL points to first letter screen location (down row)
+                        ld      ix, $5A6D                   ; IX points to first letter attribute location (down row)
+Screen_Letters_Row:
+                        ld      de, LETTERS_SPRITES         ; DE points to letters sprites
+                        ld      b, 7                        ; number of letters (loop counter)
+Screen_Letter_Loop
+                        push    hl                          ; save loop counter
+                        call    Draw_Sprite_LetterNum       ; draw letter at screen location
+                        pop     hl
+                        ld      (ix+0), CYAN_COLOR          ; set letter attribute (2 bytes)
+                        ld      (ix+32), CYAN_COLOR
+                        inc     ixl                         ; IX points to the next letter atribute location
+                        inc     ixl
+                        inc     l                           ; HL points to the next letter screen location
+                        inc     l
+                        djnz    Screen_Letter_Loop          ; repeat for each letter
+                        ret
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Screen_Numbers: draw the two columns of numbers (1-7)
+;
+; Input:    -
+; Output:   BC - 0
+; Destroys: HL, DE, IX, A
+; ----------------------------------------------------------------------------------------------------------------------
+Screen_Numbers:
+                        ld      hl, NUMBERS_LOCATIONS       ; HL points to the numbers locations array (screen addr.)
+                        ld      de, NUMBERS_SPRITES         ; DE points to the numbers sprites array
+                        ld      ix, $58A5                   ; IX points to the attribute address of first number
+                        ld      b, 7                        ; number of numbers (loop counter)
+Screen_Number_Loop
+                        ld      a, (hl)                     ; get low-byte of screen address location
+                        inc     hl                          ; HL points to hi-byte of screen address location
+                        push    hl                          ; store HL
+                        ld      h, (hl)                     ; get hi-byte of screen address location
+                        ld      l, a                        ; HL points to the pixel-byte screen address
+                        push    de                          ; store sprite pointer
+                        push    hl
+                        call    Draw_Sprite_LetterNum       ; draw number on the 1st column
+                        pop     hl
+                        pop     de                          ; restore sprite pointer
+                        ld      (ix+0), RED_COLOR           ; set color of number
+                        ld      (ix+32), RED_COLOR
+                        ld      a, l                        ; move HL pointer to the screen address of the 2nd column
+                        add     a, 15
+                        ld      l, a
+                        call    Draw_Sprite_LetterNum       ; draw number on the second column
+                        ld      (ix+15), RED_COLOR          ; set color of number
+                        ld      (ix+47), RED_COLOR
+                        ld      a, b
+                        ld      bc, 65                      ; displacement of next attribute address
+                        add     ix, bc                      ; IX points to the next attribute address
+                        pop     hl                          ; restore pointer to hi-byte of screen address location
+                        inc     hl                          ; HL points to the next screen address location
+                        ld      b, a
+                        djnz    Screen_Number_Loop          ; repeat for each number
+                        ret
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Screen_Frame: draw the screen frame
+;
+; Input:    -
+; Output:   BC - 0
+; Destroys: HL, DE, IX, A
+; ----------------------------------------------------------------------------------------------------------------------
+Screen_Frame:
+                        ld      de, STR_LEVELTEXT           ; HL points to "Level" string
+                        ld      hl, $4009                   ; set string position
+                        call    Print_String
+                        ld      de, STR_WELLDONE            ; HL points to "Well done![..]" string
+                        ld      hl, $4042                   ; set string position
+                        call    Print_String
+                        ld      de, STR_CHOOSE              ; HL points to "Choose[..]" string
+                        ld      hl, $50C2                   ; set string position
+                        call    Print_String
+
+                        call    Screen_Vertical_Bars        ; draw the vertical bars of frame
+
+                        ld      ix, FRAME_MAP               ; IX points to the frame tiles indexes
+                        ld      hl, $4000                   ; HL points to the screen addrees of the 1st row
+                        call    Screen_Frame_Row            ; Draw the first frame row
+                        ld      hl, $50E0                   ; HL points to the screen address of the 2nd row
+Screen_Frame_Row:
+                        ld      c, 32                       ; number of tiles to draw (loop counter)
+Screen_Frame_Loop
+                        ld      a, (ix+0)                   ; get tile index
+                        cp      -1                          ; is it -1?
+                        jr      z, Screen_Frame_Next        ; yes, skip tile
+                        ld      de, FRAME_TILES             ; DE points to tiles array
+                        call    Print_Tile
+Screen_Frame_Next
+                        inc     l                           ; HL points to the next screen address (next column)
+                        inc     ix                          ; IX points to the next tile index
+                        dec     c                           ; decrement loop counter
+                        jr      nz, Screen_Frame_Loop       ; repeat for each tile
+                        ret
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Screen_Vertical_Bars: draw the vertical bars of the frame
+;
+; Input:    -
+; Output:   B - 0
+; Destroys: HL, A
+; ----------------------------------------------------------------------------------------------------------------------
+Screen_Vertical_Bars:
+                        ld      hl, $4020                   ; HL points to left bar screen address
+                        call    Screen_Vertical_Bar         ; draw left bar
+                        ld      hl, $403F                   ; HL points to right bar screen address
+Screen_Vertical_Bar:
+                        ld      b, 176                      ; number of pixel lines
+Screen_Vertical_Loop
+                        ld      (hl), $3C                   ; draw pixel byte of bar
+                        call    Draw_Next_Line              ; move HL to the next pixel-line address
+                        djnz    Screen_Vertical_Loop        ; repeat until finish
+                        ret
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Screen_Tokens: draw the fixed tokens on the screen
+;
+; Input:    -
+; Output:   B - 0
+; Destroys: HL, DE, IY, A
+; ----------------------------------------------------------------------------------------------------------------------
+Screen_Tokens:
+                        ld      a, CYAN_COLOR               ; set token color
+                        ld      hl, $44BA                   ; HL points to the cyan token screen address
+                        call    Screen_Tokens_Draw          ; color token
+
+                        ld      a, RED_COLOR                ; set token color
+                        ld      hl, $5424                   ; HL points to the red token screen address 
+Screen_Tokens_Draw:
+                        ld      (TOKEN_COLOR), a
+                        call    Draw_Hexagon_Color          ; color token
+                        ld      (ix+64), a                  ; the fixed tokens are 3 bytes (attr) high,
+                        ld      (ix+65), a                  ; so color the bottom attributes addresses
+                        ld      de, HEXAGON_TOKEN           ; DE points to token sprite address
+                        jp      Draw_Sprite_Hexagon         ; draw token
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Screen_Timer_Quotes: draw the timer quotes ('  '') on the screen
+;
+; Input:    -
+; Output:   -
+; Destroys: IX
+; ----------------------------------------------------------------------------------------------------------------------
+Screen_Timer_Quotes:
+                        ld      ix, $407A                   ; IX points to the screen address of the cyan timer quotes 
+                        ld      (ix+0), 8                   ; draw 1st half of simple quote (')
+                        ld      (ix+3), 10                  ; draw 1st half of double quotes (")
+                        inc     ixh                         ; move IX to the next screen pixel-line
+                        ld      (ix+0), 8                   ; draw 2nd half of simple quote (')
+                        ld      (ix+3), 10                  ; draw 2nd half of double quotes (")
+                        ld      ixh, $58                    ; move IX to the attribute address
+                        ld      (ix+0), WHITE_COLOR         ; color quotes
+                        ld      (ix+3), WHITE_COLOR
+
+                        ld      ix, $48E4                   ; IX points to the screen address of the red timer quotes
+                        ld      (ix+0), 8                   ; draw 1st half of simple quote (')
+                        ld      (ix+3), 10                  ; draw 1st half of double quotes (")
+                        inc     ixh                         ; move IX to the next screen pixel-line
+                        ld      (ix+0), 8                   ; draw 2nd half of simple quote (')
+                        ld      (ix+3), 10                  ; draw 2nd half of double quotes (")
+                        ld      ixh, $59                    ; move IX to the attribute address
+                        ld      (ix+0), WHITE_COLOR         ; color quotes
+                        ld      (ix+3), WHITE_COLOR
+                        ret
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Screen_Color_Statics: apply color to some statics items of the screen
+;
+; Input:    -
+; Output:   -
+; Destroys: HL, IX, B, A
+; ----------------------------------------------------------------------------------------------------------------------
+Screen_Color_Statics:
+                        ld      ix, $5807                   ; IX points to the "concave left" tile screen position
+                        ld      (ix+0), BLUE_PAPER          ; color tile
+                        ld      (ix+10), BLUE_PAPER         ; color "concave right" tile
+
+                        ld      ix, $5AF1                   ; IX points to the "convex left" tile screen position
+                        ld      (ix+0), BLUE_COLOR          ; color tile
+                        ld      (ix+4), BLUE_COLOR          ; color "convex right" tile
+
+                        ld      ix, $5878                   ; IX points to the attr. address of the cyan player timer
+                        ld      a, WHITE_COLOR              ; set color in A
+                        call    Screen_Apply_Color          ; apply color
+
+                        ld      ixl, $98                    ; IX points to the attr. address of the cyan player name
+                        ld      a, CYAN_COLOR               ; set color in A
+                        call    Screen_Apply_Color          ; apply color
+
+                        ld      ix, $5918                   ; IX points to the attr. address of the cyan player messages
+                        ld      a, WHITE_COLOR+BRIGHT       ; set color in A
+                        call    Screen_Apply_Color          ; apply color
+
+                        ld      ixl, $E2                    ; IX points to the attr. address of the red player timer
+                        ld      a, WHITE_COLOR              ; set color in A
+                        call    Screen_Apply_Color          ; apply color
+
+                        ld      ix, $5A02                   ; IX points to the attr. address of the red player name
+                        ld      a, RED_COLOR                ; set color in A
+                        call    Screen_Apply_Color          ; apply color
+
+                        ld      ixl, $82                    ; IX points to the attr. address of the red player messages
+                        ld      a, WHITE_COLOR+BRIGHT       ; set color in A
+Screen_Apply_Color:
+                        ld      b, 6                        ; number of bytes to be colored
+Screen_Apply_Color_Loop:
+                        ld      (ix+0), a                   ; apply color
+                        inc     ixl                         ; move IX to the next attribute address
+                        djnz    Screen_Apply_Color_Loop     ; repeat B times
+                        ret
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Screen_Last_Level: show last level messages and restart game from a chosen level
+;
+; Input:    HL - GAME_LEVEL address
+; Output:   HL - GAME_LEVEL address
+; Destroys: DE, IX, B, A
+; ----------------------------------------------------------------------------------------------------------------------
+Screen_Last_Level:
+                        ld      ix, $580F                   ; IX points to attr address of level number
+                        ld      (ix+0), MAGENTA_FLASH       ; activate flash on level number
+                        ld      d, WHITE_COLOR              ; set color for STR_CHOOSE string
+                        ld      e, WHITE_COLOR+BRIGHT       ; set color for STR_WELLDONE string
+                        call    Screen_WellDone             ; show STR_WELLDONE and STR_CHOOSE strings
+                        ld      ix, WINNER_FX               ; IX points to winner sound fx
+                        push    hl                          ; store game level address
+                        call    Sound_FX                    ; play sound fx
+                        pop     hl                          ; restore game level address
+Screen_Choose_Level
+                        call    Input_Key_Scan              ; wait for a key pressed
+                        cp      '1'                         ; is it < '1' ?
+                        jr      c, Screen_Choose_Level      ; yes, wait for a key pressed
+                        cp      '5'                         ; is it >= '5' ?
+                        jr      nc, Screen_Choose_Level     ; yes, wait for a key pressed
+                        sub     $31                         ; convert ASCII into level number (-1)
+                        ld      (hl), a                     ; save game level
+                        ld      de, 0                       ; DE = paper 0, ink 0
+Screen_WellDone:
+                        ld      ix, $5AC2                   ; IX points to attr address of STR_CHOOSE string
+                        ld      a, d                        ; set STR_CHOOSE color in A
+                        ld      b, 28                       ; number of chars (loop counter)
+                        call    Screen_Apply_Color_Loop     ; apply color
+                        ld      ix, $5842                   ; IX points to attr address of STR_WELLDONE string
+                        ld      a, e                        ; set STR_WELLDONE color in A
+                        ld      b, 28                       ; number of chars (loop counter)
+                        jr      Screen_Apply_Color_Loop     ; apply color
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Screen_ThreeRow: colour the three-in-a-row marks according to the current three row counter
+;
+; Input:    -
+; Output:   -
+; Destroys: HL, IX, C, A
+; ----------------------------------------------------------------------------------------------------------------------
+Screen_ThreeRow:
+                        ld      hl, LEVEL_COLOR             ; HL points to level color address
+                        ld      c, (hl)                     ; save level color in C
+                        call    Screen_Clear_ThreeRow       ; clear all three-in-a-row marks
+                        ld      a, (THREE_ROW)              ; A = three-in-a-row counter
+                        or      a                           ; is it 0?
+                        ret     z                           ; yes, return
+                        dec     a                           ; is it 1?
+                        jr      z, Screen_ThreeRow_1        ; yes, color first mark
+                        dec     a                           ; is it 2?
+                        jr      z, Screen_ThreeRow_2        ; yes color 2nd and 1st marks
+                        ld      (ix+0), c                   ; color 3rd mark
+Screen_ThreeRow_2
+                        ld      (ix+1), c                   ; color 2nd mark
+Screen_ThreeRow_1
+                        ld      (ix+2), c                   ; color 1st mark
+                        ret
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Screen_Clear_ThreeRow: clear all three-in-a-row marks
+;
+; Input:    -
+; Output:   IX - attribute address of three-in-a-row marks
+; Destroys: -
+; ----------------------------------------------------------------------------------------------------------------------
+Screen_Clear_ThreeRow:
+                        ld      ix, $5AF2                   ; IX points to attribute address of three-in-a-row marks
+                        ld      (ix+0), BLUE_COLOR          ; clear all three-in-a-row marks
+                        ld      (ix+1), BLUE_COLOR
+                        ld      (ix+2), BLUE_COLOR
+                        ret
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Screen_Frame_Color: set up frame color and print level number depending on current level
+;
+; Input:    HL - GAME_LEVEL address
+; Output:   LEVEL_COLOR updated
+; Destroys: HL, DE, B, A
+; ----------------------------------------------------------------------------------------------------------------------
+Screen_Frame_Color:
+                        ld      a, '0'                      ; A = char '0'
+                        add     a, (hl)                     ; add current level number
+                        push    hl                          ; store game level address
+                        ld      hl, $400F                   ; HL points to screen address of game level
+                        call    Print_Char                  ; print level number
+                        pop     hl                          ; restore game level address
+                        ld      l, (hl)                     ; set game level as index for color map
+                        ld      h, 0
+                        ld      de, ROW_COLOR_MAP-1         ; DE points to color map address (adjusted for index 0)
+                        add     hl, de                      ; HL points to level color address
+                        ld      a, (hl)                     ; A = level color
+                        call    Screen_Tiles_Color          ; colour the frame according to the current level
+                        and     7                           ; mask color
+                        ld      (LEVEL_COLOR), a            ; save masked color
+                        rla                                 ; rotate to text level color
+                        rla
+                        rla
+                        ld      hl, $5808                   ; HL points to attr address of level text
+                        ld      b, 9                        ; length of level text (loop counter)
+Screen_Level_Loop
+                        ld      (hl), a                     ; apply color to level text
+                        inc     l                           ; HL points to attr address of next character of level text
+                        djnz    Screen_Level_Loop           ; repeat for each character of level text
+                        ret
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Screen_Tiles_Color: apply color to the frame tiles
+;
+; Input:    A - color to apply
+; Output:   A - applied color
+; Destroys: HL, DE, BC
+; ----------------------------------------------------------------------------------------------------------------------
+Screen_Tiles_Color:
+                        ; color up row
+
+                        ld      hl, $5801                   ; HL points to attribute address of the the frame tile 
+                        ld      b, 6                        ; number of tiles (loop counter)
+Screen_Tiles_URow1
+                        ld      (hl), a                     ; apply color
+                        inc     l                           ; move HL to the next attribute address
+                        djnz    Screen_Tiles_URow1          ; repeat for each tile
+                        ld      l, $12                      ; move HL to the next attrinute address
+                        ld      b, 13                       ; number of tiles (loop counter)
+Screen_Tiles_URow2
+                        ld      (hl), a                     ; apply color
+                        inc     l                           ; move HL to the next attribute address
+                        djnz    Screen_Tiles_URow2          ; repeat for each tile
+
+                        ; color vertical bars
+
+                        ld      l, 0                        ; move HL to the next attribute address
+                        ld      de, 31                      ; attribute address displacement (for each bar)
+                        ld      c, 3                        ; number of thirds (outer loop counter)
+Screen_Tiles_VBar1
+                        ld      b, 8                        ; number of tiles (inner loop counter)
+Screen_Tiles_VBar2
+                        ld      (hl), a                     ; apply color
+                        add     hl, de                      ; move HL to the right column
+                        ld      (hl), a                     ; apply color
+                        inc     l                           ; move HL to the next attribute address
+                        djnz    Screen_Tiles_VBar2          ; repeat for each tile
+                        inc     h                           ; move HL to the next third
+                        dec     c                           ; decrement number of thirds
+                        jr      nz, Screen_Tiles_VBar1      ; repeat for each third
+
+                        ; color bottom row
+
+                        ld      hl, $5AE1                   ; HL points to attribute address of the the frame tile
+                        ld      b, 16                       ; number of tiles (loop counter)
+Screen_Tiles_BRow1
+                        ld      (hl), a                     ; apply color
+                        inc     l                           ; move HL to the next attribute address
+                        djnz    Screen_Tiles_BRow1          ; repeat for each tile
+                        ld      l, $F6                      ; move HL to the next attrinute address
+                        ld      b, 9                        ; number of tiles (loop counter)
+Screen_Tiles_BRow2
+                        ld      (hl), a                     ; apply color
+                        inc     l                           ; move HL to the next attribute address
+                        djnz    Screen_Tiles_BRow2          ; repeat for each tile
+                        ret
