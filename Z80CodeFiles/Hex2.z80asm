@@ -1,0 +1,33 @@
+﻿; ----------------------------------------------------------------------------------------------------------------------
+; Hex2.z80asm
+; Coded by Antonio Luque
+;
+; Build file
+; ----------------------------------------------------------------------------------------------------------------------
+
+                        #include "Data.z80asm"
+                        #include "Main.z80asm"
+                        #include "Draw.z80asm"
+                        #include "Input.z80asm"
+                        #include "Print.z80asm"
+                        #include "Play.z80asm"
+                        #include "Brainiac.z80asm"
+                        #include "PathFinder.z80asm"
+                        #include "Timer.z80asm"
+                        #include "Sound.z80asm"
+                        #include "Screen.z80asm"
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Credits and acknowledgements:
+;
+; - Einar Saukas and his amazing BRAINIAC: https://spectrumcomputing.co.uk/entry/30216/ZX-Spectrum/COMPLICA_DX,
+;   PATHFINDER adaptation: https://spectrumcomputing.co.uk/entry/28178/ZX-Spectrum/PATHFINDERloading, loading screen,
+;   "King+" font and TOKEN graphics.
+; - Greg Surma article: https://gsurma.medium.com/hex-creating-intelligent-opponents-with-minimax-driven-ai-part-1-%CE%B
+;   1-%CE%B2-pruning-cc1df850e5bd
+; - Jack van Rijswijck's thesis: https://webdocs.cs.ualberta.ca/~hayward/theses/jackmsc.pdf
+; - ChibiAkumas lessons: https://www.chibiakumas.com/z80/simplesamples.php#LessonS2
+; - Santiago Romero assembler course: https://wiki.speccy.org/cursos/ensamblador/indice
+;
+; - Special thanks to my wife Sonia.
+; ----------------------------------------------------------------------------------------------------------------------

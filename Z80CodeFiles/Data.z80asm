@@ -1,229 +1,338 @@
-﻿; -----------------------------------------------------------------------------
+﻿; ----------------------------------------------------------------------------------------------------------------------
 ; Data.z80asm
 ; Coded by Antonio Luque
 ;
 ; Definition of data, variables and tables
-; -----------------------------------------------------------------------------
-                    org     $6000
+; ----------------------------------------------------------------------------------------------------------------------
 
-; -----------------------------------------------------------------------------
+                        org     $6000
+; ----------------------------------------------------------------------------------------------------------------------
 ; Circular queue
-; -----------------------------------------------------------------------------
-BLUE_QUEUE_AREA     defs    256                     ; 256-aligned block reserved for circular queue
+; ----------------------------------------------------------------------------------------------------------------------
+CYAN_QUEUE_AREA         defs    256                         ; 256-aligned block reserved for circular queue
 
-; -----------------------------------------------------------------------------
-; These boards must be located immediately after Queue Area!
-; -----------------------------------------------------------------------------
-BLUE_BOARD_UP_DOWN
-                    defb      $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F
-                    defb    $7F, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb       $7F, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb          $7F, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb             $7F, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb                $7F, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb                   $7F, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb                      $7F, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb                         $7F, $80, $81, $82, $83, $84, $85, $86, $7F
-BLUE_BOARD_DOWN_UP
-                    defb    $7F, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb       $7F, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb          $7F, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb             $7F, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb                $7F, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb                   $7F, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb                      $7F, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb                         $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F
+; ----------------------------------------------------------------------------------------------------------------------
+; CYAN BOARD arrays: these boards must be located immediately after cyan queue area!
+; 
+; These boards hold a determinated position of the board from cyan perspective. They are used to calculate CYAN two-
+; distance from UP to DOWN edges and CYAN two-distance from DOWN to UP edges. The cyan UP-DOWN board is also used to
+; store CYAN potentials and TOTAL potentials.
+; 
+; The values of $7F form the border of the board. The UP and DOWN edges are identified with Bit 7 set and the lowest 3
+; bits are the edge number. The rest of bytes indicates two-distance from goal (stored in lowest 6 bits), and a flag
+; that indicates a position occupied by a friendly token (stored in 6th bit).
+; ----------------------------------------------------------------------------------------------------------------------
+CYAN_BOARD_UP_DOWN:
+                        defb      $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F
+                        defb    $7F, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb       $7F, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb          $7F, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb             $7F, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb                $7F, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb                   $7F, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb                      $7F, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb                         $7F, $80, $81, $82, $83, $84, $85, $86, $7F
+CYAN_BOARD_DOWN_UP:
+                        defb    $7F, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb       $7F, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb          $7F, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb             $7F, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb                $7F, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb                   $7F, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb                      $7F, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb                         $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F
 
-; -----------------------------------------------------------------------------
+; ----------------------------------------------------------------------------------------------------------------------
 ; Variables
-; -----------------------------------------------------------------------------
-POTENTIALS:                                         ; the next 4 bytes must be in a 256-byte boundary
-BLUE_POTENTIAL      defb    0                       ; blue board potential
-BLUE_MOBILITY       defb    0                       ; blue attack mobility
-RED_POTENTIAL       defb    0                       ; red board potential
-RED_MOBILITY        defb    0                       ; red attack mobility
+; ----------------------------------------------------------------------------------------------------------------------
+POTENTIALS:                                                 ; (must be in a 256-byte boundary)
+                        defb    0                           ; board potential
+                        defb    0                           ; attack mobility
+AI_PLAYER               defb    0                           ; speccy side (FRIEND or ENEMY)
+AI_DEPTH                defb    0                           ; recursion depth level (1-4)
+MOVE_NUMBER             defb    0                           ; current move number
+LEVEL_COLOR             defb    0                           ; current level color for frame border
+GAME_LEVEL              defb    0                           ; number of game level (1-4)
+PLAYER_COLOR            defb    0                           ; player color selected (CYAN or RED)
+TOKEN_COLOR             defb    0                           ; current token color (CYAN or RED)
 
-AI_PLAYER           defb    0                       ; speccy side (FRIEND or ENEMY)
-AI_DEPTH            defb    0                       ; recursion depth level (1-5)
-GAME_LEVEL          defb    0                       ; number of game level selected (1-5)
-
-; -----------------------------------------------------------------------------
-; Attributes/Screen look-up table for HEX board
+; ----------------------------------------------------------------------------------------------------------------------
+; Screen look-up table for the hexagons board
 ;
-; (First byte unused)
-;   Row 0: contains Hi-Byte screen memory addresses
-;   Column 0: contains Hi-Byte attribute memory addresses
-; Rest of bytes are the Lo-Byte attr/screen memory addresses
-; -----------------------------------------------------------------------------
+; The first column contains Hi-Byte screen addresses of the hexagons
+; The rest of bytes are the Lo-Byte screen addresses of the hexagons
+; ----------------------------------------------------------------------------------------------------------------------
 BOARD_MAP:
-                    defb    $00, $40, $40, $48, $48, $48, $48, $50
-                    defb    $58, $A6, $A8, $AA, $AC, $AE, $B0, $B2
-                    defb    $58, $E7, $E9, $EB, $ED, $EF, $F1, $F3
-                    defb    $59, $28, $2A, $2C, $2E, $30, $32, $34
-                    defb    $59, $69, $6B, $6D, $6F, $71, $73, $75
-                    defb    $59, $AA, $AC, $AE, $B0, $B2, $B4, $B6
-                    defb    $59, $EB, $ED, $EF, $F1, $F3, $F5, $F7
-                    defb    $5A, $2C, $2E, $30, $32, $34, $36, $38
+                        defb    $40, $A6, $A8, $AA, $AC, $AE, $B0, $B2
+                        defb    $40, $E7, $E9, $EB, $ED, $EF, $F1, $F3
+                        defb    $48, $28, $2A, $2C, $2E, $30, $32, $34
+                        defb    $48, $69, $6B, $6D, $6F, $71, $73, $75
+                        defb    $48, $AA, $AC, $AE, $B0, $B2, $B4, $B6
+                        defb    $48, $EB, $ED, $EF, $F1, $F3, $F5, $F7
+                        defb    $50, $2C, $2E, $30, $32, $34, $36, $38
 
-; -----------------------------------------------------------------------------
-; Token graphic
-; -----------------------------------------------------------------------------
-TOKEN:
-                    defb      7, 224,  31, 248,  56,  28, 115, 206
-                    defb    103, 230, 111, 118, 111, 182, 111, 182
-                    defb    111, 246, 111, 246, 111, 246, 103, 230
-                    defb    115, 206,  56,  28,  31, 248,   7, 224
+; ----------------------------------------------------------------------------------------------------------------------
+; Keyboard array map
+; ----------------------------------------------------------------------------------------------------------------------
+KEY_MAP                 defm    " zxcvasdfgqwert1234509876poiuy\x0Dlkjh  mnb"
 
-; -----------------------------------------------------------------------------
-; Variables
-; -----------------------------------------------------------------------------
-NUM_PLAYERS         defb    0                       ; number of players selected (1 or 2)
-PLAYER_COLOR        defb    0                       ; player color selected (BLUE_TOKEN or RED_TOKEN)
+                        ;org     $6200
+; ----------------------------------------------------------------------------------------------------------------------
+; Vector table of routines (must be aligned at the next page of cyan board arrays)
+; ----------------------------------------------------------------------------------------------------------------------
+CYAN_VECTOR_TABLE:
+                        defw    PathFinder_CYAN_Edge_0
+                        defw    PathFinder_CYAN_Edge_1
+                        defw    PathFinder_CYAN_Edge_2
+                        defw    PathFinder_CYAN_Edge_3
+                        defw    PathFinder_CYAN_Edge_4
+                        defw    PathFinder_CYAN_Edge_5
+                        defw    PathFinder_CYAN_Edge_6
 
-; -----------------------------------------------------------------------------
-; Circular queue
-; -----------------------------------------------------------------------------
-RED_QUEUE_AREA      defs    256                     ; 256-aligned block reserved for circular queue
-
-; -----------------------------------------------------------------------------
-; These boards must be located immediately after Queue Area!
-; -----------------------------------------------------------------------------
-RED_BOARD_LEFT_RIGHT
-                    defb      $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F
-                    defb    $7F, $00, $00, $00, $00, $00, $00, $00, $80
-                    defb       $7F, $00, $00, $00, $00, $00, $00, $00, $81
-                    defb          $7F, $00, $00, $00, $00, $00, $00, $00, $82
-                    defb             $7F, $00, $00, $00, $00, $00, $00, $00, $83
-                    defb                $7F, $00, $00, $00, $00, $00, $00, $00, $84
-                    defb                   $7F, $00, $00, $00, $00, $00, $00, $00, $85
-                    defb                      $7F, $00, $00, $00, $00, $00, $00, $00, $86
-                    defb                         $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F
-RED_BOARD_RIGHT_LEFT
-                    defb    $80, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb       $81, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb          $82, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb             $83, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb                $84, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb                   $85, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb                      $86, $00, $00, $00, $00, $00, $00, $00, $7F
-                    defb                         $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F
-
-; -----------------------------------------------------------------------------
-; Hexagon graphic
-; -----------------------------------------------------------------------------
-HEXAGON:
-                    defb      7, 224,  28,  56,  48,  12,  96,   6
-                    defb     64,   2,  64,   2,  64,   2,  64,   2
-                    defb     64,   2,  64,   2,  64,   2,  64,   2
-                    defb     96,   6,  48,  12,  28,  56,   7, 224
-
-; -----------------------------------------------------------------------------
-; Strings
-; -----------------------------------------------------------------------------
-STR_WAIT            defm    "WAIT\0"
-STR_EMPTY4          defm    "    \0"
-STR_EMPTY6          defm    "      \0"
-STR_MOVE            defb    0, '-', 0, 0, 0
-STR_PLAYERS         defm    "One or two players? 1/2\0"
-STR_COLORS          defm    "Choose blue or red, b/r\0"
-
-; -----------------------------------------------------------------------------
-; Variables
-; -----------------------------------------------------------------------------
-CHAR_ATTR           defb    %00101000               ; default char attribute: bright 0, flash 0, paper 5, ink 0
-MOVE_POSXY:
-MOVE_POSX           defb    0                       ; current player X input/output screen location
-MOVE_POSY           defb    0                       ; current player Y input/output screen location
-
-; -----------------------------------------------------------------------------
-; Vector table of routines (must be aligned)
-; -----------------------------------------------------------------------------
-BLUE_VECTOR_TABLE
-                    defw    path_finder_BLUE_edge_0
-                    defw    path_finder_BLUE_edge_1
-                    defw    path_finder_BLUE_edge_2
-                    defw    path_finder_BLUE_edge_3
-                    defw    path_finder_BLUE_edge_4
-                    defw    path_finder_BLUE_edge_5
-                    defw    path_finder_BLUE_edge_6
-
-; -----------------------------------------------------------------------------
-; Strings
-; -----------------------------------------------------------------------------
-STR_LEVEL           defm    "Select game level, 1-5 \0"
-STR_CLEAR           defm    "                       \0"
-STR_SPECCY          defm    "Speccy\0"
-STR_PLAYER          defm    "Player\0"
-STR_LEVELTEXT       defm    "Level\0"
-STR_NOLEVEL         defm    "       \0"
-STR_HEADER          defm    " HEX \0"
-STR_FILLED          defm    "FILLED\0"
-
-; -----------------------------------------------------------------------------
-; Variables
-; -----------------------------------------------------------------------------
-CHAR_COUNT          defb    0                       ; number of current chars in input string
-TOKEN_COLOR         defb    0                       ; current token color (BLUE_TOKEN or RED_TOKEN)
-
-; -----------------------------------------------------------------------------
-; Interrupt entry point: must be allocated at $6469
-; -----------------------------------------------------------------------------
-INTERRUPT:
-                    defb    $C3                     ; 'jp' opcode
-                    defw    Timer
-
-; -----------------------------------------------------------------------------
+; ----------------------------------------------------------------------------------------------------------------------
 ; Variables and strings
-; -----------------------------------------------------------------------------
-MOVE_NUMBER         defb    0                       ; current move number
-KEYS_MAP            defb    '1', '2', '3', '4', '5' ; 1 to 5 keys mapping
-PLAYER_MOVE         defb    0, 0, 0, 0              ; 4 bytes for input player move
-STR_WINNER          defm    " WINS \0"              ; 'WINS' string
+; ----------------------------------------------------------------------------------------------------------------------
+STR_SPECCY              defm    "Speccy\0"                  ; 'Speccy' string
+STR_PLAYER              defm    "Player\0"                  ; 'Player' string
+STR_LEVELTEXT           defm    "Level\0"                   ; 'Level' string
+STR_FILLED              defm    "FILLED\0"                  ; 'FILLED' string
+STR_WAIT                defm    "WAIT\0"                    ; 'WAIT' string
+STR_WINNER              defm    " WINS \0"                  ; 'WINS' string
+STR_EMPTY4              defm    "    \0"                    ; 4 spaces string
+STR_EMPTY6              defm    "      \0"                  ; 6 spaces string
+STR_MOVE                defb    0, '-', '0', 0, '\0'        ; formatted move string
+ASCII_MOVE              defb    0, 0                        ; move in ASCII format
+CHAR_COUNT              defb    0                           ; number of current chars in input string
+THREE_ROW               defb    0                           ; three-in-a-row counter
+ROW_COLOR_MAP           defb    15, 14, 12, 11              ; level-color map for frame border
 
-; -----------------------------------------------------------------------------
+; ----------------------------------------------------------------------------------------------------------------------
+; Conversion table: from position to XY board indexes
+; ----------------------------------------------------------------------------------------------------------------------
 BOARD_COORDINATES:
-                    defb    $00, $00, $00, $00, $00, $00, $00, $00
-                    defb    $00, $09, $0A, $0B, $0C, $0D, $0E, $0F
-                    defb    $00, $12, $13, $14, $15, $16, $17, $18
-                    defb    $00, $1B, $1C, $1D, $1E, $1F, $20, $21
-                    defb    $00, $24, $25, $26, $27, $28, $29, $2A
-                    defb    $00, $2D, $2E, $2F, $30, $31, $32, $33
-                    defb    $00, $36, $37, $38, $39, $3A, $3B, $3C
-                    defb    $00, $3F, $40, $41, $42, $43, $44, $45
+                        defb    $00, $00, $00, $00, $00, $00, $00, $00
+                        defb    $00, $09, $0A, $0B, $0C, $0D, $0E, $0F
+                        defb    $00, $12, $13, $14, $15, $16, $17, $18
+                        defb    $00, $1B, $1C, $1D, $1E, $1F, $20, $21
+                        defb    $00, $24, $25, $26, $27, $28, $29, $2A
+                        defb    $00, $2D, $2E, $2F, $30, $31, $32, $33
+                        defb    $00, $36, $37, $38, $39, $3A, $3B, $3C
+                        defb    $00, $3F, $40, $41, $42, $43, $44, $45
 
-; -----------------------------------------------------------------------------
-; Sounds of the game
-; -----------------------------------------------------------------------------
-FILLED_FX           defw    1000, 10, 100, 0, 128
-TOKEN_FX            defw    1, 200, 1000, 0, 128
-WINNER_FX           defw    5, 5000, 200, 100, 128
+; ----------------------------------------------------------------------------------------------------------------------
+; Graphics map indexes for the frame tiles
+; ----------------------------------------------------------------------------------------------------------------------
+FRAME_MAP:
+                        defb      0,   1,   1,   1,   1,   1,   2,   3
+                        defb      4,  -1,  -1,  -1,  -1,  -1,  -1,  -1
+                        defb      5,   6,   7,   1,   1,   1,   1,   1
+                        defb      1,   1,   1,   1,   1,   1,   1,   8
+                        defb      9,   1,   1,   1,   1,   1,   1,   1
+                        defb      1,   1,   1,   1,   1,   1,   1,   1
+                        defb     10,   6,  13,  13,  13,   3,  11,   1
+                        defb      1,   1,   1,   1,   1,   1,   1,  12
 
-; -----------------------------------------------------------------------------
+; ----------------------------------------------------------------------------------------------------------------------
 ; Definition of a small "Opening Book" for speccy first move
-; -----------------------------------------------------------------------------
+; ----------------------------------------------------------------------------------------------------------------------
 OPENINGS:
-                    defb    $0F, $14, $16, $17, $18, $1C, $1D
-                    defb    $1E, $1F, $20, $24, $25, $26, $27
-                    defb    $28, $29, $2A, $2E, $2F, $30, $31
-                    defb    $32, $36, $37, $38, $3A, $3F
+                        defb    $0F, $14, $16, $17, $18, $1C, $1D
+                        defb    $1E, $1F, $20, $24, $25, $26, $27
+                        defb    $28, $29, $2A, $2E, $2F, $30, $31
+                        defb    $32, $36, $37, $38, $3A, $3F
 
-FILLER              defs    10                      ; filler space to align vector table
+; ----------------------------------------------------------------------------------------------------------------------
+; Timer variables
+; ----------------------------------------------------------------------------------------------------------------------
+TIMER_FLAG              defb    0                           ; 0 = timer stopped, 1 = cyan timer on; 2 = red timer on
+; for each timer:
+;   1st byte = interrupt counter (incremented each 1/50 seconds)
+;   2nd byte = seconds counter
+;   3th byte = minutes counter
+CYAN_TIMER              defb    50, 0, 0
+RED_TIMER               defb    50, 0, 0
 
-; -----------------------------------------------------------------------------
-; Vector table of routines (must be aligned)
-; -----------------------------------------------------------------------------
-RED_VECTOR_TABLE
-                    defw    path_finder_RED_edge_0
-                    defw    path_finder_RED_edge_1
-                    defw    path_finder_RED_edge_2
-                    defw    path_finder_RED_edge_3
-                    defw    path_finder_RED_edge_4
-                    defw    path_finder_RED_edge_5
-                    defw    path_finder_RED_edge_6
+; ----------------------------------------------------------------------------------------------------------------------
+; Screen addresses look-up array for board numbers
+; ----------------------------------------------------------------------------------------------------------------------
+NUMBERS_LOCATIONS:
+                        defw    $43A5, $43E6, $4B27, $4B68, $4BA9, $4BEA, $532B
 
-; -----------------------------------------------------------------------------
+FILLER_1                defb    $F1, $F1                    ; Filler to align next block (not used)
+
+                        ;org     $6300
+; ----------------------------------------------------------------------------------------------------------------------
+; Circular queue
+; ----------------------------------------------------------------------------------------------------------------------
+RED_QUEUE_AREA          defs    256                         ; 256-aligned block reserved for circular queue
+
+; ----------------------------------------------------------------------------------------------------------------------
+; RED BOARD arrays: these boards must be located immediately after red queue area!
+; 
+; These boards hold a determinated position of the board from red perspective. They are used to calculate RED two-
+; distance from LEFT to RIGHT edges and RED two-distance from RIGHT to LEFT edges. The red LEFT-RIGHT board is also used
+; to store RED potentials.
+; 
+; The values of $7F form the border of the board. The LEFT-RIGHT edges are identified with Bit 7 set and the lowest 3
+; bits are the edge number. The rest of bytes indicates two-distance from goal (stored in lowest 6 bits), and a flag
+; that indicates a position occupied by a friendly token (stored in 6th bit).
+; ----------------------------------------------------------------------------------------------------------------------
+RED_BOARD_LEFT_RIGHT:
+                        defb      $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F
+                        defb    $7F, $00, $00, $00, $00, $00, $00, $00, $80
+                        defb       $7F, $00, $00, $00, $00, $00, $00, $00, $81
+                        defb          $7F, $00, $00, $00, $00, $00, $00, $00, $82
+                        defb             $7F, $00, $00, $00, $00, $00, $00, $00, $83
+                        defb                $7F, $00, $00, $00, $00, $00, $00, $00, $84
+                        defb                   $7F, $00, $00, $00, $00, $00, $00, $00, $85
+                        defb                      $7F, $00, $00, $00, $00, $00, $00, $00, $86
+                        defb                         $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F
+RED_BOARD_RIGHT_LEFT:
+                        defb    $80, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb       $81, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb          $82, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb             $83, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb                $84, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb                   $85, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb                      $86, $00, $00, $00, $00, $00, $00, $00, $7F
+                        defb                         $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Timer digits. Must be in a 256 bytes boundary
+; ----------------------------------------------------------------------------------------------------------------------
+TIMER_DIGITS:
+                        defb    $00, $0F, $0B, $0B, $0B, $0F, $00, $00              ; 0
+                        defb    $00, $06, $0E, $06, $06, $06, $00, $00              ; 1
+                        defb    $00, $0F, $03, $0F, $08, $0F, $00, $00              ; 2
+                        defb    $00, $0F, $03, $07, $03, $0F, $00, $00              ; 3
+                        defb    $00, $0B, $0B, $0F, $03, $03, $00, $00              ; 4 
+                        defb    $00, $0F, $08, $0F, $03, $0F, $00, $00              ; 5
+                        defb    $00, $0F, $0C, $0F, $0D, $0F, $00, $00              ; 6
+                        defb    $00, $0F, $03, $03, $03, $03, $00, $00              ; 7
+                        defb    $00, $0F, $0B, $0F, $0B, $0F, $00, $00              ; 8
+                        defb    $00, $0F, $0B, $0F, $03, $0F, $00, $00              ; 9
+
+FILLER_2                defs    25, $F2                     ; Filler to align next block (not used)
+
+                        ;org     $6500
+; ----------------------------------------------------------------------------------------------------------------------
+; Vector table of routines (must be aligned at the next page of red board arrays)
+; ----------------------------------------------------------------------------------------------------------------------
+RED_VECTOR_TABLE:
+                        defw    PathFinder_RED_Edge_0
+                        defw    PathFinder_RED_Edge_1
+                        defw    PathFinder_RED_Edge_2
+                        defw    PathFinder_RED_Edge_3
+                        defw    PathFinder_RED_Edge_4
+                        defw    PathFinder_RED_Edge_5
+                        defw    PathFinder_RED_Edge_6
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Graphics for the screen frame
+; ----------------------------------------------------------------------------------------------------------------------
+FRAME_TILES:
+                        defb    $00, $00, $1F, $3F, $3F, $3F, $3C, $3C              ; 00: up-left corner
+                        defb    $00, $00, $FF, $FF, $FF, $FF, $00, $00              ; 01: horizontal bar
+                        defb    $00, $00, $FF, $FE, $FE, $FF, $00, $00              ; 02: concave left
+                        defb    $03, $07, $0F, $0F, $0F, $0F, $07, $03              ; 03: end frame 1
+                        defb    $FF, $FE, $FC, $FC, $FC, $FC, $FE, $FF              ; 04: level left
+                        defb    $FF, $7F, $3F, $3F, $3F, $3F, $7F, $FF              ; 05: level right
+                        defb    $C0, $E0, $F0, $F0, $F0, $F0, $E0, $C0              ; 06: end frame 2
+                        defb    $00, $00, $FF, $7F, $7F, $FF, $00, $00              ; 07: concave right
+                        defb    $00, $00, $F8, $FC, $FC, $FC, $3C, $3C              ; 08: up-right corner
+                        defb    $3C, $3C, $3F, $3F, $3F, $1F, $00, $00              ; 09: bottom-left corner
+                        defb    $00, $00, $FE, $FF, $FF, $FE, $00, $00              ; 10: convex left
+                        defb    $00, $00, $7F, $FF, $FF, $7F, $00, $00              ; 11: convex right
+                        defb    $3C, $3C, $FC, $FC, $FC, $F8, $00, $00              ; 12: bottom-right corner
+                        defb    $00, $00, $38, $7C, $7C, $38, $00, $00              ; 13: level marks
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Hexagon sprites
+; ----------------------------------------------------------------------------------------------------------------------
+HEXAGON_EMPTY:
+                        defb    $07, $E0, $18, $18, $20, $04, $24, $04
+                        defb    $48, $02, $48, $02, $40, $02, $40, $02
+                        defb    $40, $02, $40, $02, $40, $12, $40, $12
+                        defb    $20, $24, $20, $04, $18, $18, $07, $E0  
+HEXAGON_SPRITE:
+                        defb    $03, $C0, $0C, $30, $10, $08, $12, $08
+                        defb    $24, $04, $24, $04, $20, $04, $20, $04
+                        defb    $20, $04, $20, $04, $20, $24, $20, $24
+                        defb    $10, $48, $10, $08, $0C, $30, $03, $C0
+
+                        defb    $01, $80, $02, $40, $04, $20, $09, $10
+                        defb    $0A, $10, $0A, $10, $08, $10, $08, $10
+                        defb    $08, $10, $08, $10, $08, $50, $08, $50
+                        defb    $08, $90, $04, $20, $02, $40, $01, $80
+
+                        defb    $00, $80, $00, $80, $00, $80, $00, $80
+                        defb    $00, $80, $00, $80, $00, $80, $00, $80
+                        defb    $00, $80, $00, $80, $00, $80, $00, $80
+                        defb    $00, $80, $00, $80, $00, $80, $00, $80  
+
+                        defb    $01, $80, $02, $40, $05, $A0, $0B, $D0
+                        defb    $0B, $D0, $0B, $D0, $0B, $D0, $0B, $D0
+                        defb    $0B, $D0, $0B, $D0, $0B, $D0, $0B, $D0
+                        defb    $0B, $D0, $05, $A0, $02, $40, $01, $80
+
+                        defb    $03, $C0, $0C, $30, $13, $C8, $17, $E8
+                        defb    $2F, $F4, $2F, $F4, $2F, $F4, $2F, $F4
+                        defb    $2F, $F4, $2F, $F4, $2F, $F4, $2F, $F4
+                        defb    $17, $E8, $13, $C8, $0C, $30, $03, $C0
+HEXAGON_TOKEN:
+                        defb    $07, $E0, $18, $18, $27, $E4, $2F, $F4
+                        defb    $5F, $FA, $5F, $FA, $5F, $FA, $5F, $FA
+                        defb    $5F, $FA, $5F, $FA, $5F, $FA, $5F, $FA
+                        defb    $2F, $F4, $27, $E4, $18, $18, $07, $E0
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Board letters sprites
+; ----------------------------------------------------------------------------------------------------------------------
+LETTERS_SPRITES:
+                        defb    $3C, $7E, $FF, $C3, $F3, $C3, $D3, $C3, $7E, $3C    ; a
+                        defb    $3C, $7E, $CF, $CF, $C3, $CB, $CB, $C3, $7E, $3C    ; b
+                        defb    $3C, $7E, $FF, $E3, $CF, $CF, $CF, $E3, $7E, $3C    ; c
+                        defb    $3C, $7E, $F3, $F3, $C3, $D3, $D3, $C3, $7E, $3C    ; d
+                        defb    $3C, $7E, $FF, $E3, $CB, $C3, $CF, $E3, $7E, $3C    ; e
+                        defb    $3C, $7E, $E3, $CF, $C7, $CF, $CF, $CF, $7E, $3C    ; f
+                        defb    $3C, $7E, $FF, $E3, $D3, $D3, $E3, $F3, $46, $3C    ; g
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Board numbers sprites
+; ----------------------------------------------------------------------------------------------------------------------
+NUMBERS_SPRITES:
+                        defb    $3C, $7E, $E7, $C7, $E7, $E7, $E7, $E7, $7E, $3C    ; 1
+                        defb    $3C, $7E, $E7, $D3, $F3, $E7, $CF, $C3, $7E, $3C    ; 2
+                        defb    $3C, $7E, $C7, $F3, $E3, $F3, $F3, $C7, $7E, $3C    ; 3
+                        defb    $3C, $7E, $D3, $D3, $C3, $F3, $F3, $F3, $7E, $3C    ; 4
+                        defb    $3C, $7E, $C3, $CF, $C7, $F3, $F3, $C7, $7E, $3C    ; 5
+                        defb    $3C, $7E, $E3, $CF, $C3, $CB, $CB, $C3, $7E, $3C    ; 6
+                        defb    $3C, $7E, $C3, $F3, $F3, $E7, $E7, $E7, $7E, $3C    ; 7
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Tone paramaters for sound effects
+; ----------------------------------------------------------------------------------------------------------------------
+; for each tone (from left to right):
+;   - number of frames in the block, slide changes applied once per frame (1..65536)
+;   - length of a frame (1..65536)
+;   - tone pitch, lower numbers for lower tone (1..65536)
+;   - pitch slide, this value is added to pitch every frame (-32767..32768)
+;   - duty cycle, defines the timbre of the tone (0..255, 128 for 50% square wave)
+;   - duty slide, this value is added to duty every frame (-127..128)
+; ----------------------------------------------------------------------------------------------------------------------
+TOKEN_FX                defw       1,  1000, 1400,   0, 128
+WINNER_FX               defw       5,  5000,  200, 100, 128
+FILLED_FX               defw    1000,    10,  100,   0, 128
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Strings
+; ----------------------------------------------------------------------------------------------------------------------
+STR_WELLDONE            defm    "Well done! Last level passed\0"
+STR_CHOOSE              defm    "Choose level to restart, 1-4\0"
+
+; ----------------------------------------------------------------------------------------------------------------------
 ; Based on "King" font https://spectrumcomputing.co.uk/entry/25245/ZX-Spectrum/ZX-ALFA
 ; this font was designed by Einar Saukas for Hex game
-; -----------------------------------------------------------------------------
-FONT
-                    includebin "King+.bin"
+; ----------------------------------------------------------------------------------------------------------------------
+FONT:
+                        includebin "King+.bin"
