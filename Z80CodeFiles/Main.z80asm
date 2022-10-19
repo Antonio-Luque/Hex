@@ -3,14 +3,13 @@
 ; Coded by Antonio Luque
 ; ----------------------------------------------------------------------------------------------------------------------
 
-CYAN_COLOR              equ     %00000101                   ; Attributes: flash 0, bright 0, paper 0, ink 5
-RED_COLOR               equ     %00000010                   ; Attributes: flash 0, bright 0, paper 0, ink 2
-SW_COLOR                equ     %00000111                   ; BITs to be XORed to swap current player color
+CYAN_COLOR              equ     %00000101                   ; attributes: flash 0, bright 0, paper 0, ink 5
+RED_COLOR               equ     %00000010                   ; attributes: flash 0, bright 0, paper 0, ink 2
 
+                        ent     $
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Entry point of the program - Initialization
 ; ----------------------------------------------------------------------------------------------------------------------
-                        ent     $
 
                         di                                  ; disable interrupts
 
@@ -18,40 +17,41 @@ SW_COLOR                equ     %00000111                   ; BITs to be XORed t
 
                         ld      hl, Timer_Interrupt         ; HL points to interrupt routine address
                         ld      (iy+103), $C3               ; 'jp' opcode
-                        ld      (iy+104), l                 ; LSB of interrupt routine address
-                        ld      (iy+105), h                 ; MSB of interrupt routine address
-                        ld      a, $2E                      ; set MSB of interrupt vector address
-                        ld      i, a
+                        ld      (iy+104), l                 ; Low byte of interrupt routine address
+                        ld      (iy+105), h                 ; High byte of interrupt routine address
+                        ld      a, $2E                      ; High byte of interrupt vector address
+                        ld      i, a                        ; set interrupt vector address
                         im      2                           ; set interrupt mode 2
 
-                        ; The ULA doesn't put any device ID in the data bus. When no value is placed on the Spectrum's
-                        ; data bus, this acquires the value of 8 signals one ($FF). So, the resultant vector address is
-                        ; formed as follows:
+                        ; When the ULA triggers an interrupt it doesn't put any device ID in the data bus. When no value
+                        ; is placed on the Spectrum's data bus, this acquires the value of 8 signals one ($FF). So, the
+                        ; resultant vector address is formed as follows:
+                        ;
                         ;                           ( I * $100 ) + $FF = $2E00 + $FF = $2EFF
                         ; Source: 
                         ; https://wiki.speccy.org/cursos/ensamblador/interrupciones#curiosidades-y-consideraciones
                         ;
                         ; The value pointed at ROM address $2EFF is $5CA1. This address belongs to the calculator's
-                        ; memory area and it is used by some ROM routines, but it is not longer used by HEX2 program.
+                        ; memory area and it is used by some ROM routines, but it is no longer used by HEX2 program.
 
-                        ld      sp, $6000                   ; move stack
+                        ld      sp, STACK                   ; move stack
 
                         xor     a                           ; A = 0
-                        ld      (GAME_LEVEL), a             ; initialize game level
-                        out     ($FE), a                    ; set border colour
+                        out     ($FE), a                    ; set border color (black)
+                        call    Screen_Menu                 ; show main menu and wait for an option
 
-                        ; set up screen layout
-
-                        call    Screen_Clear                ; clear the whole screen area and attributes area
-                        call    Screen_Letters              ; draw the two rows of letters on screen (a-g)
-                        call    Screen_Numbers              ; draw the two columns of numbers on screen (1-7)
+; ----------------------------------------------------------------------------------------------------------------------
+; Start new game
+; ----------------------------------------------------------------------------------------------------------------------
+Main_Start
+                        call    Screen_Clear                ; fill in black the whole screen area and attributes area
+                        call    Screen_Letters              ; draw the two rows of letters on the screen (a..g)
+                        call    Screen_Numbers              ; draw the two columns of numbers on the screen (1..7)
                         call    Screen_Frame                ; draw the screen frame
                         call    Screen_Tokens               ; draw the fixed tokens on the screen
                         call    Screen_Timer_Quotes         ; draw the timer quotes (' ") on the screen
-                        call    Screen_Color_Statics        ; apply color to some statics items of the screen
+                        call    Screen_Color_Statics        ; apply color to statics items of the screen
 
-                        ld      a, CYAN_COLOR               ; initialize first player color
-                        ld      (PLAYER_COLOR), a
                         ei                                  ; enable interrupts
 
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -60,46 +60,53 @@ SW_COLOR                equ     %00000111                   ; BITs to be XORed t
 Main_New_Level
                         ld      a, 4                        ; maximum level
                         ld      hl, GAME_LEVEL              ; HL points to game level address
-                        cp      (hl)                        ; check current level
-                        jr      nz, Main_Increment_Level    ; if level 4 not achieved then increment level
-                        call    Screen_Last_Level           ; else show last level messages
+                        cp      (hl)                        ; level 4 achieved?
+                        jr      nz, Main_Increment_Level    ; no, increment game level
+                        call    Screen_Last_Level           ; show last level screen and input game level
+                        jr      Main_Start                  ; start a new game
 Main_Increment_Level
                         inc     (hl)                        ; increment game level
                         call    Screen_Frame_Color          ; set up frame color depending on current level
                         call    Screen_Clear_ThreeRow       ; clear all three-in-a-row marks
-                        xor     a                           ; (re)initialize three-in-a-row counter
-                        ld      (THREE_ROW), a
+                        xor     a                           ; A = 0
+                        ld      (THREE_ROW), a              ; initialize three-in-a-row counter
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Start new match
 ; ----------------------------------------------------------------------------------------------------------------------
 Main_Start_Match
-                        call    Print_Clear_Alert           ; clear last alert
+                        ; set up timers and clear last messages
 
+                        call    Timer_Reset                 ; reset timers
+                        call    Timer_Display_All           ; display timers
+                        call    Print_Clear_Alert           ; clear last alert
                         ld      a, RED_COLOR                ; set red color in A
                         ld      (TOKEN_COLOR), a            ; save token color
                         call    Print_Clear_Move            ; clear red player last move
 
-                        call    Timer_Reset                 ; reset timers
-                        call    Timer_Display_All           ; display timers
-                        call    Print_Players               ; swap colors and print "Player" and "Speccy" strings
-                        call    Draw_Board                  ; draw an empty hexagons board
+                        ; swap players' colors
+
+                        ld      a, (PLAYER_COLOR)           ; get current player color
+                        xor     %00000111                   ; swap color
+                        ld      (PLAYER_COLOR), a           ; save swapped player color
+                        call    Print_Players               ; print "Player" and "Speccy" strings
 
                         ; initialize boards
 
-                        ld      hl, CYAN_BOARD              ; HL points to CYAN_BOARD address
-                        ld      de, CYAN_BOARD+1            ; DE points to CYAN_BOARD+1 address
+                        ld      hl, CYAN_POSITIONS          ; HL points to cyan positions address
+                        ld      de, CYAN_POSITIONS+1        ; DE points to cyan positions (+1) address
                         ld      (hl), EMPTY                 ; set first position as empty
-                        ld      bc, (256*2)-1               ; length of CYAN_BOARD+RED_BOARD areas (-1 already set)
-                        ldir                                ; set empty to the rest of position
+                        ld      bc, (256*2)-1               ; length of cyan + red positions areas (-1 already set)
+                        ldir                                ; fill the rest of positions as empty
 
-                        ld      a, 10                       ; set delay duration for animate hexagons
-                        ld      (Draw_Token_Delay+1), a
+                        call    Draw_Board                  ; draw an empty hexagons board
 
+                        ld      a, 10
+                        ld      (Draw_Token_Delay+1), a     ; set delay duration for animate hexagons
                         ld      a, 1
                         ld      (MOVE_NUMBER), a            ; initialize move number
                         ld      (TIMER_FLAG), a             ; set cyan timer on
-                        ld      a, CYAN_COLOR               ; (re)initialize first player color
+                        ld      a, CYAN_COLOR               ; first player token color
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Process players moves - Match loop
@@ -108,66 +115,45 @@ Main_Match_Loop
                         ; check player turn
 
                         ld      (TOKEN_COLOR), a            ; save current token color
-                        ld      hl, PLAYER_COLOR            ; get player color
+                        ld      hl, PLAYER_COLOR            ; HL points to player color address
                         cp      (hl)                        ; is player color = current token color?
-                        jr      z, Main_Player_Move         ; yes, input player move
-
-                        call    Main_Speccy_Process         ; process speccy move
-                        jr      Main_Update_Board           ; continue updating board position
+                        jr      z, Main_Player_Move         ; yes, process player move
+                        call    Main_GetSpeccy_Move         ; get the speccy move
+                        jr      Main_Update_Board           ; update board position
 Main_Player_Move
-                        call    Main_Player_Process         ; process player move
-
-                        ; check player move legality
-
-                        ld      l, (hl)                     ; get board position of player move
-                        ld      h, CYAN_BOARD/256           ; HL points to move position on board
-                        ld      a, EMPTY
-                        cp      (hl)                        ; is node empty?
-                        jr      nz, Main_Hex_Filled         ; no, node is filled
+                        call    Main_GetPlayer_Move         ; get a legal (empty position) player move 
 Main_Update_Board
-                        ; update board position with player/speccy move
+                        ; update positions with player/speccy move
 
                         call    PathFinder_Friend           ; get player/speccy side
-                        call    PathFinder_PutToken         ; update board position
-                        call    Draw_Token                  ; draw token (player or speccy) on the screen
+                        call    PathFinder_PutToken         ; put token on cyan and red positions
+                        call    Draw_Token                  ; animate hexagon sprite on the screen
 
                         ; check win condition
 
                         ld      a, (TOKEN_COLOR)            ; get current token color
-                        cp      CYAN_COLOR                  ; is CYAN the current token color?
-                        jr      z, Main_Get_CyanScore       ; yes, go for the score for cyan player
+                        cp      CYAN_COLOR                  ; is token color = cyan?
+                        jr      z, Main_Cyan_Score          ; yes, get score for cyan player
                         call    PathFinder_Red_LeftRight    ; get score for red player
                         jr      Main_Check_Winner           ; check victory condition
-Main_Get_CyanScore
+Main_Cyan_Score
                         call    PathFinder_Cyan_UpDown      ; get score for cyan player
 Main_Check_Winner
                         cp      WIN_CONDITION               ; player/speccy won?
-                        jr      z, Main_Match_End           ; yes, there is a winner!
+                        jr      z, Main_Match_End           ; yes, match ends
 
-                        ld      hl, MOVE_NUMBER
+                        ld      hl, MOVE_NUMBER             ; HL points to move number address
                         inc     (hl)                        ; increment move number
 
-                        ; swap players timers and colors
+                        ; swap players' timers and token color
 
-                        ld      a, (TIMER_FLAG)             ; swap current timer
-                        xor     %00000011
-                        ld      (TIMER_FLAG), a
-                        ld      a, (TOKEN_COLOR)            ; swap current token color
-                        xor     SW_COLOR
+                        ld      a, (TIMER_FLAG)             ; get current timer flag
+                        xor     %00000011                   ; swap timer flag
+                        ld      (TIMER_FLAG), a             ; save swapped timer flag
+
+                        ld      a, (TOKEN_COLOR)            ; get current token color
+                        xor     %00000111                   ; swap token color
                         jr      Main_Match_Loop             ; repeat match loop
-
-; ----------------------------------------------------------------------------------------------------------------------
-; Illegal player move (node is filled)
-; ----------------------------------------------------------------------------------------------------------------------
-Main_Hex_Filled
-                        ld      de, STR_FILLED              ; HL points to "FILLED" string
-                        call    Print_Alert                 ; print string
-                        ld      ix, FILLED_FX               ; HL points to filled hexagon sound fx
-                        call    Sound_FX                    ; play sound fx
-                        ld      a, 80                       ; set delay counter
-                        call    Main_Delay
-                        call    Print_Clear_Alert           ; clear alert message
-                        jr      Main_Player_Move            ; repeat player input until move is legal
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Current player wins the match
@@ -175,18 +161,17 @@ Main_Hex_Filled
 Main_Match_End
                         ld      hl, TIMER_FLAG              ; HL points to timer flag address
                         ld      (hl), 0                     ; stop timers
-                        ld      a, 4                        ; set delay duration for animate hexagons
-                        ld      (Draw_Token_Delay+1), a
-                        call    PathFinder_BrightPath       ; highlights the winner path
-
-                        ld      de, STR_WINNER              ; HL points to "WINNER" string
+                        ld      a, 4
+                        ld      (Draw_Token_Delay+1), a     ; set delay duration for animate hexagons
+                        call    PathFinder_BrightPath       ; animate and highlight the winner path
+                        ld      de, STR_WINNER              ; DE points to "WINS" string address
                         call    Print_Alert                 ; print string
 
                         ld      a, (TOKEN_COLOR)            ; get current token color
                         ld      hl, PLAYER_COLOR            ; get player color
                         cp      (hl)                        ; is player color = current token color?
-                        ld      hl, THREE_ROW
-                        jr      z, Main_ThreeRow_Increment  ; yes, increment three-in-a-row counter
+                        ld      hl, THREE_ROW               ; HL points to three-in-a-row counter
+                        jr      z, Main_ThreeRow_Increment  ; yes, go to increment three-in-a-row counter
                         dec     (hl)                        ; decrement three-in-a-row counter
                         jp      p, Main_ThreeRow_Show       ; if not negative (-1), show marks
 Main_ThreeRow_Increment
@@ -194,123 +179,179 @@ Main_ThreeRow_Increment
 Main_ThreeRow_Show
                         call    Screen_ThreeRow             ; show three-in-a-row marks
                         ld      a, 255                      ; set delay duration
-                        call    Main_Delay                  ; delay
+                        call    Main_Delay                  ; execute delay
                         ld      a, (THREE_ROW)              ; check three row counter
                         cp      3                           ; is it 3?
-                        jp      z, Main_New_Level           ; yes, start new level
-
+                        jp      z, Main_New_Level           ; yes, start a new level
                         jp      Main_Start_Match            ; start a new match
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Main_Player_Proces: process for player move
+; Main_GetSpeccy_Move: get the speccy move
 ;
 ; Input:    -
-; Output:   HL - address of board position of player move
-;           BC - board indexes at screen of player move (B=column, C=row)
-; Destroys: DE, IX
+;
+; Output:   BC = hexagon board indexes (B:column, C:row)
+;           HL = CYAN_POSITIONS move address
+;
+; Uses:     MOVE_NUMBER (current move number)
+;           GAME_LEVEL (current game level)
+;           AI_DEPTH (recursion depth level)
+;           STR_MOVE (formatted move string)
+;
+; Destroys: A, DE, IX, IY
 ; ----------------------------------------------------------------------------------------------------------------------
-Main_Player_Process:
+Main_GetSpeccy_Move:
+                        call    Print_Wait                  ; print "WAIT" message
+                        ld      a, (MOVE_NUMBER)            ; get move number
+                        dec     a                           ; is it cyan first move?
+                        jr      z, Main_GetSpeccy_Book      ; yes, get move from opening book
+
+                        ld      ix, CANDIDATES              ; IX points to candidates list address
+                        ld      a, (GAME_LEVEL)             ; get game level
+                        ld      (AI_DEPTH), a               ; save recursion depth level
+                        call    PathFinder_Friend           ; get speccy side
+                        call    BRAINIAC_best_move          ; get speccy best move
+                        ld      l, e                        ; set node index in L
+Main_GetSpeccy_Positions
+                        ld      h, CYAN_POSITIONS/256       ; HL points to CYAN_POSITIONS move address
+                        push    hl                          ; store CYAN_POSITIONS move address
+                        call    Main_Board2Indexes          ; convert board position to indexes
+                        ld      a, b                        ; get 1..7 column
+                        add     a, $60                      ; adjust to charset ('a'..'g')
+                        ld      (STR_MOVE+0), a             ; put it on formatted move string
+                        ld      a, c                        ; get 1..7 row
+                        add     a, $30                      ; adjust to charset ('1'..'7')
+                        ld      (STR_MOVE+3), a             ; put it on formatted move string
+                        push    bc                          ; store hexagon board indexes
+                        call    Print_Move                  ; print Speccy move
+                        pop     bc                          ; restore hexagon board indexes
+                        pop     hl                          ; restore CYAN_POSITIONS move address
+                        ret
+Main_GetSpeccy_Book
+                        ld      a, r                        ; get a pseudo-random number (0..127)
+                        and     %00011111                   ; number is in range (0..31)
+                        cp      27                          ; is it >= 27?
+                        jr      nc, Main_GetSpeccy_Book     ; yes, repeat until range is (0..26)
+                        ld      hl, OPENINGS                ; HL points to opening book address
+                        ld      d, 0                        ; set index in DE
+                        ld      e, a
+                        add     hl, de                      ; HL points to move index address
+                        ld      l, (hl)                     ; get move from opening book
+                        jr      Main_GetSpeccy_Positions    ; get speccy move positions
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Main_GetPlayer_Move: get a legal (empty hexagon) move from player
+;
+; Input:    -
+;
+; Output:   BC = hexagon board indexes (B:column, C:row)
+;           HL = CYAN_POSITIONS move address
+;
+; Uses:     STR_MOVE (formatted move string)
+;
+; Destroys: A, DE, IX
+; ----------------------------------------------------------------------------------------------------------------------
+Main_GetPlayer_Move:
                         call    Print_Clear_Move            ; clear player last move
                         call    Input_Move                  ; wait for input player move
-                        ld      ix, STR_MOVE                ; IX points to formatted move string to print
-                        dec     bc                          ; BC points to the last char of input move
-                        ld      a, (bc)                     ; get row ('1'..'7')
-                        ld      (ix+3), a                   ; put it on formatted move string
-                        dec     bc                          ; BC points to the first char of input move
-                        ld      a, (bc)                     ; get column ('a'..'g')
-                        ld      (ix+0), a                   ; put it on formatted move string
-                        call    Print_Move                  ; print Speccy move
+                        ld      a, (hl)                     ; get column ('a'..'g') from move
+                        ld      (STR_MOVE+0), a             ; put it on formatted move string
+                        sub     $60                         ; convert to number (1..7)
+                        ld      b, a                        ; set column index in B
+                        inc     hl                          ; HL points to move-row address
+                        ld      a, (hl)                     ; get row ('1'..'7')
+                        ld      (STR_MOVE+3), a             ; put it on formatted move string
+                        sub     $30                         ; convert to number (1..7)
+                        ld      c, a                        ; set row index in C
+                        push    bc                          ; store board indexes
+                        call    Print_Move                  ; print player move
+                        pop     bc                          ; restore board indexes
+                        ld      de, BOARD_COORDINATES       ; DE points to board coordinates address
+                        call    Main_Search_Table           ; search board position in board coordinates
+                        ld      l, (hl)                     ; set board position of player move
+                        ld      h, CYAN_POSITIONS/256       ; HL points to CYAN_POSITIONS move address
+                        ld      a, EMPTY                    ; check position
+                        cp      (hl)                        ; is position empty?
+                        ret     z                           ; yes, return
 
-                        ; convert player move into an hexagon's indexes in board
+                        ; illegal player move (position not empty)
 
-                        inc     de                          ; DE points to the first char of input move
-                        ld      a, (de)                     ; get 'a'..'g' column
-                        sub     $60                         ; adjust to charset (1..7)
-                        ld      b, a                        ; set column position in B
-                        inc     de                          ; DE points to next char of input move
-                        ld      a, (de)                     ; get '1'..'7' row
-                        sub     $30                         ; adjust to charset (1..7)
-                        ld      c, a                        ; set row position in C
+                        ld      de, STR_FILLED              ; DE points to "FILLED" string address
+                        call    Print_Alert                 ; print string
+                        ld      ix, FILLED_FX               ; IX points to filled tone parameters address
+                        call    Sound_FX                    ; play sound fx
+                        ld      a, 80                       ; set delay counter
+                        call    Main_Delay                  ; execute delay
+                        call    Print_Clear_Alert           ; clear alert message
+                        jr      Main_GetPlayer_Move         ; repeat player process until move is legal
 
-                        ; convert a XY indexes of the hexagon in screen into a board position
-
-                        ld      h, 0                        ; first, get the C row
-                        ld      l, c
+; ----------------------------------------------------------------------------------------------------------------------
+; Main_Search_Table: search an element in a 8x8 bytes table
+;
+; Input:    BC = element indexes (B = column, C = row)
+;           DE = table address in which to search for the element
+;
+; Output:   DE = address of first element in the C row of the table
+;           HL = address of the element in the BC indexes of the table
+;
+; Destroys: -
+; ----------------------------------------------------------------------------------------------------------------------
+Main_Search_Table:
+                        ld      h, 0                        ; first, get the C row in table
+                        ld      l, c                        ; set index in HL
                         add     hl, hl                      ; a row is 8 bytes long
                         add     hl, hl
                         add     hl, hl
-                        ld      de, BOARD_COORDINATES
-                        add     hl, de
-                        ex      de, hl                      ; DE and HL points to the address of C row 
+                        add     hl, de                      ; HL points to the address of C row 
+                        ex      de, hl                      ; DE points to the address of C row
                         ld      h, 0                        ; go for to the B column
-                        ld      l, b
-                        add     hl, de                      ; HL points to the address of B col
+                        ld      l, b                        ; set index in HL
+                        add     hl, de                      ; HL points to the address of BC indexes
                         ret
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Main_Speccy_Process: process for speccy move
+; Main_Board2Indexes: convert a board position into a board indexes
 ;
-; Input:    -
-; Output:   HL - address of board position of speccy move
-;           BC - board indexes at screen of speccy move (B=column, C=row)
-; Destroys: DE, IX
-; ----------------------------------------------------------------------------------------------------------------------
-Main_Speccy_Process:
-                        call    Print_Wait                  ; print "WAIT" message
-                        call    Play_Speccy                 ; get Speccy move
-                        push    hl                          ; store board position of move
-                        call    Main_Board2Indexes          ; convert board postion to indexes
-                        ld      ix, STR_MOVE                ; IX points to formatted move string to print
-                        ld      a, b                        ; get 1..7 column
-                        add     a, $60                      ; adjust to charset ('a'..'g')
-                        ld      (ix+0), a                   ; put it on formatted move string
-                        ld      a, c                        ; get 1..7 row
-                        add     a, $30                      ; adjust to charset ('1'..'7')
-                        ld      (ix+3), a                   ; put it on formatted move string
-                        push    bc                          ; store XY indexes
-                        call    Print_Move                  ; print Speccy move
-                        pop     bc                          ; restore XY indexes
-                        pop     hl                          ; restore board position of move
-                        ret
-
-; ----------------------------------------------------------------------------------------------------------------------
-; Main_Board2Indexes: convert a board position into a XY indexes of the hexagon in screen
+; Input:    L  = board position
 ;
-; Input:    L  - board position
-; Output:   BC - board indexes of the hexagon in screen (B=column, C=row)
-; Destroys: -
+; Output:   BC = board indexes (B = column, C = row)
+;
+; Destroys: HL
 ; ----------------------------------------------------------------------------------------------------------------------
 Main_Board2Indexes:
-                        ld      a, l
-                        ld      hl, BOARD_COORDINATES+64
+                        ld      a, l                        ; set board position in A to compare later
+
+                        ld      hl, BOARD_COORDINATES+64    ; HL points to last board position address (+1)
                         ld      c, 7                        ; 7 rows
 Board2Indexes_Row
                         ld      b, 7                        ; 7 columns
 Board2Indexes_Col
-                        dec     hl
-                        cp      (hl)                        ; is it the position?
-                        ret      z                          ; yes, return XY indexes
-                        djnz    Board2Indexes_Col
+                        dec     hl                          ; move HL to next board position address
+                        cp      (hl)                        ; is A the position?
+                        ret     z                           ; yes, return board indexes
+                        djnz    Board2Indexes_Col           ; repeat for each column
                         dec     hl                          ; skip borders
-                        dec     c
-                        jr      Board2Indexes_Row           ; loop each row
+                        dec     c                           ; decrement row
+                        jr      Board2Indexes_Row           ; loop until find position
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Main_Delay: wait for execution
+; Main_Delay: execute a delay
 ;
-; Input:    A - delay counter
-; Output:   A - 0
-; Destroys: -
+; Input:    A = delay counter
+;
+; Output:   -
+;
+; Destroys: A
 ; ----------------------------------------------------------------------------------------------------------------------
 Main_Delay:
                         push    bc                          ; store register
 Main_Delay_Loop
-                        ld      c, 10                       ; set outher loop counter
+                        ld      c, 10                       ; set outer loop counter
 Main_Delay_Loop1
-                        ld      b, 0                        ; set inner loop counter (255)
+                        ld      b, 0                        ; set inner loop counter (256)
 Main_Delay_Loop2
                         djnz    Main_Delay_Loop2            ; repeat until B=0
-                        dec     c                           ; decrement outher loop counter
+                        dec     c                           ; decrement outer loop counter
                         jr      nz, Main_Delay_Loop1        ; repeat until C=0
                         dec     a                           ; decrement delay counter
                         jr      nz, Main_Delay_Loop         ; repeat until A=0

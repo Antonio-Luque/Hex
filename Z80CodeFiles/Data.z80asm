@@ -5,21 +5,22 @@
 ; Definition of data, variables and tables
 ; ----------------------------------------------------------------------------------------------------------------------
 
-                        org     $6000
+STACK                   org     $6000
+
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Circular queue
 ; ----------------------------------------------------------------------------------------------------------------------
 CYAN_QUEUE_AREA         defs    256                         ; 256-aligned block reserved for circular queue
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; CYAN BOARD arrays: these boards must be located immediately after cyan queue area!
+; CYAN BOARDS: these boards must be located immediately after cyan queue area!
 ; 
-; These boards hold a determinated position of the board from cyan perspective. They are used to calculate CYAN two-
-; distance from UP to DOWN edges and CYAN two-distance from DOWN to UP edges. The cyan UP-DOWN board is also used to
-; store CYAN potentials and TOTAL potentials.
+; These boards hold a determined position of the board from cyan perspective. They are used to calculate CYAN "two-
+; distance" (Jack van Rijswijck) from UP to DOWN edges and CYAN two-distance from DOWN to UP edges. The cyan UP-DOWN
+; board is also used to store CYAN potentials and TOTAL potentials.
 ; 
-; The values of $7F form the border of the board. The UP and DOWN edges are identified with Bit 7 set and the lowest 3
-; bits are the edge number. The rest of bytes indicates two-distance from goal (stored in lowest 6 bits), and a flag
+; The values of $7F form the border of the board. The UP and DOWN edges are identified with 7th bit set and the lowest 3
+; bits are the edge number. The rest of bytes indicates "two-distance" from goal (stored in lowest 6 bits), and a flag
 ; that indicates a position occupied by a friendly token (stored in 6th bit).
 ; ----------------------------------------------------------------------------------------------------------------------
 CYAN_BOARD_UP_DOWN:
@@ -52,15 +53,15 @@ AI_PLAYER               defb    0                           ; speccy side (FRIEN
 AI_DEPTH                defb    0                           ; recursion depth level (1-4)
 MOVE_NUMBER             defb    0                           ; current move number
 LEVEL_COLOR             defb    0                           ; current level color for frame border
-GAME_LEVEL              defb    0                           ; number of game level (1-4)
-PLAYER_COLOR            defb    0                           ; player color selected (CYAN or RED)
-TOKEN_COLOR             defb    0                           ; current token color (CYAN or RED)
+GAME_LEVEL              defb    0                           ; current game level (1-4)
+TOKEN_COLOR             defb    0                           ; current token color
+PLAYER_COLOR            defb    5                           ; current player color
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Screen look-up table for the hexagons board
+; Screen addresses look-up table for board hexagons
 ;
-; The first column contains Hi-Byte screen addresses of the hexagons
-; The rest of bytes are the Lo-Byte screen addresses of the hexagons
+; The first column contains the screen addresses high byte
+; The rest of bytes are the screen addresses low byte
 ; ----------------------------------------------------------------------------------------------------------------------
 BOARD_MAP:
                         defb    $40, $A6, $A8, $AA, $AC, $AE, $B0, $B2
@@ -92,19 +93,21 @@ CYAN_VECTOR_TABLE:
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Variables and strings
 ; ----------------------------------------------------------------------------------------------------------------------
-STR_SPECCY              defm    "Speccy\0"                  ; 'Speccy' string
-STR_PLAYER              defm    "Player\0"                  ; 'Player' string
-STR_LEVELTEXT           defm    "Level\0"                   ; 'Level' string
-STR_FILLED              defm    "FILLED\0"                  ; 'FILLED' string
-STR_WAIT                defm    "WAIT\0"                    ; 'WAIT' string
-STR_WINNER              defm    " WINS \0"                  ; 'WINS' string
-STR_EMPTY4              defm    "    \0"                    ; 4 spaces string
-STR_EMPTY6              defm    "      \0"                  ; 6 spaces string
-STR_MOVE                defb    0, '-', '0', 0, '\0'        ; formatted move string
-ASCII_MOVE              defb    0, 0                        ; move in ASCII format
-CHAR_COUNT              defb    0                           ; number of current chars in input string
+PLAYER_MOVE:                                                ; player move in ASCII format
+                        defb    0                           ; column ('a'..'g')
+                        defb    0                           ; row ('1'..'7')
+CHAR_COUNT              defb    0                           ; number of current characters in input player move
 THREE_ROW               defb    0                           ; three-in-a-row counter
 ROW_COLOR_MAP           defb    15, 14, 12, 11              ; level-color map for frame border
+STR_MOVE                defb    0, '-', '0', 0, '\0'        ; formatted move string
+STR_SPECCY              defm    "Speccy\0"
+STR_PLAYER              defm    "Player\0"
+STR_LEVELTEXT           defm    "Level\0"
+STR_FILLED              defm    "FILLED\0"
+STR_WAIT                defm    "WAIT\0"
+STR_WINNER              defm    " WINS \0"
+STR_EMPTY4              defm    "    \0"
+STR_EMPTY6              defm    "      \0"
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Conversion table: from position to XY board indexes
@@ -144,7 +147,7 @@ OPENINGS:
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Timer variables
 ; ----------------------------------------------------------------------------------------------------------------------
-TIMER_FLAG              defb    0                           ; 0 = timer stopped, 1 = cyan timer on; 2 = red timer on
+TIMER_FLAG              defb    0                           ; 0 = timer stopped, 1 = cyan timer on, 2 = red timer on
 ; for each timer:
 ;   1st byte = interrupt counter (incremented each 1/50 seconds)
 ;   2nd byte = seconds counter
@@ -155,10 +158,10 @@ RED_TIMER               defb    50, 0, 0
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Screen addresses look-up array for board numbers
 ; ----------------------------------------------------------------------------------------------------------------------
-NUMBERS_LOCATIONS:
+NUMBER_SCREEN:
                         defw    $43A5, $43E6, $4B27, $4B68, $4BA9, $4BEA, $532B
 
-FILLER_1                defb    $F1, $F1                    ; Filler to align next block (not used)
+FILLER_1                defb    $F1, $F1                    ; filler to align next block (not used)
 
                         ;org     $6300
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -167,14 +170,14 @@ FILLER_1                defb    $F1, $F1                    ; Filler to align ne
 RED_QUEUE_AREA          defs    256                         ; 256-aligned block reserved for circular queue
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; RED BOARD arrays: these boards must be located immediately after red queue area!
+; RED BOARDS: these boards must be located immediately after red queue area!
 ; 
-; These boards hold a determinated position of the board from red perspective. They are used to calculate RED two-
-; distance from LEFT to RIGHT edges and RED two-distance from RIGHT to LEFT edges. The red LEFT-RIGHT board is also used
-; to store RED potentials.
+; These boards hold a determined position of the board from red perspective. They are used to calculate RED "two-
+; distance" (Jack van Rijswijck) from LEFT to RIGHT edges and RED two-distance from RIGHT to LEFT edges. The red
+; LEFT-RIGHT board is also used to store RED potentials.
 ; 
 ; The values of $7F form the border of the board. The LEFT-RIGHT edges are identified with Bit 7 set and the lowest 3
-; bits are the edge number. The rest of bytes indicates two-distance from goal (stored in lowest 6 bits), and a flag
+; bits are the edge number. The rest of bytes indicates "two-distance" from goal (stored in lowest 6 bits), and a flag
 ; that indicates a position occupied by a friendly token (stored in 6th bit).
 ; ----------------------------------------------------------------------------------------------------------------------
 RED_BOARD_LEFT_RIGHT:
@@ -198,7 +201,7 @@ RED_BOARD_RIGHT_LEFT:
                         defb                         $7F, $7F, $7F, $7F, $7F, $7F, $7F, $7F
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Timer digits. Must be in a 256 bytes boundary
+; Timer digits graphics. Must be in a 256 bytes boundary
 ; ----------------------------------------------------------------------------------------------------------------------
 TIMER_DIGITS:
                         defb    $00, $0F, $0B, $0B, $0B, $0F, $00, $00              ; 0
@@ -212,7 +215,20 @@ TIMER_DIGITS:
                         defb    $00, $0F, $0B, $0F, $0B, $0F, $00, $00              ; 8
                         defb    $00, $0F, $0B, $0F, $03, $0F, $00, $00              ; 9
 
-FILLER_2                defs    25, $F2                     ; Filler to align next block (not used)
+; ----------------------------------------------------------------------------------------------------------------------
+; Tone parameters for sound effects
+; ----------------------------------------------------------------------------------------------------------------------
+; for each tone (from left to right):
+;   - number of frames in the block, slide changes applied once per frame (1..65536)
+;   - length of a frame (1..65536)
+;   - tone pitch, lower numbers for lower tone (1..65536)
+;   - pitch slide, this value is added to pitch every frame (-32767..32768)
+; ----------------------------------------------------------------------------------------------------------------------
+TOKEN_FX                defw       1, 1000, 1400,   0
+WINNER_FX               defw       5, 5000,  200, 100
+FILLED_FX               defw    1000,   10,  100,   0
+
+FILLER_2                defb    $F2                         ; filler to align next block (not used)
 
                         ;org     $6500
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -286,9 +302,9 @@ HEXAGON_TOKEN:
                         defb    $2F, $F4, $27, $E4, $18, $18, $07, $E0
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Board letters sprites
+; Board letter sprites
 ; ----------------------------------------------------------------------------------------------------------------------
-LETTERS_SPRITES:
+LETTER_SPRITES:
                         defb    $3C, $7E, $FF, $C3, $F3, $C3, $D3, $C3, $7E, $3C    ; a
                         defb    $3C, $7E, $CF, $CF, $C3, $CB, $CB, $C3, $7E, $3C    ; b
                         defb    $3C, $7E, $FF, $E3, $CF, $CF, $CF, $E3, $7E, $3C    ; c
@@ -298,9 +314,9 @@ LETTERS_SPRITES:
                         defb    $3C, $7E, $FF, $E3, $D3, $D3, $E3, $F3, $46, $3C    ; g
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Board numbers sprites
+; Board number sprites
 ; ----------------------------------------------------------------------------------------------------------------------
-NUMBERS_SPRITES:
+NUMBER_SPRITES:
                         defb    $3C, $7E, $E7, $C7, $E7, $E7, $E7, $E7, $7E, $3C    ; 1
                         defb    $3C, $7E, $E7, $D3, $F3, $E7, $CF, $C3, $7E, $3C    ; 2
                         defb    $3C, $7E, $C7, $F3, $E3, $F3, $F3, $C7, $7E, $3C    ; 3
@@ -310,25 +326,60 @@ NUMBERS_SPRITES:
                         defb    $3C, $7E, $C3, $F3, $F3, $E7, $E7, $E7, $7E, $3C    ; 7
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Tone paramaters for sound effects
+; Screen addresses for menu hexagons
 ; ----------------------------------------------------------------------------------------------------------------------
-; for each tone (from left to right):
-;   - number of frames in the block, slide changes applied once per frame (1..65536)
-;   - length of a frame (1..65536)
-;   - tone pitch, lower numbers for lower tone (1..65536)
-;   - pitch slide, this value is added to pitch every frame (-32767..32768)
-;   - duty cycle, defines the timbre of the tone (0..255, 128 for 50% square wave)
-;   - duty slide, this value is added to duty every frame (-127..128)
-; ----------------------------------------------------------------------------------------------------------------------
-TOKEN_FX                defw       1,  1000, 1400,   0, 128
-WINNER_FX               defw       5,  5000,  200, 100, 128
-FILLED_FX               defw    1000,    10,  100,   0, 128
+MENU_HEXAGONS:
+                        defw    $4001, $4005, $4008, $400C, $400F, $4013, $401A
+                        defw    $4045, $4048, $4052, $405D, $4081, $4083, $4085
+                        defw    $4088, $408A, $4091, $409D, $40C1, $40D0, $40D9
+                        defw    $4805, $4808, $480A, $4813, $4819, $481B, $481D
+                        defw    $400A, $4059, $40BB, $40C5, $40D2, $480C, $401C
+                        defw    $4041, $4050, $40C8, $4801, $480F
+SAMPLE_BOARD_RED:
+                        defw    $4869, $486B, $482C, $482E, $40EF, $40F1, $40B2
+                        defw    $40E9, $486F, $4830, $40F3, $48AA, $40AC, $48EF
+                        defw    $482A, $486D, $40ED, $48AE
+SAMPLE_BOARD_CYAN:
+                        defw    $40AE, $40EF, $4830, $486F, $48AE, $48EF, $502E
+                        defw    $48AC, $48B4, $486B, $486D, $482E, $40F1, $40F3
+                        defw    $4873, $48B2, $5030
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Strings
 ; ----------------------------------------------------------------------------------------------------------------------
-STR_WELLDONE            defm    "Well done! Last level passed\0"
-STR_CHOOSE              defm    "Choose level to restart, 1-4\0"
+STR_OPTIONS:
+                        defm    "Start new game\0"
+                        defm    "How to play\0"
+                        defm    "Credits\0"
+STR_CREDITS:
+                        defm    "Design:     Antonio Luque\0"
+                        defm    "Code:       Antonio Luque\0"
+                        defm    "            Einar Saukas\0"
+                        defm    "Font:       Einar Saukas\0"
+                        defm    "Graphics:   Einar Saukas\0"
+                        defm    "            Antonio Luque\0"
+STR_PRESSKEY            defm    "Press any key\0"
+STR_BUTTONS:
+                        defm    "Next\0"
+                        defm    "Back\0"
+STR_RED                 defm    "RED\0"
+STR_CYAN                defm    "CYAN\0"
+STR_HELP1               defm    "Connect\0"
+STR_HELP2_RED           defm    "left and\0"
+STR_HELP2_CYAN          defm    "up and\0"
+STR_HELP3_RED           defm    "right\0"
+STR_HELP3_CYAN          defm    "down\0"
+STR_HELP4               defm    "borders\0"
+STR_HELP5               defm    "to win\0"
+STR_HELP:
+                        defm    "Win three\0"
+                        defm    "times in\0"
+                        defm    "a row to\0"
+                        defm    "level up\0"
+STR_CONGRATS            defm    " CONGRATULATIONS \0"
+STR_LAST_LEVEL:
+                        defm    "Well done! Last level passed\0"
+                        defm    "Choose level to restart, 1-4\0"
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Based on "King" font https://spectrumcomputing.co.uk/entry/25245/ZX-Spectrum/ZX-ALFA

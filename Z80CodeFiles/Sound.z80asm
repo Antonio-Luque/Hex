@@ -1,52 +1,46 @@
 ﻿; ----------------------------------------------------------------------------------------------------------------------
 ; Sound.z80asm
 ; Coded with BeepFX player tool by Shiru: https://opengameart.org/content/zx-spectrum-beeper-sound-effects
+;
+; Adapted for Hex game by Antonio Luque
 ; ----------------------------------------------------------------------------------------------------------------------
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Sound_FX: play a sound effect (tone) defined by many parameters
 ; 
-; Input:    IX - pointer to tone parameters
+; Input:    IX = tone parameters address
+;
 ; Output:   -
-; Destroys: HL, BC, DE, IY, A
+;
+; Destroys: A, BC, DE, HL, IY
 ; ----------------------------------------------------------------------------------------------------------------------
 Sound_FX:
                         di                                  ; disable interrupts
-
                         ld      c, (ix+0)                   ; BC = frames
                         ld      b, (ix+1)
                         ld      e, (ix+2)                   ; DE = frame length
                         ld      d, (ix+3)
-
-                        push    de
+                        push    de                          ; (simulate 'ld iy,de')
                         pop     iy                          ; store frame length in IY
-
                         ld      e, (ix+4)                   ; DE = pitch
                         ld      d, (ix+5)
-                        ld      a, (ix+8)                   ; A = duty
-                        ld      (@Tone_Duty+1), a           ; save duty
                         ld      hl, 0                       ; reset HL
 Sound_FX_Frames
                         push    bc                          ; store frames
-
-                        push    iy
+                        push    iy                          ; (simulate 'ld bc,iy')
                         pop     bc                          ; restore frame length in BC
 Sound_FX_FrameLength
                         add     hl, de                      ; HL = incremented pitch
                         ld      a, h                        ; set high-byte in A
-@Tone_Duty
-                        cp      0                           ; compares with duty (set/reset carry flag)
-                        sbc     a, a                        ; substract with carry
+                        cp      128                         ; compares with duty cycle, the timbre of the tone
+                                                            ; (128 for 50% square wave)
+                        sbc     a, a                        ; subtract with carry
                         and     16                          ; mask result
                         out     (254), a                    ; play sound
                         dec     bc                          ; decrement frame length
                         ld      a, b
-                        or      c
-                        jr      nz, Sound_FX_FrameLength    ; repeat "frame length" times
-
-                        ld      a, (@Tone_Duty+1)           ; get duty change
-                        add     a, (ix+9)                   ; add duty slide
-                        ld      (@Tone_Duty+1), a           ; update duty
+                        or      c                           ; frame length = 0?
+                        jr      nz, Sound_FX_FrameLength    ; no, repeat "frame length" times
                         ld      c, (ix+6)                   ; BC = pitch slide
                         ld      b, (ix+7)
                         ex      de, hl                      ; HL = pitch
@@ -55,8 +49,7 @@ Sound_FX_FrameLength
                         pop     bc                          ; restore frames
                         dec     bc                          ; decrement frames
                         ld      a, b
-                        or      c
-                        jr      nz, Sound_FX_Frames         ; repeat "frames" times
-
+                        or      c                           ; frames = 0?
+                        jr      nz, Sound_FX_Frames         ; no, repeat "frames" times
                         ei                                  ; enable interrupts
                         ret

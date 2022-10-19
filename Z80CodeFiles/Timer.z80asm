@@ -2,14 +2,18 @@
 ; Timer.z80asm
 ; Coded by Antonio Luque
 ;
-; Based on dissasembly of 'Chess' (c) 1982 Psion
+; Based on disassembly of "Chess" (c) 1982 Psion
 ; ----------------------------------------------------------------------------------------------------------------------
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Timer_Interrupt: interrupt routine for manage players' timers
+; Timer_Interrupt: interrupt routine to manage players' timers
 ;
 ; Input:    -
+;
 ; Output:   -
+;
+; Uses:     TIMER_FLAG (0 = timer stopped, 1 = cyan timer on, 2 = red timer on)
+;
 ; Destroys: BC', DE', HL'
 ; ----------------------------------------------------------------------------------------------------------------------
 Timer_Interrupt:
@@ -51,8 +55,12 @@ Timer_Exit
 ; Timer_Display: display a timer on the screen
 ;
 ; Input:    -
+;
 ; Output:   -
-; Destroys: DE, BC, HL, A
+;
+; Uses:     TIMER_FLAG (0 = timer stopped, 1 = cyan timer on, 2 = red timer on)
+;
+; Destroys: A, BC, DE, HL
 ; ----------------------------------------------------------------------------------------------------------------------
 Timer_Display:
                         ld      de, RED_TIMER+2             ; DE points to red's minutes counter address
@@ -77,7 +85,7 @@ Timer_Display_MinSec:
 Timer_Display_Digit:
                         and     %00001111                   ; discard the last 4th bits of the digit
                         push    bc                          ; store digit screen address
-                        ld      hl, TIMER_DIGITS            ; HL points to TIMER_DIGITS address
+                        ld      hl, TIMER_DIGITS            ; HL points to timer digits (graphics) address
                         add     a, a                        ; a digit is 8 bytes long
                         add     a, a
                         add     a, a
@@ -85,8 +93,8 @@ Timer_Display_Digit:
                         ld      l, a
                         ld      a, (hl)                     ; get digit tile
                         ld      (bc), a                     ; put it on screen address
-                        inc     b                           ; move BC to next pixel-line
-                        inc     l                           ; move HL to next digit tile
+                        inc     b                           ; move BC to next pixel-line address
+                        inc     l                           ; move HL to next digit tile address
                         ld      a, (hl)                     ; (repeat 7 more times)
                         ld      (bc), a
                         inc     b
@@ -106,7 +114,7 @@ Timer_Display_Digit:
                         ld      a, (hl)
                         ld      (bc), a
                         inc     b
-                        inc     hl
+                        inc     l
                         ld      a, (hl)
                         ld      (bc), a
                         inc     b
@@ -121,8 +129,12 @@ Timer_Display_Digit:
 ; Timer_Display_All: display cyan and red timers
 ;
 ; Input:    -
-; Output:   A = 0
-; Destroys: DE, BC, HL
+;
+; Output:   -
+;
+; Uses:     TIMER_FLAG (0 = timer stopped, 1 = cyan timer on, 2 = red timer on)
+;
+; Destroys: BC, DE, HL
 ; ----------------------------------------------------------------------------------------------------------------------
 Timer_Display_All:
                         ld      a, 1                        ; set cyan timer on
@@ -139,20 +151,22 @@ Timer_Display_All:
 ; Timer_Reset: initialize cyan and red timers
 ;
 ; Input:    -
+;
 ; Output:   -
+;
 ; Destroys: HL
 ; ----------------------------------------------------------------------------------------------------------------------
 Timer_Reset:
-                        ld      hl, CYAN_TIMER              ; HL points to CYAN_TIMER address
+                        ld      hl, CYAN_TIMER              ; HL points to cyan timer address
                         ld      (hl), 50                    ; set interrupt counter (1/50 seconds)
-                        inc     hl                          ; move HL to cyan's seconds counter
+                        inc     hl                          ; move HL to cyan's seconds counter address
                         ld      (hl), 0                     ; reset seconds counter
-                        inc     hl                          ; move HL to cyan's minutes counter
+                        inc     hl                          ; move HL to cyan's minutes counter address
                         ld      (hl), 0                     ; reset minutes counter
                         inc     hl                          ; move HL to red's interrupt counter
                         ld      (hl), 50                    ; set interrupt counter (1/50 seconds)
-                        inc     hl                          ; move HL to red's seconds counter
+                        inc     hl                          ; move HL to red's seconds counter address
                         ld      (hl), 0                     ; reset seconds counter
-                        inc     hl                          ; move HL to red's minutes counter
+                        inc     hl                          ; move HL to red's minutes counter address
                         ld      (hl), 0                     ; reset minutes counter
                         ret
