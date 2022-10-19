@@ -3,163 +3,173 @@
 ; Coded by Antonio Luque
 ; ----------------------------------------------------------------------------------------------------------------------
 
-CHARS                   equ     FONT-256                    ; Address of charset data
-WHITE_FLASH0            equ     %01000111                   ; Attributes: flash 0, bright 1, paper 0, ink 7
-WHITE_FLASH1            equ     %11000111                   ; Attributes: flash 1, bright 1, paper 0, ink 7
+CHAR_SET                equ     FONT-256                    ; address of character set data, adjusted for ASCII codes
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Print_Players: swap players colors and print "Player" and "Speccy" strings in the corresponding positions
+; Print_Players: print "Player" and "Speccy" strings in the corresponding positions
 ;
-; Input:    -  
+; Input:    A = player color (CYAN_COLOR or RED_COLOR)
+;
 ; Output:   -
-; Destroys: HL, BC, DE, IX, A
+;
+; Destroys: A, BC, DE, HL
 ; ----------------------------------------------------------------------------------------------------------------------
 Print_Players:
-                        ld      de, STR_SPECCY              ; DE points to "Speccy" string
-                        push    de                          ; (simulate ld bc,de)
-                        pop     bc                          ; store "Speccy" string address in BC
-                        ld      hl, $4098                   ; HL points to screen address position of cyan player
-                        push    hl                          ; (simulate ld ix,hl)
-                        pop     ix                          ; store cyan player screen position in IX
-                        ld      de, STR_PLAYER              ; DE points to "Player" string
-                        ld      hl, $5002                   ; HL points to screen address position of red player
-                        ld      a, (PLAYER_COLOR)           ; get current player color in A
-                        xor     SW_COLOR                    ; swap color
-                        cp      RED_COLOR                   ; is it RED?
-                        jr      z, Print_Players_Text       ; yes, skip to print players text
-
-                        push    de                          ; (simulate ld bc,de)
-                        pop     bc                          ; store "Player" string address in BC
-                        ld      de, STR_SPECCY              ; DE points to "Speccy" string
-Print_Players_Text
-                        ld      (PLAYER_COLOR), a           ; store swapped player color
+                        ld      de, STR_PLAYER              ; DE points to "Player" string address
+                        ld      bc, STR_SPECCY              ; BC points to "Speccy" string address
+                        ld      hl, $5002                   ; HL points to red string screen address
+                        cp      RED_COLOR                   ; is player color red?
+                        jr      z, Print_Players_Strings    ; yes, print players strings
+                        ld      de, STR_SPECCY              ; DE points to "Speccy" string address
+                        ld      bc, STR_PLAYER              ; BC points to "Player" string address
+Print_Players_Strings
                         call    Print_String                ; print "Player" or "Speccy"
-                        push    bc                          ; (simulate ld de,bc)
-                        pop     de                          ; DE points to "Speccy" or "Player" string
-                        push    ix                          ; (simulate ld hl,ix)
-                        pop     hl                          ; HL points to screen address position of cyan/red player
+                        ld      d, b                        ; DE points to "Player" or "Speccy" string address
+                        ld      e, c
+                        ld      hl, $4098                   ; HL points to cyan string screen address
                         jr      Print_String                ; print "Player" or "Speccy"
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Print_Alert: prints an alert message below the current player input/output screen location
+; Print_Clear_Alert: clear a printed alert message below the current player input move
 ;
-; Input:    DE - address of the string with the alert message
+; Input:    -
 ; Output:   -
-; Destroys: HL, BC, DE, IX, A
+; Destroys: A, BC, DE, HL, IX
+; ----------------------------------------------------------------------------------------------------------------------
+Print_Clear_Alert:
+                        ld      de, STR_EMPTY6              ; DE points to a 6 blanks string address
+                        ld      c, WHITE_FLASH0             ; set (clear) alert message color
+                        jr      Print_Alert_XY              ; print (clear) alert string
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Print_Alert: print an alert message below the current player input move
+;
+; Input:    DE = alert message string address
+;
+; Output:   -
+;
+; Uses:     TOKEN_COLOR (current token color)
+;
+; Destroys: A, BC, DE, HL, IX
 ; ----------------------------------------------------------------------------------------------------------------------
 Print_Alert:
-                        ld      c, WHITE_FLASH1             ; set alert message attributes
-                        jr      Print_Alert_XY
-Print_Clear_Alert:
-                        ld      de, STR_EMPTY6              ; HL points to a 6 blanks string
-                        ld      c, WHITE_FLASH0             ; set clear alert attributes
+                        ld      c, WHITE_FLASH1             ; set alert message color
 Print_Alert_XY
-                        ld      a, (TOKEN_COLOR)            ; check current player color
-                        ld      ix, $5AA2                   ; IX points to the attr address of RED alert string
-                        ld      hl, $50A2                   ; HL points to the screen address of RED alert string
-                        cp      RED_COLOR                   ; is RED the current token color?
-                        jr      z, Print_String_Attr        ; yes, apply color attributes and print alert string
-                        ld      ix, $5938                   ; IX points to the attr address of CYAN alert string
-                        ld      hl, $4838                   ; HL points to the screen address of CYAN alert string
-                        jr      Print_String_Attr           ; apply color attributes and print alert string
+                        ld      ix, $5AA2                   ; IX points to red alert string attribute address
+                        ld      hl, $50A2                   ; HL points to red alert string screen address
+                        ld      a, (TOKEN_COLOR)            ; check current token color
+                        cp      RED_COLOR                   ; is token color red?
+                        jr      z, Print_String_Color       ; yes, print alert string with color
+                        ld      ix, $5938                   ; IX points to cyan alert string attribute address
+                        ld      hl, $4838                   ; HL points to cyan alert string screen address
+                        jr      Print_String_Color          ; print alert string with color
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Print_Wait: prints "WAIT" message at current player input/output screen location 
+; Print_Wait: print "WAIT" message at current player input move location 
 ;
 ; Input:    -
+;
 ; Output:   -
-; Destroys: HL, BC, DE, A
+;
+; Destroys: A, BC, DE, HL, IX
 ; ----------------------------------------------------------------------------------------------------------------------
 Print_Wait:
-                        ld      de, STR_WAIT                ; DE points to "WAIT" string
-                        ld      c, WHITE_FLASH1             ; set wait message attributes
-                        jr      Print_Move_XY
+                        ld      de, STR_WAIT                ; DE points to "WAIT" string address
+                        ld      c, WHITE_FLASH1             ; set wait message color
+                        jr      Print_Move_XY               ; print wait string
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Clear_Move: clears a printed player move at current player input/output screen location 
+; Clear_Move: clear a printed player move at current player input move location 
 ;
 ; Input:    -
+;
 ; Output:   -
-; Destroys: HL, BC, DE, A
+;
+; Destroys: A, BC, DE, HL, IX
 ; ----------------------------------------------------------------------------------------------------------------------
 Print_Clear_Move:
-                        ld      de, STR_EMPTY4              ; HL points to a 4 blanks string
-                        ld      c, WHITE_FLASH0             ; set clear message attributes
-                        jr      Print_Move_XY
+                        ld      de, STR_EMPTY4              ; DE points to a 4 blanks string address
+                        ld      c, WHITE_FLASH0             ; set (clear) move string color
+                        jr      Print_Move_XY               ; print (clear) move string
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Print_Move: prints a formatted move at current player input/output screen location 
+; Print_Move: print a formatted move at current player input move location 
 ;
 ; Input:    -
+;
 ; Output:   -
-; Destroys: HL, BC, DE, IX, A
+;
+; Uses:     TOKEN_COLOR (current token color)
+;
+; Destroys: A, BC, DE, HL, IX
 ; ----------------------------------------------------------------------------------------------------------------------
 Print_Move:
-                        ld      de, STR_MOVE                ; DE points to current player formatted move
-                        ld      c, WHITE_FLASH0             ; set string attributes
+                        ld      de, STR_MOVE                ; DE points to formatted move string address
+                        ld      c, WHITE_FLASH0             ; set string color
 Print_Move_XY
-                        ld      ix, $5A82                   ; IX points to the attr address of RED move string
-                        ld      hl, $5083                   ; HL points to the screen address of RED move string
-                        ld      a, (TOKEN_COLOR)            ; check current player color
-                        cp      RED_COLOR                   ; is RED the current token color?
-                        jr      z, Print_String_Attr        ; yes, apply color attributes and print move
-                        ld      ix, $5918                   ; IX points to the attr address of CYAN move string
-                        ld      hl, $4819                   ; HL points to the screen address of CYAN move string
-Print_String_Attr
-                        ld      a, c                        ; set color attributes in A
-                        call    Screen_Apply_Color          ; apply color attributes
-
+                        ld      ix, $5A82                   ; IX points to red move attribute address
+                        ld      hl, $5083                   ; HL points to red move screen address
+                        ld      a, (TOKEN_COLOR)            ; check current token color
+                        cp      RED_COLOR                   ; is token color red?
+                        jr      z, Print_String_Color       ; yes, print move string with color
+                        ld      ix, $5918                   ; IX points to cyan move attribute address
+                        ld      hl, $4819                   ; HL points to cyan move screen address
+Print_String_Color
+                        call    Screen_Apply_Color          ; apply color to string area
 ; ----------------------------------------------------------------------------------------------------------------------
-; Print_String: prints a text string on screen
+; Print_String: print a string on the screen
 ; Based on assembler course by sromero: https://wiki.speccy.org/cursos/ensamblador/gfx4_fuentes
 ;
-; Input:    HL - screen memory address where print the string
-;           DE - pointer to text string (ending with 0)
+; Input:    DE = string address (ending with 0)
+;           HL = string screen address
+;
 ; Output:   -
-; Destroys: HL, DE, A
+;
+; Destroys: A, DE, HL
 ; ----------------------------------------------------------------------------------------------------------------------
 Print_String:
-                        ld      a, (de)                     ; get string char
+                        ld      a, (de)                     ; get string character
                         or      a                           ; is it 0? (end of string)
                         ret     z                           ; yes, return
-                        push    de
-                        call    Print_Char                  ; print char
-                        pop     de
-                        inc     de                          ; DE points to the next char
-                        inc     l                           ; HL points to the next column
+                        push    de                          ; store pointer to string address
+                        call    Print_Char                  ; print character
+                        pop     de                          ; restore pointer to string address
+                        inc     de                          ; move DE to next string character
+                        inc     l                           ; move HL to next screen column
                         jr      Print_String                ; repeat until end of string
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Print_Char: print a character on screen
+; Print_Char: print a character on the screen
 ;
-; Input:     A - ASCII char to print
-;           HL - screen memory address where print the char
+; Input:    A  = character to print (ASCII)
+;           HL = character screen address
+;
 ; Output:   -
-; Destroys: DE, A
+;
+; Destroys: A, DE
 ; ----------------------------------------------------------------------------------------------------------------------
 Print_Char:
-                        ld      de, CHARS                   ; DE points to font address
-; entry point to print a tile
+                        ld      de, CHAR_SET                ; DE points to charset address
 Print_Tile:
-                        push    hl
-                        ld      h, 0                        ; set char/tile index in HL
+                        push    hl                          ; store pointer to character screen address
+                        ld      h, 0                        ; set character/tile index in HL
                         ld      l, a
-                        add     hl, hl                      ; a char/tile is 8 bytes long
+                        add     hl, hl                      ; a character/tile is 8 bytes long
                         add     hl, hl
                         add     hl, hl
-                        add     hl, de                      ; HL points to char/tile address
-                        ex      de, hl                      ; DE points to char/tile address
-                        pop     hl                          ; restore pointer to screen address
-                        push    bc
-                        ld      b, 8                        ; number of char/tile bytes (loop counter)
+                        add     hl, de                      ; move HL to character/tile address
+                        ex      de, hl                      ; DE points to character/tile address
+                        pop     hl                          ; restore pointer to character screen address
+                        push    bc                          ; store BC register
+                        ld      b, 8                        ; number of character/tile bytes (loop counter)
 Print_Tile_Pixels
-                        ld      a, (de)                     ; get char/tile byte
-                        ld      (hl), a                     ; put chat/tile byte on screen
-                        inc     de                          ; DE points to next chat/tile byte
-                        inc     h                           ; HL points to next screen pixel-line
-                        djnz    Print_Tile_Pixels           ; repeat for all pixel-lines
-                        pop     bc
-                        ld      a, h                        ; restore pixel-line
-                        sub     8
-                        ld      h, a
+                        ld      a, (de)                     ; get character/tile byte
+                        ld      (hl), a                     ; put character/tile byte on screen
+                        inc     de                          ; move DE to next character/tile byte
+                        inc     h                           ; move HL down one pixel-line
+                        djnz    Print_Tile_Pixels           ; repeat for each character/tile bytes
+                        pop     bc                          ; restore BC register
+                        ld      a, h                        ; get high byte of character screen address
+                        sub     8                           ; subtract number of character/tile bytes
+                        ld      h, a                        ; HL points to character screen address
                         ret

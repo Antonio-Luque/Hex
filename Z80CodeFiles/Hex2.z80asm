@@ -10,7 +10,6 @@
                         #include "Draw.z80asm"
                         #include "Input.z80asm"
                         #include "Print.z80asm"
-                        #include "Play.z80asm"
                         #include "Brainiac.z80asm"
                         #include "PathFinder.z80asm"
                         #include "Timer.z80asm"
@@ -20,8 +19,8 @@
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Credits and acknowledgements:
 ;
-; - Einar Saukas and his amazing BRAINIAC: https://spectrumcomputing.co.uk/entry/30216/ZX-Spectrum/COMPLICA_DX,
-;   PATHFINDER adaptation: https://spectrumcomputing.co.uk/entry/28178/ZX-Spectrum/PATHFINDERloading, loading screen,
+; - Einar Saukas and his amazing BRAINIAC: https://spectrumcomputing.co.uk/entry/31171/ZX-Spectrum/BRAINIAC,
+;   PATHFINDER adaptation: https://spectrumcomputing.co.uk/entry/28178/ZX-Spectrum/PATHFINDER, loading screen,
 ;   "King+" font and TOKEN graphics.
 ; - Greg Surma article: https://gsurma.medium.com/hex-creating-intelligent-opponents-with-minimax-driven-ai-part-1-%CE%B
 ;   1-%CE%B2-pruning-cc1df850e5bd

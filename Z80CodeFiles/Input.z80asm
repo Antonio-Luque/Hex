@@ -10,22 +10,27 @@ MAX_CHARS               equ     2                           ; maximum of input c
 ; Based on assembler course by sromero: https://wiki.speccy.org/cursos/ensamblador/gfx4_fuentes
 ;
 ; Input:    -
-; Output:   BC - points to one more than the last char of input move (ASCII_MOVE+2)
-; Destroys: BC, DE, IX, A, A'
+;
+; Output:   HL = player move address (PLAYER_MOVE)
+;
+; Uses:     CHAR_COUNT (number of current characters in input player move)
+;           TOKEN_COLOR (current token color)
+;
+; Destroys: A, A', BC, DE, IX
 ; ----------------------------------------------------------------------------------------------------------------------
 Input_Move:
-                        ld      bc, ASCII_MOVE              ; BC points to ASCII player move
-                        ld      hl, CHAR_COUNT
-                        ld      (hl), 0                     ; char counter = 0
+                        ld      bc, PLAYER_MOVE             ; BC points to player move address
+                        push    bc                          ; store pointer to player move address
+                        xor     a                           ; A = 0
+                        ld      (CHAR_COUNT), a             ; initialize char counter
 
+                        ld      ix, $5A83                   ; IX points to attribute address of RED input text
+                        ld      hl, $5083                   ; HL points to screen address of RED input text
                         ld      a, (TOKEN_COLOR)            ; check current player color
-                        ld      ix, $5A83                   ; IX points to attr address of RED input text
-                        ld      hl, $5083                   ; HL points to screen addres of RED input text
-                        rra                                 ; is RED the current token color?
-                        jr      nc, Input_Start             ; yes, start input
-
-                        ld      ix, $5919                   ; IX points to attr address of CYAN input text
-                        ld      hl, $4819                   ; HL points to screen addres of CYAN input text
+                        cp      RED_COLOR                   ; is RED the current token color?
+                        jr      z, Input_Start              ; yes, start input
+                        ld      ix, $5919                   ; IX points to attribute address of CYAN input text
+                        ld      hl, $4819                   ; HL points to screen address of CYAN input text
 Input_Start
                         ld      a, '_'                      ; text input cursor
                         ld      (ix+0), WHITE_FLASH1        ; set attributes for cursor (flash)
@@ -33,7 +38,7 @@ Input_Start
 Input_Loop
                         call    Input_Key_Scan              ; scan for a key pressed
                         cp      $0D                         ; is it ENTER?
-                        jr      z, Input_Exit               ; yes, go to the end of rutine
+                        jr      z, Input_Exit               ; yes, go to the end of routine
                         cp      '0'                         ; is it DELETE?
                         jr      z, Input_Delete             ; yes, perform delete char
                         ex      af, af'                     ; store ASCII code in A'
@@ -49,8 +54,8 @@ Input_Loop
 ; char is valid: 'a'-'g' (1st char) and '1'-'7' (2nd char)
 ; ----------------------------------------------------------------------------------------------------------------------
 Input_Char_OK
-                        ld      (bc), a                     ; set char in current string position
-                        inc     bc                          ; increment string position
+                        ld      (bc), a                     ; set char in ASCII move
+                        inc     bc                          ; increment ASCII move position
                         ld      (ix+0), WHITE_FLASH0        ; restore attributes (no flash)
                         call    Print_Char                  ; print key pressed
                         ld      a, (CHAR_COUNT)             ; increment char counter
@@ -71,9 +76,9 @@ Input_Char_OK
 ; ----------------------------------------------------------------------------------------------------------------------
 Input_First_Letter 
                         ex      af, af'                     ; restore ASCII code
-                        cp      'a'                         ; is it < 'a'
+                        cp      'a'                         ; is it < 'a'?
                         jr      c, Input_Loop               ; yes, repeat input loop (char is not allowed)
-                        cp      'h'                         ; is it >= 'h'
+                        cp      'h'                         ; is it >= 'h'?
                         jr      nc, Input_Loop              ; yes, repeat input loop (char is not allowed)
                         jr      Input_Char_OK               ; char is valid
 
@@ -82,9 +87,9 @@ Input_First_Letter
 ; ----------------------------------------------------------------------------------------------------------------------
 Input_First_Number 
                         ex      af, af'                     ; restore ASCII code
-                        cp      '1'                         ; is it < '1'
+                        cp      '1'                         ; is it < '1'?
                         jr      c, Input_Loop               ; yes, repeat input loop (char is not allowed)
-                        cp      '8'                         ; is it >= '8'
+                        cp      '8'                         ; is it >= '8'?
                         jr      nc, Input_Loop              ; yes, repeat input loop (char is not allowed)
                         jr      Input_Char_OK               ; char is valid
 
@@ -108,7 +113,7 @@ Input_Decrement_Chars
                         ld      a, (CHAR_COUNT)             ; decrement char counter
                         dec     a
                         ld      (CHAR_COUNT), a
-                        dec     bc                          ; decrement string position
+                        dec     bc                          ; decrement ASCII move position
                         ld      a, ' '                      ; empty char
                         ld      (ix+0), WHITE_FLASH0        ; restore attributes (no flash)
                         call    Print_Char                  ; delete cursor and last char
@@ -125,7 +130,9 @@ Input_Exit
                         jp      c, Input_Loop               ; yes, repeat input loop (move is incomplete)
                         ld      a, ' '                      ; empty char
                         ld      (ix+0), WHITE_FLASH0        ; restore attributes (no flash)
-                        jp      Print_Char                  ; delete cursor and return
+                        call    Print_Char                  ; delete cursor
+                        pop     hl                          ; restore pointer to player move address
+                        ret
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Input_Key_Scan: wait for a key pressed and return its ASCII code
@@ -145,7 +152,9 @@ Input_Exit
 ;  Bits are set to 0 for any key that is pressed and 1 for any key that is not pressed
 ;
 ; Input:    -
+;
 ; Output:   A = ASCII code of key pressed
+;
 ; Destroys: DE
 ; ----------------------------------------------------------------------------------------------------------------------
 Input_Key_Scan:
@@ -173,7 +182,7 @@ Input_Key_Pressed_Line
                         jr      c, Input_Key_Pressed_Line   ; repeat for each port
                         jr      Input_Key_Pressed_Begin     ; repeat from the beginning until any key is pressed
 Input_Key_Next
-                        inc     hl                          ; move HL to the next char
+                        inc     hl                          ; move HL to the next character
 Input_Key_Pressed
                         rra                                 ; rotate bits of port readed
                         jr      nc, Input_Key_Next          ; repeat until find the key pressed

@@ -19,7 +19,6 @@
     <Z80Asm Include="Z80CodeFiles\Input.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Main.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Print.z80asm" />
-    <Z80Asm Include="Z80CodeFiles\Play.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Sound.z80asm" />
     <Z80Asm Include="Z80CodeFiles\Timer.z80asm" />
   </ItemGroup>
@@ -27,14 +26,13 @@
     <None Include=".gitattributes" />
     <None Include="hex-ingame.png" />
     <None Include="hex-load.png" />
+    <None Include="Listings\Hex2.list" />
     <None Include="README.md" />
     <None Include="Z80CodeFiles\.gitattributes" />
     <None Include="Z80CodeFiles\King+.bin" />
   </ItemGroup>
   <ItemGroup>
-    <Tzx Include="TapeFiles\hex2%24.tzx" />
-  </ItemGroup>
-  <ItemGroup>
+    <Tap Include="TapeFiles\hex2%24.tap" />
     <Tap Include="TapeFiles\Hex2.tap" />
   </ItemGroup>
   <Import Project="$(CustomProjectExtensionsPath)Spect.Net.CodeDiscover.targets" />
