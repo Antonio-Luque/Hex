@@ -91,7 +91,7 @@ AI_Main_Next
 ; node anyway. This change was useful to allow a highly optimized Assembly implementation with a more efficient register
 ; allocation. The only drawback was that, whenever a parent node obtains the same best score from 2 child nodes, it must
 ; always choose the child node evaluated first, since the other child node node may not really have the same score and
-; could be just; reproducing the best score from its sibling.
+; could be just reproducing the best score from its sibling.
 ;
 ; Original source code by Einar Saukas: https://spectrumcomputing.co.uk/entry/31171/ZX-Spectrum/BRAINIAC
 ;
