@@ -776,7 +776,7 @@ PathFinder_CYAN_Edge_6
                         jp      Path_Finder_Neighbors       ; continue processing neighbors
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; PathFinder_SpeccyScore: calculate SPECCY score depending on speccy color
+; PathFinder_Score: calculate board score depending on speccy color
 ;
 ; Input:    -
 ;
@@ -788,7 +788,7 @@ PathFinder_CYAN_Edge_6
 ;
 ; Destroys: A', BC, DE, HL, IY
 ; ----------------------------------------------------------------------------------------------------------------------
-PathFinder_SpeccyScore:
+PathFinder_Score:
                         ld      a, (AI_PLAYER)
                         cp      FRIEND                      ; if speccy is FRIEND, calculate CYAN score
                         jr      z, PathFinder_CyanScore
@@ -840,24 +840,6 @@ PathFinder_RedScore
                         jp      PathFinder_Evaluation       ; calculate heuristic evaluation
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; PathFinder_PlayerScore: calculate PLAYER score depending on speccy color
-;
-; Input:    -
-;
-; Output:   A = DEFEAT, if player can't reach his opposite edge
-;           A = WIN_CONDITION, if speccy can't reach his opposite edge
-;           A = player heuristic evaluation, otherwise
-;
-; Uses:     AI_PLAYER (speccy side)
-;
-; Destroys: A', BC, DE, HL
-; ----------------------------------------------------------------------------------------------------------------------
-PathFinder_PlayerScore:
-                        ld      a, (AI_PLAYER)
-                        cp      FRIEND                      ; if speccy is FRIEND, calculate RED score
-                        jr      z, PathFinder_RedScore
-
-; ----------------------------------------------------------------------------------------------------------------------
 ; PathFinder_CyanScore: calculate cyan score
 ;
 ; Input:    -
@@ -903,7 +885,7 @@ PathFinder_CyanScore
                         call    PathFinder_Potentials       ; calculate red potentials
 ; ----------------------------------------------------------------------------------------------------------------------
 ; PathFinder_Evaluation: calculate heuristic evaluation.
-; The original evaluation function (from cyan player perspective) is described in Jack van Rijswijck's thesis as:
+; The original evaluation function (from cyan perspective) is described in Jack van Rijswijck's thesis as:
 ;
 ;                                       e = M (pC - pR) - (aC - aR)
 ; where:
@@ -936,7 +918,7 @@ PathFinder_Evaluation:
                         sub     e                           ; subtract result of attack mobilities subtraction
                                                             ; -> M (pC - pR) - (aC - aR)
                         xor     $80                         ; invert sign for easier further comparative
-                        ret                                 ; return A = -1 (M (pC - pR) - (aC - aR))
+                        ret                                 ; return A = -1 * (M (pC - pR) - (aC - aR))
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; PathFinder_TotalPotentials: set up 'PathFinder_Potentials' routine for Total potentials
@@ -1014,55 +996,9 @@ Potentials_Next
 PathFinder_Candidates:
                         inc     a                           ; A = DEFEAT?
                         jr      z, Defeat_Candidates        ; yes, process candidates for defeated color
-
                         call    PathFinder_TotalPotentials  ; no, process candidates from total potentials
-                        ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
-                        jp      PathFinder_FillCandidates   ; fill candidates vector
 
-                        ; process candidates for defeated color
-Defeat_Candidates
-                        ld      a, (AI_PLAYER)
-                        cp      FRIEND                      ; friend score has been processed?
-                        jr      z, Cyan_Defeat_Candidates   ; yes, process candidates for cyan
-
-                        ; if RED is defeated, candidates are chosen from cyan board potentials
-
-                        call    PathFinder_Cyan_UpDown      ; calculate CYAN two-distance from UP to DOWN edge
-                        call    PathFinder_Cyan_DownUp      ; calculate CYAN two-distance from DOWN to UP edge
-
-; entry point for BRAINIAC_best_move
-PathFinder_CyanCandidates:
-                        ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
-                        ld      de, CYAN_BOARD_DOWN_UP+1    ; DE points to cyan board down-up address (1st position)
-                        call    PathFinder_Potentials       ; calculate cyan potentials
-
-                        ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board potentials address (1st position)
-                        jp      PathFinder_FillCandidates   ; fill candidates vector
-
-                        ; if CYAN is defeated, candidates are chosen from red board potentials
-Cyan_Defeat_Candidates
-                        call    PathFinder_Red_LeftRight    ; calculate RED two-distance from LEFT to RIGHT edge
-                        call    PathFinder_Red_RightLeft    ; calculate RED two-distance from RIGHT to LEFT edge
-
-; entry point for BRAINIAC_best_move
-PathFinder_RedCandidates:
-                        ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st position)
-                        ld      de, RED_BOARD_RIGHT_LEFT+1  ; DE points to red board right-left address (1st position)
-                        call    PathFinder_Potentials       ; calculate red potentials
-
-                        ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board potentials address (1st position)
-; ----------------------------------------------------------------------------------------------------------------------
-; Fill CANDIDATES vector with second and best candidates from calculated potentials
-;
-; Input:    B  = attack mobility
-;           C  = board potential
-;           HL = cyan or red board address (with calculated potentials) 
-;           IX = candidates area address
-;
-; Output:   IX = first candidate address
-;
-; Destroys: A, A', HL, BC, DE
-; ----------------------------------------------------------------------------------------------------------------------
+                        ; fill candidates area
 PathFinder_FillCandidates
                         ld      (ix+0), 0                   ; set candidates endmarker
                         ld      e, ixl                      ; store candidates position in E
@@ -1070,8 +1006,7 @@ PathFinder_FillCandidates
                         ld      a, c                        ; store board potential in A'
                         ex      af, af'
 
-                        ; insert the second best board potentials in candidates vector
-
+                        ; insert the second best board potentials in candidates area
 Search_Second_Best
                         ld      l, 9                        ; HL points to board potentials address (1st position)
                         inc     c                           ; increment board potential
@@ -1089,7 +1024,7 @@ Second_Best_Next
                         cp      e                           ; new candidates inserted?
                         jr      z, Search_Second_Best       ; no, repeat until new candidates inserted
 
-                        ; insert the best board potentials in candidates vector
+                        ; insert the best board potentials in candidates area
 
                         ld      l, 8                        ; HL points to board potential address (1st position -1)
                         ld      b, d                        ; restore attack mobility (loop counter)
@@ -1102,6 +1037,38 @@ Best_Candidate_Loop
                         ld      (ix+0), l
                         djnz    Best_Candidate_Loop         ; repeat for each cell
                         ret
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Process candidates for defeated color
+; ----------------------------------------------------------------------------------------------------------------------
+Defeat_Candidates
+                        ld      a, (AI_PLAYER)
+                        cp      FRIEND                      ; friend score has been processed?
+                        jr      z, Cyan_Defeat_Candidates   ; yes, process candidates for cyan
+
+                        ; if RED is defeated, candidates are chosen from cyan board potentials
+
+                        call    PathFinder_Cyan_UpDown      ; calculate CYAN two-distance from UP to DOWN edge
+                        call    PathFinder_Cyan_DownUp      ; calculate CYAN two-distance from DOWN to UP edge
+
+; entry point for BRAINIAC_best_move
+PathFinder_CyanCandidates:
+                        ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
+                        ld      de, CYAN_BOARD_DOWN_UP+1    ; DE points to cyan board down-up address (1st position)
+                        call    PathFinder_Potentials       ; calculate cyan potentials
+                        jp      PathFinder_FillCandidates   ; fill candidates vector
+
+                        ; if CYAN is defeated, candidates are chosen from red board potentials
+Cyan_Defeat_Candidates
+                        call    PathFinder_Red_LeftRight    ; calculate RED two-distance from LEFT to RIGHT edge
+                        call    PathFinder_Red_RightLeft    ; calculate RED two-distance from RIGHT to LEFT edge
+
+; entry point for BRAINIAC_best_move
+PathFinder_RedCandidates:
+                        ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st position)
+                        ld      de, RED_BOARD_RIGHT_LEFT+1  ; DE points to red board right-left address (1st position)
+                        call    PathFinder_Potentials       ; calculate red potentials
+                        jp      PathFinder_FillCandidates   ; fill candidates vector
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; PathFinder_BrightPath: animate and highlight the hexagons included in shortest path when match ends

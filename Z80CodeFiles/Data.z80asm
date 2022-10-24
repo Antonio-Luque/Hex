@@ -98,7 +98,7 @@ PLAYER_MOVE:                                                ; player move in ASC
                         defb    0                           ; row ('1'..'7')
 CHAR_COUNT              defb    0                           ; number of current characters in input player move
 THREE_ROW               defb    0                           ; three-in-a-row counter
-ROW_COLOR_MAP           defb    15, 14, 12, 11              ; level-color map for frame border
+ROW_COLOR_MAP           defb    15, 14, 12, 11, 13, 10      ; level-color map for frame border
 STR_MOVE                defb    0, '-', '0', 0, '\0'        ; formatted move string
 STR_SPECCY              defm    "Speccy\0"
 STR_PLAYER              defm    "Player\0"
@@ -160,8 +160,6 @@ RED_TIMER               defb    50, 0, 0
 ; ----------------------------------------------------------------------------------------------------------------------
 NUMBER_SCREEN:
                         defw    $43A5, $43E6, $4B27, $4B68, $4BA9, $4BEA, $532B
-
-FILLER_1                defb    $F1, $F1                    ; filler to align next block (not used)
 
                         ;org     $6300
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -228,7 +226,7 @@ TOKEN_FX                defw       1, 1000, 1400,   0
 WINNER_FX               defw       5, 5000,  200, 100
 FILLED_FX               defw    1000,   10,  100,   0
 
-FILLER_2                defb    $F2                         ; filler to align next block (not used)
+FILLER                  defb    $FF                         ; filler to align next block (not used)
 
                         ;org     $6500
 ; ----------------------------------------------------------------------------------------------------------------------

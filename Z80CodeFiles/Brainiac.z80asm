@@ -28,9 +28,10 @@ MAX_VALUE               equ     255                         ; alphaBeta pruning 
 ; ----------------------------------------------------------------------------------------------------------------------
 BRAINIAC_best_move:
                         ld      (AI_PLAYER), a              ; save speccy side
-                        call    PathFinder_SpeccyScore      ; get speccy score
+                        call    PathFinder_Score            ; get board score
                         cp      WIN_CONDITION               ; speccy won?
                         jr      z, AI_Color_Candidates      ; yes, get candidates depending on speccy color
+
                         call    PathFinder_Candidates       ; get candidates from board potentials
                         jr      AI_First_Candidate          ; go to first candidate
 
@@ -43,6 +44,8 @@ AI_Color_Candidates
                         jr      AI_First_Candidate          ; go to first candidate
 AI_Cyan_Candidates
                         call    PathFinder_CyanCandidates   ; get cyan candidates
+
+                        ; BRAINIAC start
 AI_First_Candidate
                         ld      a, (ix+0)                   ; A is our first candidate
 
@@ -82,7 +85,7 @@ AI_Main_Next
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Alphabeta_Min: Process a tree node of the Minimax search tree with alpha-beta pruning, when it requires MINIMIZING
-; player's score.
+; Speccy's score.
 ;
 ; This implementation is different from conventional alpha-beta pruning because it returns the best (lowest) betaMin
 ; value obtained so far at this subtree depth (from previous sibling nodes), when it's even lower than the best (lowest)
@@ -112,7 +115,7 @@ Alphabeta_Min:
 
                         ; check if last speccy move is a winner one
 
-                        call    PathFinder_SpeccyScore      ; if (speccy won)
+                        call    PathFinder_Score            ; if (speccy won)
                         cp      WIN_CONDITION
                         jr      nz, Alphabeta_Min_Candidates
                         ld      a, (AI_DEPTH)
@@ -184,7 +187,7 @@ Alphabeta_Min_Skip
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Heuristic_Min: Specialized routine to process the lowest tree node (depth zero) of the Minimax search tree with alpha-
-; beta pruning, when it requires MINIMIZING player's score.
+; beta pruning, when it requires MINIMIZING Speccy's score.
 ;
 ; Technically "Heuristic_Min" works exactly like "Alphabeta_Min_Loop", except it directly evaluates board for each child
 ; node instead of calling "Alphabeta_Max" recursively. Although it would be easier to just let it invoke "Alphabeta_Max"
@@ -217,8 +220,8 @@ Heuristic_Min:                                              ; for each candidate
                         xor     $7C                         ;       convert to player side
                         call    PathFinder_PutToken         ;       BRAINIAC_play
 
-                        call    PathFinder_PlayerScore      ;       if (player won)
-                        cp      WIN_CONDITION
+                        call    PathFinder_Score            ;       if (player won)
+                        cp      DEFEAT
                         jr      nz, Heuristic_Min_Continue
                         ld      a, 64                       ;           A = 64
 Heuristic_Min_Continue
@@ -263,7 +266,7 @@ Heuristic_Min_Skip
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Alphabeta_Max: Process a tree node of the Minimax search tree with alpha-beta pruning, when it requires MAXIMIZING
-; speccy's score.
+; Speccy's score.
 ;
 ; This implementation is different from conventional alpha-beta pruning because it returns the best (highest) alphaMax
 ; value obtained so far at this subtree depth (from previous sibling nodes), when it's even higher than the best
@@ -293,8 +296,8 @@ Alphabeta_Max:
 
                         ; check if last player move is a winner one
 
-                        call    PathFinder_PlayerScore      ; if (player won)
-                        cp      WIN_CONDITION        
+                        call    PathFinder_Score            ; if (player won)
+                        cp      DEFEAT
                         jr      nz, Alphabeta_Max_Candidates
                         ld      a, (AI_DEPTH)
                         cpl
@@ -364,7 +367,7 @@ Alphabeta_Max_Skip
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Heuristic_Max: Specialized routine to process the lowest tree node (depth zero) of the Minimax search tree with alpha-
-; beta pruning, when it requires MAXIMIZING speccy's score.
+; beta pruning, when it requires MAXIMIZING Speccy's score.
 ;
 ; Technically "Heuristic_Max" works exactly like "Alphabeta_Max_Loop", except it directly evaluates board for each child
 ; node instead of calling "Alphabeta_Min" recursively. Although it would be easier to just let it invoke "Alphabeta_Min"
@@ -396,8 +399,8 @@ Heuristic_Max:                                              ; for each candidate
                         ld      a, (AI_PLAYER)              ;       get speccy side
                         call    PathFinder_PutToken         ;       (BRAINIAC_play)
 
-                        call    PathFinder_SpeccyScore      ;       if (speccy won)
-                        cp      WIN_CONDITION    
+                        call    PathFinder_Score            ;       if (speccy won)
+                        cp      WIN_CONDITION
                         jr      nz, Heuristic_Max_Continue
                         ld      a, 192                      ;           A = 192
 Heuristic_Max_Continue
