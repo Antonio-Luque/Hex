@@ -10,7 +10,7 @@ I use [SpectNet IDE](https://dotneteer.github.io/spectnetide/) for developing, b
 
 ## Credits and acknowledgements
 
-- Einar Saukas and his amazing [BRAINIAC](https://spectrumcomputing.co.uk/entry/31171/ZX-Spectrum/BRAINIAC) and [PATHFINDER](https://spectrumcomputing.co.uk/entry/28178/ZX-Spectrum/PATHFINDER) adaptations, loading screen, King+ font and TOKEN graphics.
+- Einar Saukas and his amazing [BRAINIAC](https://spectrumcomputing.co.uk/entry/31171/ZX-Spectrum/BRAINIAC) and [PATHFINDER](https://spectrumcomputing.co.uk/entry/28178/ZX-Spectrum/PATHFINDER) adaptations, loading screen and King+ font.
 - ChibiAkumas [lessons](https://www.chibiakumas.com/z80/simplesamples.php#LessonS2).
 - Santiago Romero [assembler course](https://wiki.speccy.org/cursos/ensamblador/indice).
  
