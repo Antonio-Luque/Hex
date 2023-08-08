@@ -139,7 +139,7 @@ Main_Update_Board
 Main_Cyan_Score
                         call    PathFinder_Cyan_UpDown      ; get score for cyan player
 Main_Check_Winner
-                        cp      WIN_CONDITION               ; player/speccy won?
+                        or      a                           ; player/speccy won?
                         jr      z, Main_Match_End           ; yes, match ends
 
                         ld      hl, MOVE_NUMBER             ; HL points to move number address

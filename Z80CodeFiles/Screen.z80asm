@@ -24,7 +24,7 @@ WHITE_FLASH1            equ     WHITE+BRIGHT+FLASH          ; attributes: flash 
 Screen_Clear:
                         ld      hl, $4000                   ; HL points to start of the screen address
                         ld      de, $4001                   ; DE points to next byte of the screen address
-                        ld      (hl), 0                     ; set first pixel-byte in black
+                        ld      (hl), l                     ; set first pixel-byte in black
                         ld      bc, 6144-1+768              ; length of screen area (-1 already set) + attributes area 
                         ldir                                ; fill the rest of screen area and attributes area in black
                         ret
