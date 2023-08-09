@@ -127,9 +127,8 @@ Alphabeta_Min_Loop                                          ; for each candidate
                         ld      l, a
                         push    hl
 
-                        ld      a, (AI_PLAYER)              ;       rather to track player or speccy side
-                                                            ;       we get it from AI_PLAYER
-                        xor     $7C                         ;       get player side
+                        ld      a, (AI_PLAYER)              ;       get speccy side
+                        xor     $7C                         ;       switch to player side
                         call    PathFinder_PutToken         ;       BRAINIAC_play
                         call    Alphabeta_Max               ;       A = alphabeta_max(alphaMax, betaMin)
 
@@ -204,7 +203,7 @@ Heuristic_Min:                                              ; for each candidate
                         push    hl
 
                         ld      a, (AI_PLAYER)              ;       get speccy side
-                        xor     $7C                         ;       convert to player side
+                        xor     $7C                         ;       switch to player side
                         call    PathFinder_PutToken         ;       BRAINIAC_play
 
                         call    PathFinder_Score            ;       if (player won)
@@ -284,7 +283,7 @@ Alphabeta_Max:
                         ; check if last player move is a winner one
 
                         call    PathFinder_Score            ; if (player won)
-                        dec     a
+                        cp      DEFEAT
                         jr      nz, Alphabeta_Max_Candidates
                         ld      a, (AI_DEPTH)
                         cpl

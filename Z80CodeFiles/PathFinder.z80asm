@@ -13,11 +13,9 @@ EMPTY                   equ     $00                         ; empty positions on
 SKIPPED                 equ     $01                         ; skipped positions on the board
 FRIEND                  equ     $02                         ; positions occupied by friendly tokens on the board
 ENEMY                   equ     $7E                         ; positions occupied by opponent tokens on the board
-DEFEAT                  equ     $FF                         ; return value if defeat
-WINNER                  equ     $00                         ; return value if winner
 VICTORY                 equ     $03                         ; internal value if victory
-FRIENDLY                equ     %01000000                   ; mask to set friendly flag
-WIN_CONDITION           equ     VICTORY+FRIENDLY            ; return value if victory
+WINNER                  equ     $00                         ; return value if winner
+DEFEAT                  equ     $FF                         ; return value if defeat
 
 CYAN_POSITIONS          equ     $7D00                       ; a 256-aligned memory area reserved for cyan positions
 RED_POSITIONS           equ     $7E00                       ; a 256-aligned memory area reserved for red positions
@@ -190,7 +188,7 @@ PathFinder_Cyan_BrightPath:
                         ; set up cyan board (up-down) start positions distances
 
                         ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
-                        ld      c, VICTORY+FRIENDLY         ; initialize start positions distance
+                        ld      c, VICTORY+$40              ; set start positions distance + friendly flag
                         ld      a, FRIEND                   ; set distance to compare with
                         cp      (hl)                        ; check 1st start position distance
                         call    nc, PathFinder_Update       ; if FRIEND >= distance, update distance
@@ -239,7 +237,7 @@ PathFinder_Cyan_DownUp:
 
                         ex      de, hl                      ; (take advantage of last "CopyPositions" execution)
                         dec     l                           ; move HL to cyan boad down-up address (last position)
-                        ld      c, VICTORY+FRIENDLY         ; initialize start positions distance
+                        ld      c, VICTORY+$40              ; set start positions distance + friendly flag
                         ld      a, FRIEND                   ; set distance to compare with
                         cp      (hl)                        ; check 1st start position distance
                         call    nc, PathFinder_Update       ; if FRIEND >= distance, update distance
@@ -290,7 +288,7 @@ PathFinder_Red_BrightPath
                         ; set up red board (left-right) start positions distances
 
                         ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st position)
-                        ld      c, VICTORY+FRIENDLY         ; initialize start positions distance
+                        ld      c, VICTORY+$40              ; set start positions distance + friendly flag
                         ld      a, FRIEND                   ; set distance to compare with
                         cp      (hl)                        ; check 1st start position distance
                         call    nc, PathFinder_Update       ; if FRIEND >= distance, update distance
@@ -339,7 +337,7 @@ PathFinder_Red_RightLeft:
 
                         ex      de, hl                      ; take advantage of last "CopyPositions" execution
                         dec     l                           ; move HL to red board right-left address (last position)
-                        ld      c, VICTORY+FRIENDLY         ; set start positions distance (+ friendly flag)
+                        ld      c, VICTORY+$40              ; set start positions distance + friendly flag
                         ld      a, FRIEND                   ; set distance to compare with
                         cp      (hl)                        ; check 1st start position distance
                         call    nc, PathFinder_Update       ; if FRIEND >= distance, update distance
@@ -425,11 +423,8 @@ Path_Finder_First
                         cp      l                           ; is queue empty?
                         jp      nz, Path_Finder             ; no, repeat until queue is empty
 
-                        ; return if corresponding edge was reached
-
                         ld      a, iyl                      ; get last position processed by 'Path_Finder_Adjacent'
                         dec     a                           ; return A = DEFEAT, if the edge couldn't be reached
-                                                            ; return A = X, otherwise
                         ret
 
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -449,9 +444,10 @@ Path_Finder_First
 ; Destroys: DE, HL
 ; ----------------------------------------------------------------------------------------------------------------------
 Path_Finder_Adjacent
-                        ld      a, WIN_CONDITION            ; A = VICTORY+FRIENDLY
+                        ld      a, VICTORY+$40              ; set victory distance + friendly flag
                         cp      c                           ; is current distance victory and friendly?
                         jr      z, Path_Finder_Abort        ; yes, abort path_finder
+
                         ld      a, (hl)                     ; get current edge position
                         and     %00000111                   ; convert to edge number (0..6)
                         add     a, a                        ; calculate vector table routine index
@@ -956,10 +952,14 @@ Potentials_Next
                         ret
 Potentials_Infinite
                         set     7, (hl)                     ; set cell potential as "infinite"
-                        jp      Potentials_Next             ; skip to next cell
+                        inc     e                           ; move to next cells of each board
+                        inc     l
+                        dec     iyl                         ; decrement loop counter
+                        jp      nz, Potentials_Loop         ; repeat until end of boards
+                        ret
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; PathFinder_Candidates: search candidates based on color score result and boards potentials
+; PathFinder_Candidates: search candidates based on score result and boards potentials
 ;
 ; Input:    A  = DEFEAT, WINNER or heuristic result
 ;           IX = candidates area address
@@ -967,7 +967,6 @@ Potentials_Infinite
 ; Output:   IX = first candidate address
 ;
 ; Uses:     AI_PLAYER (speccy side)
-;           POTENTIALS (board potential and attack mobility)
 ;
 ; Destroys: A, A', BC, DE, HL
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -975,92 +974,94 @@ PathFinder_Candidates:
                         ld      (ix+0), 0                   ; set candidates endmarker
 
                         or      a                           ; A = WINNER?
-                        jr      z, Winner_Candidates        ; yes, process candidates for winner color
+                        jr      z, Candidates_Winner        ; yes, fill candidates for winner color
                         inc     a                           ; A = DEFEAT?
-                        jr      z, Defeat_Candidates        ; yes, process candidates for defeated color
+                        jr      z, Candidates_Defeat        ; yes, fill candidates for defeated color
 
-                        ; calculate total potentials
+                        ; if score is not DEFEAT nor WINNER, fill candidates from total potentials
 
                         ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
                         ld      de, RED_BOARD_LEFT_RIGHT+9  ; DE points to red board left-right address (1st position)
                         call    PathFinder_Potentials       ; process candidates from total potentials
 
-                        ; insert the second best board potentials in candidates area
-
                         ld      a, c                        ; set board potential in A
                         ex      af, af'                     ; save board potential
-                        ld      d, b                        ; store attack mobility 
+                        ld      d, b                        ; store attack mobility
                         ld      e, ixl                      ; store candidates position
-Search_Second_Best
+
+                        ; insert the second best board potentials in candidates area
+Candidates_2nd_Best
                         ld      l, 9                        ; HL points to board potentials address (1st position)
                         inc     c                           ; increment board potential
                         ld      a, c                        ; A = second best potential
                         ld      b, 61                       ; number of cells to be checked (loop counter)
-Second_Best_Loop
+Candidates_2nd_Best_Loop
                         cp      (hl)                        ; is current board potential = 2nd best board potential?
-                        jp      nz, Second_Best_Next        ; no, skip to next potential
+                        jp      nz, Candidates_2nd_Best_Next; no, skip to next potential
                         inc     ixl                         ; yes, insert candidate
                         ld      (ix+0), l
-Second_Best_Next
+Candidates_2nd_Best_Next
                         inc     l                           ; move HL to next board potential address
-                        djnz    Second_Best_Loop            ; repeat for each cell
+                        djnz    Candidates_2nd_Best_Loop    ; repeat for each cell
                         ld      a, ixl                      ; A = current candidates position
                         cp      e                           ; new candidates inserted?
-                        jr      z, Search_Second_Best       ; no, repeat until new candidates inserted
-
-                        ; insert the best board potentials in candidates area
+                        jr      z, Candidates_2nd_Best      ; no, repeat until new candidates inserted
 
                         ld      b, d                        ; restore attack mobility
                         ex      af, af'                     ; restore board potential
-Best_Candidates
+
+                        ; insert the best board potentials in candidates area
+Candidates_Best
                         ld      l, 8                        ; HL points to board potential address (1st position -1)
-Best_Candidates_Loop
+Candidates_Best_Loop
                         inc     l                           ; move HL to next board potential address
                         cp      (hl)                        ; is current board potential equal to best board potential?
-                        jp      nz, Best_Candidates_Loop    ; no, next potential
+                        jp      nz, Candidates_Best_Loop    ; no, next potential
                         inc     ixl                         ; yes, insert candidate
                         ld      (ix+0), l
-                        djnz    Best_Candidates_Loop        ; repeat for each cell
+                        djnz    Candidates_Best_Loop        ; repeat for each cell
                         ret
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Process candidates for winner color
+; Fill candidates for winner color
 ; ----------------------------------------------------------------------------------------------------------------------
-Winner_Candidates
-                        ld      a, (AI_PLAYER)              ; check current player
+Candidates_Winner
+                        ld      a, (AI_PLAYER)              ; check speccy side
                         cp      FRIEND                      ; is it friend?
-                        jr      z, Cyan_Potentials          ; yes, process cyan potentials
-                        jp      Red_Potentials              ; process red potentials
+                        jp      z, Candidates_Cyan_Potential; yes, fill candidates from cyan potentials
+                        jp      Candidates_Red_Potential    ; no, fill candidates from red potentials
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Process candidates for defeated color
+; Fill candidates for defeated color
 ; ----------------------------------------------------------------------------------------------------------------------
-Defeat_Candidates
-                        ld      a, (AI_PLAYER)              ; check current player
+Candidates_Defeat
+                        ld      a, (AI_PLAYER)              ; check speccy side
                         cp      FRIEND                      ; is it friend?
-                        jr      z, Red_Candidates           ; yes, process red candidates
+                        jr      z, Candidates_Red           ; yes, fill candidates from red potentials
 
                         ; if RED is defeated, candidates are chosen from cyan board potentials
 
                         call    PathFinder_Cyan_UpDown      ; calculate cyan two-distance from UP to DOWN edge
                         call    PathFinder_Cyan_DownUp      ; calculate cyan two-distance from DOWN to UP edge
-Cyan_Potentials
+Candidates_Cyan_Potential
                         ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
                         ld      de, CYAN_BOARD_DOWN_UP+1    ; DE points to cyan board down-up address (1st position)
                         call    PathFinder_Potentials       ; calculate cyan potentials
+
                         ld      a, c                        ; set board potential in A
-                        jp      Best_Candidates             ; fill only the best candidates
+                        jp      Candidates_Best             ; fill only the best candidates
 
                         ; if CYAN is defeated, candidates are chosen from red board potentials
-Red_Candidates
+Candidates_Red
                         call    PathFinder_Red_LeftRight    ; calculate red two-distance from LEFT to RIGHT edge
                         call    PathFinder_Red_RightLeft    ; calculate red two-distance from RIGHT to LEFT edge
-Red_Potentials
+Candidates_Red_Potential
                         ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st pos.)
                         ld      de, RED_BOARD_RIGHT_LEFT+1  ; DE points to red board right-left address (1st position)
                         call    PathFinder_Potentials       ; calculate red potentials
+
                         ld      a, c                        ; set board potential in A
-                        jp      Best_Candidates             ; fill only the best candidates
+                        jp      Candidates_Best             ; fill only the best candidates
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; PathFinder_BrightPath: animate and highlight the hexagons included in shortest path when match ends
@@ -1155,7 +1156,7 @@ BrightPath_Position
 ; Destroys: A, BC, HL
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_PrepareBoard:
-                        ld      a, WIN_CONDITION
+                        ld      a, VICTORY+$40              ; set victory distance + friendly flag
                         ld      c, 7                        ; 7 rows
 PrepareBoard_Row
                         ld      b, 7                        ; 7 columns

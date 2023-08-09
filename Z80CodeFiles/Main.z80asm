@@ -6,10 +6,10 @@
 CYAN_COLOR              equ     %00000101                   ; attributes: flash 0, bright 0, paper 0, ink 5
 RED_COLOR               equ     %00000010                   ; attributes: flash 0, bright 0, paper 0, ink 2
 
-                        ent     $
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Entry point of the program - Initialization
 ; ----------------------------------------------------------------------------------------------------------------------
+Main                    ent     $
 
                         di                                  ; disable interrupts
 
