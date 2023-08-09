@@ -28,22 +28,9 @@ MAX_VALUE               equ     255                         ; alphaBeta pruning 
 ; ----------------------------------------------------------------------------------------------------------------------
 BRAINIAC_best_move:
                         ld      (AI_PLAYER), a              ; save speccy side
+
                         call    PathFinder_Score            ; get board score
-                        cp      WIN_CONDITION               ; speccy won?
-                        jr      z, AI_Color_Candidates      ; yes, get candidates depending on speccy color
-
                         call    PathFinder_Candidates       ; get candidates from board potentials
-                        jr      AI_First_Candidate          ; go to first candidate
-
-                        ; if speccy won, candidates are chosen depending on speccy color
-AI_Color_Candidates
-                        ld      a, (AI_PLAYER)              ; get speccy side
-                        cp      FRIEND                      ; is speccy friend?
-                        jr      z, AI_Cyan_Candidates       ; yes, go to get cyan candidates
-                        call    PathFinder_RedCandidates    ; get red candidates
-                        jr      AI_First_Candidate          ; go to first candidate
-AI_Cyan_Candidates
-                        call    PathFinder_CyanCandidates   ; get cyan candidates
 
                         ; BRAINIAC start
 AI_First_Candidate
@@ -116,7 +103,7 @@ Alphabeta_Min:
                         ; check if last speccy move is a winner one
 
                         call    PathFinder_Score            ; if (speccy won)
-                        cp      WIN_CONDITION
+                        or      a
                         jr      nz, Alphabeta_Min_Candidates
                         ld      a, (AI_DEPTH)
                         add     a, 192                      ;     return 192+depth
@@ -140,9 +127,8 @@ Alphabeta_Min_Loop                                          ; for each candidate
                         ld      l, a
                         push    hl
 
-                        ld      a, (AI_PLAYER)              ;       rather to track player or speccy side
-                                                            ;       we get it from AI_PLAYER
-                        xor     $7C                         ;       get player side
+                        ld      a, (AI_PLAYER)              ;       get speccy side
+                        xor     $7C                         ;       switch to player side
                         call    PathFinder_PutToken         ;       BRAINIAC_play
                         call    Alphabeta_Max               ;       A = alphabeta_max(alphaMax, betaMin)
 
@@ -217,7 +203,7 @@ Heuristic_Min:                                              ; for each candidate
                         push    hl
 
                         ld      a, (AI_PLAYER)              ;       get speccy side
-                        xor     $7C                         ;       convert to player side
+                        xor     $7C                         ;       switch to player side
                         call    PathFinder_PutToken         ;       BRAINIAC_play
 
                         call    PathFinder_Score            ;       if (player won)
@@ -400,7 +386,7 @@ Heuristic_Max:                                              ; for each candidate
                         call    PathFinder_PutToken         ;       (BRAINIAC_play)
 
                         call    PathFinder_Score            ;       if (speccy won)
-                        cp      WIN_CONDITION
+                        or      a
                         jr      nz, Heuristic_Max_Continue
                         ld      a, 192                      ;           A = 192
 Heuristic_Max_Continue
@@ -430,10 +416,10 @@ Heuristic_Max_Next
                         inc     (hl)                        ; depth++
                         ret
 
-Heuristic_Max_Exit:
+Heuristic_Max_Exit
                         ld      d, a                        ; (discard remaining candidates)
                         xor     a
-Heuristic_Max_Skip:
+Heuristic_Max_Skip
                         dec     ixl
                         cp      (ix+0)
                         jr      nz, Heuristic_Max_Skip
