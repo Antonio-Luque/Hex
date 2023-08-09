@@ -11,18 +11,15 @@ MAX_CHARS               equ     2                           ; maximum of input c
 ;
 ; Input:    -
 ;
-; Output:   HL = player move address (PLAYER_MOVE)
+; Output:   -
 ;
-; Uses:     CHAR_COUNT (number of current characters in input player move)
-;           TOKEN_COLOR (current token color)
+; Uses:     TOKEN_COLOR (current token color)
+;           STR_MOVE (formatted move string)
 ;
-; Destroys: A, A', BC, DE, IX
+; Destroys: A, A', BC, DE, HL, IX
 ; ----------------------------------------------------------------------------------------------------------------------
 Input_Move:
-                        ld      bc, PLAYER_MOVE             ; BC points to player move address
-                        push    bc                          ; store pointer to player move address
-                        xor     a                           ; A = 0
-                        ld      (CHAR_COUNT), a             ; initialize char counter
+                        ld      bc, MAX_CHARS*256           ; B = maximum of input chars, C = chars counter
 
                         ld      ix, $5A83                   ; IX points to attribute address of RED input text
                         ld      hl, $5083                   ; HL points to screen address of RED input text
@@ -32,106 +29,94 @@ Input_Move:
                         ld      ix, $5919                   ; IX points to attribute address of CYAN input text
                         ld      hl, $4819                   ; HL points to screen address of CYAN input text
 Input_Start
-                        ld      a, '_'                      ; text input cursor
                         ld      (ix+0), WHITE_FLASH1        ; set attributes for cursor (flash)
+                        ld      a, '_'                      ; text input cursor
                         call    Print_Char                  ; print cursor
 Input_Loop
                         call    Input_Key_Scan              ; scan for a key pressed
-                        cp      $0D                         ; is it ENTER?
-                        jr      z, Input_Exit               ; yes, go to the end of routine
-                        cp      '0'                         ; is it DELETE?
-                        jr      z, Input_Delete             ; yes, perform delete char
-                        ex      af, af'                     ; store ASCII code in A'
-                        ld      a, (CHAR_COUNT)             ; A = number of chars inserted
-                        cp      MAX_CHARS                   ; chars limit reached?
-                        jr      z, Input_Loop               ; yes, repeat input loop (do not insert char)
-                        or      a                           ; is the first char to be inserted? (A = 0)
-                        jr      z, Input_First_Letter       ; yes, perform input of 1st char (column)
-                        cp      1                           ; is the secord char to be inserted? (A = 1)
-                        jr      z, Input_First_Number       ; yes, perform input of 2nd char (row)
 
-; ----------------------------------------------------------------------------------------------------------------------
-; char is valid: 'a'-'g' (1st char) and '1'-'7' (2nd char)
-; ----------------------------------------------------------------------------------------------------------------------
-Input_Char_OK
-                        ld      (bc), a                     ; set char in ASCII move
-                        inc     bc                          ; increment ASCII move position
+                        cp      $0D                         ; is it ENTER?
+                        jr      z, Input_Enter              ; yes, perform enter pressed
+                        cp      '0'                         ; is it "delete"? (char '0' acts as delete, without Shift)
+                        jr      z, Input_Delete             ; yes, perform delete char
+                        ex      af, af'                     ; store char in A'
+                        ld      a, c                        ; check number of chars inserted
+                        cp      b                           ; chars limit reached?
+                        jr      z, Input_Loop               ; yes, repeat input loop
+
+                        or      a                           ; is it the first char?
+                        jr      nz, Input_Numbers           ; no, perform input of 2nd char
+
+                        ; restrict first char to 'a'-'g'
+
+                        ex      af, af'                     ; restore char
+                        cp      'a'                         ; is it < 'a'?
+                        jr      c, Input_Loop               ; yes, repeat input loop (char is not allowed)
+                        cp      'h'                         ; is it >= 'g'?
+                        jr      nc, Input_Loop              ; yes, repeat input loop (char is not allowed)
+
+                        ; char is valid as column
+
+                        ld      (STR_MOVE+0), a             ; save char in player move
                         ld      (ix+0), WHITE_FLASH0        ; restore attributes (no flash)
                         call    Print_Char                  ; print key pressed
-                        ld      a, (CHAR_COUNT)             ; increment char counter
-                        inc     a
-                        ld      (CHAR_COUNT), a
+                        inc     c                           ; increment chars counter
                         inc     l                           ; increment X position of current input screen location
                         inc     ixl                         ; increment X position of current input attr location
-                        dec     a                           ; is the first char?
-                        jr      nz, Input_Start             ; no, get next char
-                        ld      a, '-'                      ; yes, print dash
-                        call    Print_Char                  ; print dash
+                        ld      a, '-'                      ; set dash char
+                        call    Print_Char                  ; print key pressed
                         inc     l                           ; increment X position of current input screen location
                         inc     ixl                         ; increment X position of current input attr location
                         jr      Input_Start                 ; get next char (do until ENTER is pressed)
+Input_Numbers
+                        ; restrict second char to '1'-'7'
 
-; ----------------------------------------------------------------------------------------------------------------------
-; restrict first char to 'a'-'g'
-; ----------------------------------------------------------------------------------------------------------------------
-Input_First_Letter 
-                        ex      af, af'                     ; restore ASCII code
-                        cp      'a'                         ; is it < 'a'?
-                        jr      c, Input_Loop               ; yes, repeat input loop (char is not allowed)
-                        cp      'h'                         ; is it >= 'h'?
-                        jr      nc, Input_Loop              ; yes, repeat input loop (char is not allowed)
-                        jr      Input_Char_OK               ; char is valid
-
-; ----------------------------------------------------------------------------------------------------------------------
-; restrict second char to '1'-'7'
-; ----------------------------------------------------------------------------------------------------------------------
-Input_First_Number 
-                        ex      af, af'                     ; restore ASCII code
+                        ex      af, af'                     ; restore char
                         cp      '1'                         ; is it < '1'?
                         jr      c, Input_Loop               ; yes, repeat input loop (char is not allowed)
                         cp      '8'                         ; is it >= '8'?
                         jr      nc, Input_Loop              ; yes, repeat input loop (char is not allowed)
-                        jr      Input_Char_OK               ; char is valid
 
-; ----------------------------------------------------------------------------------------------------------------------
-; erase last char, update input screen location and string pointer
-; ----------------------------------------------------------------------------------------------------------------------
-Input_Delete
-                        ld      a, (CHAR_COUNT)             ; get char counter
-                        or      a                           ; is it 0?
-                        jr      z, Input_Loop               ; yes, repeat input loop (no chars to delete)
-                        cp      2                           ; is it 2?
-                        jr      nz, Input_Delete_Dash       ; no, delete dash
-                        jr      Input_Decrement_Chars       ; continue delete
-Input_Delete_Dash  
-                        ld      a, ' '                      ; empty char
+                        ; char is valid as row
+
+                        ld      (STR_MOVE+3), a             ; save char in player move
                         ld      (ix+0), WHITE_FLASH0        ; restore attributes (no flash)
-                        call    Print_Char                  ; delete char
+                        call    Print_Char                  ; print key pressed
+                        inc     c                           ; increment chars counter
+                        inc     l                           ; increment X position of current input screen location
+                        inc     ixl                         ; increment X position of current input attr location
+                        jr      Input_Start                 ; get next char (do until ENTER is pressed)
+
+                        ; player pressed "delete" (char '0')
+Input_Delete
+                        ld      a, c                        ; get char counter
+                        or      a                           ; is it 0?
+                        jr      z, Input_Loop               ; repeat input loop (no chars to delete)
+
+                        ld      (ix+0), WHITE_FLASH0        ; restore attributes (no flash)
+                        cp      b                           ; is it the first char?
+                        jr      z, Input_Delete_Char        ; yes, continue delete
+                        ld      a, ' '                      ; empty char
+                        call    Print_Char                  ; delete cursor and last char
                         dec     l                           ; decrement X position of input screen location
                         dec     ixl                         ; decrement X position of input attr location
-Input_Decrement_Chars 
-                        ld      a, (CHAR_COUNT)             ; decrement char counter
-                        dec     a
-                        ld      (CHAR_COUNT), a
-                        dec     bc                          ; decrement ASCII move position
+Input_Delete_Char
+                        dec     c                           ; decrement char counter
                         ld      a, ' '                      ; empty char
-                        ld      (ix+0), WHITE_FLASH0        ; restore attributes (no flash)
                         call    Print_Char                  ; delete cursor and last char
                         dec     l                           ; decrement X position of player input screen location
                         dec     ixl                         ; decrement X position of player input attr location
-                        jp      Input_Start                 ; get next char
+                        jr      Input_Start                 ; get next char
 
-; ----------------------------------------------------------------------------------------------------------------------
-; player finished move (ENTER pressed)
-; ----------------------------------------------------------------------------------------------------------------------
-Input_Exit
-                        ld      a, (CHAR_COUNT)             ; check char counter  
-                        cp      2                           ; is it < 2?
-                        jp      c, Input_Loop               ; yes, repeat input loop (move is incomplete)
-                        ld      a, ' '                      ; empty char
+                        ; player pressed ENTER
+Input_Enter
+                        ld      a, c                        ; check char counter  
+                        cp      b                           ; is it < MAX_CHARS?
+                        jr      c, Input_Loop               ; yes, repeat input loop (move is incomplete)
+
                         ld      (ix+0), WHITE_FLASH0        ; restore attributes (no flash)
+                        ld      a, ' '                      ; empty char
                         call    Print_Char                  ; delete cursor
-                        pop     hl                          ; restore pointer to player move address
                         ret
 
 ; ----------------------------------------------------------------------------------------------------------------------

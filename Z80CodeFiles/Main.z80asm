@@ -202,6 +202,7 @@ Main_ThreeRow_Show
 ; ----------------------------------------------------------------------------------------------------------------------
 Main_GetSpeccy_Move:
                         call    Print_Wait                  ; print "WAIT" message
+
                         ld      a, (MOVE_NUMBER)            ; get move number
                         dec     a                           ; is it cyan first move?
                         jr      z, Main_GetSpeccy_Book      ; yes, get move from opening book
@@ -254,18 +255,14 @@ Main_GetSpeccy_Book
 Main_GetPlayer_Move:
                         call    Print_Clear_Move            ; clear player last move
                         call    Input_Move                  ; wait for input player move
-                        ld      a, (hl)                     ; get column ('a'..'g') from move
-                        ld      (STR_MOVE+0), a             ; put it on formatted move string
+                        call    Print_Move                  ; print player move
+
+                        ld      a, (STR_MOVE+0)             ; get column ('a'..'g')
                         sub     $60                         ; convert to number (1..7)
                         ld      b, a                        ; set column index in B
-                        inc     hl                          ; HL points to move-row address
-                        ld      a, (hl)                     ; get row ('1'..'7')
-                        ld      (STR_MOVE+3), a             ; put it on formatted move string
+                        ld      a, (STR_MOVE+3)             ; get row ('1'..'7')
                         sub     $30                         ; convert to number (1..7)
                         ld      c, a                        ; set row index in C
-                        push    bc                          ; store board indexes
-                        call    Print_Move                  ; print player move
-                        pop     bc                          ; restore board indexes
                         ld      de, BOARD_COORDINATES       ; DE points to board coordinates address
                         call    Main_Search_Table           ; search board position in board coordinates
                         ld      l, (hl)                     ; set board position of player move
