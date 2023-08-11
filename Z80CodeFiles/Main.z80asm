@@ -118,6 +118,7 @@ Main_Match_Loop
                         ld      hl, PLAYER_COLOR            ; HL points to player color address
                         cp      (hl)                        ; is player color = current token color?
                         jr      z, Main_Player_Move         ; yes, process player move
+
                         call    Main_GetSpeccy_Move         ; get the speccy move
                         jr      Main_Update_Board           ; update board position
 Main_Player_Move
@@ -129,18 +130,11 @@ Main_Update_Board
                         call    PathFinder_PutToken         ; put token on cyan and red positions
                         call    Draw_Token                  ; animate hexagon sprite on the screen
 
-                        ; check win condition
+                        ; check for a winner
 
-                        ld      a, (TOKEN_COLOR)            ; get current token color
-                        cp      CYAN_COLOR                  ; is token color = cyan?
-                        jr      z, Main_Cyan_Score          ; yes, get score for cyan player
-                        call    PathFinder_Red_LeftRight    ; get score for red player
-                        jr      Main_Check_Winner           ; check victory condition
-Main_Cyan_Score
-                        call    PathFinder_Cyan_UpDown      ; get score for cyan player
-Main_Check_Winner
-                        or      a                           ; player/speccy won?
-                        jr      z, Main_Match_End           ; yes, match ends
+                        call    Main_Victory_Path           ; check current player victory path
+                        inc     a                           ; is there a victory path?
+                        jr      nz, Main_Match_End          ; yes, match ends
 
                         ld      hl, MOVE_NUMBER             ; HL points to move number address
                         inc     (hl)                        ; increment move number
@@ -159,11 +153,14 @@ Main_Check_Winner
 ; Current player wins the match
 ; ----------------------------------------------------------------------------------------------------------------------
 Main_Match_End
-                        ld      hl, TIMER_FLAG              ; HL points to timer flag address
-                        ld      (hl), 0                     ; stop timers
-                        ld      a, 4
-                        ld      (Draw_Token_Delay+1), a     ; set delay duration for animate hexagons
+                        ld      b, a                        ; set start position of victory path
+                        xor     a                           ; stop timers
+                        ld      (TIMER_FLAG), a
+                        ld      a, 4                        ; set delay duration for animate hexagons
+                        ld      (Draw_Token_Delay+1), a
+
                         call    PathFinder_BrightPath       ; animate and highlight the winner path
+
                         ld      de, STR_WINNER              ; DE points to "WINS" string address
                         call    Print_Alert                 ; print string
 
@@ -320,16 +317,43 @@ Main_Board2Indexes:
 
                         ld      hl, BOARD_COORDINATES+64    ; HL points to last board position address (+1)
                         ld      c, 7                        ; 7 rows
-Board2Indexes_Row
+Main_Board2Indexes_Row
                         ld      b, 7                        ; 7 columns
-Board2Indexes_Col
+Main_Board2Indexes_Col
                         dec     hl                          ; move HL to next board position address
                         cp      (hl)                        ; is A the position?
                         ret     z                           ; yes, return board indexes
-                        djnz    Board2Indexes_Col           ; repeat for each column
+                        djnz    Main_Board2Indexes_Col      ; repeat for each column
                         dec     hl                          ; skip borders
                         dec     c                           ; decrement row
-                        jr      Board2Indexes_Row           ; loop until find position
+                        jr      Main_Board2Indexes_Row      ; loop until find position
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Main_Victory_Path: calculate current player victory path
+;
+; Input:    -
+;
+; Output:   A = -1, if there isn't a victory path
+;           A = start position (-1) of the victory path, otherwise
+;
+; Uses:     TOKEN_COLOR (current token color)
+;
+; Destroys: C, DE, HL, IY
+; ----------------------------------------------------------------------------------------------------------------------
+Main_Victory_Path:
+                        ld      a, (TOKEN_COLOR)            ; get current token color
+                        cp      CYAN_COLOR                  ; is it cyan?
+                        jr      z, Main_Victory_PathCyan    ; yes, check path for cyan player
+
+                        call    PathFinder_Red_LeftRight    ; execute Path_Finder RED two-distance from LEFT to RIGHT
+                        ld      hl, RED_BOARD_LEFT_RIGHT+69 ; HL points to red board left-right address (last position)
+                        call    PathFinder_PrepareBoard     ; prepare board to calculate victory path
+                        jp      PathFinder_Red_CheckPath    ; calculate RED victory path
+Main_Victory_PathCyan
+                        call    PathFinder_Cyan_UpDown      ; execute Path_Finder CYAN two-distance from UP to DOWN
+                        ld      hl, CYAN_BOARD_UP_DOWN+69   ; HL points to cyan board up-down address (last position)
+                        call    PathFinder_PrepareBoard     ; prepare board to calculate victory path
+                        jp      PathFinder_Cyan_CheckPath   ; calculate CYAN victory path
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Main_Delay: execute a delay

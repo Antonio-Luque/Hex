@@ -104,7 +104,7 @@ PathFinder_CopyLoop
 ; PathFinder_Update: update current board position during heuristic function evaluation
 ;
 ; This is an approach to Jack van Rijswijck's "two-distance" metric. The two-distance is defined as "one more than the
-; second lowest distance of p’s neighbors to q, with the proviso that the two-distance equals 1 if p and q are directly
+; second lowest distance of p's neighbors to q, with the proviso that the two-distance equals 1 if p and q are directly
 ; adjacent".
 ;
 ; The position will be updated with a number that indicates two-distance from goal (stored in lowest 6 bits), and a flag
@@ -177,8 +177,8 @@ PathFinder_Cyan_UpDown:
                         ld      de, CYAN_BOARD_UP_DOWN+7    ; DE points to cyan board up-down address (up-right corner)
                         call    PathFinder_CopyPositions    ; copy from cyan positions to cyan board up-down
 
-; entry point for PathFinder_BrightPath
-PathFinder_Cyan_BrightPath:
+; entry point for Main (check win condition)
+PathFinder_Cyan_CheckPath:
                         ld      iy, $0900                   ; IYH = distance to check edge positions
                                                             ; IYL = initialize return value of 'Path_Finder'
                         ld      hl, CYAN_QUEUE_AREA         ; HL points to cyan queue area address
@@ -277,8 +277,8 @@ PathFinder_Red_LeftRight:
                         ld      de, RED_BOARD_LEFT_RIGHT+7  ; DE points to red board left-right addr. (up-right corner)
                         call    PathFinder_CopyPositions    ; copy from red positions to red board left-right
 
-; entry point for PathFinder_BrightPath
-PathFinder_Red_BrightPath
+; entry point for Main (check win condition)
+PathFinder_Red_CheckPath
                         ld      iy, $0100                   ; IYH = distance to check edge positions
                                                             ; IYL = initialize return value of 'Path_Finder'
                         ld      hl, RED_QUEUE_AREA          ; initialize red queue area
@@ -910,10 +910,10 @@ PathFinder_Evaluation:
 ; ----------------------------------------------------------------------------------------------------------------------
 ; PathFinder_Potentials: calculate board potential and attack mobility
 ;
-; * A cell’s Cyan potential is defined as the sum of its Cyan two-distance to both cyan edges; its Red potential is the
+; * A cell's Cyan potential is defined as the sum of its Cyan two-distance to both cyan edges; its Red potential is the
 ;   sum of its Red two-distance to both red edges. The board potential is defined as the lowest potential that occurs on
 ;   the board.
-; * The attack mobility is defined for each player as the number of cells that realize that player’s board potential.
+; * The attack mobility is defined for each player as the number of cells that realize that player's board potential.
 ;
 ; Input:    HL = cyan board or red board address
 ;           DE = cyan board or red board address
@@ -929,7 +929,7 @@ PathFinder_Potentials:
 Potentials_Loop
                         ld      a, (hl)                     ; get cell's two-distance pointed by HL
                         cp      $40                         ; is cell occupied or border?
-                        jr      nc, Potentials_Next         ; yes, skip to next cell 
+                        jr      nc, Potentials_Next         ; yes, skip to next cell
                         cp      $04                         ; cell distance was not updated?
                         jr      c, Potentials_Infinite      ; yes, set cell potential as "infinite" and skip
                         ld      a, (de)                     ; get cell's two-distance pointed by DE
@@ -990,23 +990,25 @@ PathFinder_Candidates:
                         ld      e, ixl                      ; store candidates position
 
                         ; insert the second best board potentials in candidates area
-Candidates_2nd_Best
+Candidates_2ndBest
                         ld      l, 9                        ; HL points to board potentials address (1st position)
                         inc     c                           ; increment board potential
                         ld      a, c                        ; A = second best potential
+                        cp      $20                         ; is potential >= $20? (2nd best max potential)
+                        jr      nc, Candidates_2ndBest_Exit ; yes, stop searching 2nd best potential
                         ld      b, 61                       ; number of cells to be checked (loop counter)
-Candidates_2nd_Best_Loop
+Candidates_2ndBest_Loop
                         cp      (hl)                        ; is current board potential = 2nd best board potential?
-                        jp      nz, Candidates_2nd_Best_Next; no, skip to next potential
+                        jp      nz, Candidates_2ndBest_Next ; no, skip to next potential
                         inc     ixl                         ; yes, insert candidate
                         ld      (ix+0), l
-Candidates_2nd_Best_Next
+Candidates_2ndBest_Next
                         inc     l                           ; move HL to next board potential address
-                        djnz    Candidates_2nd_Best_Loop    ; repeat for each cell
+                        djnz    Candidates_2ndBest_Loop     ; repeat for each cell
                         ld      a, ixl                      ; A = current candidates position
                         cp      e                           ; new candidates inserted?
-                        jr      z, Candidates_2nd_Best      ; no, repeat until new candidates inserted
-
+                        jr      z, Candidates_2ndBest       ; no, repeat until new candidates inserted
+Candidates_2ndBest_Exit
                         ld      b, d                        ; restore attack mobility
                         ex      af, af'                     ; restore board potential
 
@@ -1066,7 +1068,8 @@ Candidates_Red_Potential
 ; ----------------------------------------------------------------------------------------------------------------------
 ; PathFinder_BrightPath: animate and highlight the hexagons included in shortest path when match ends
 ;
-; Input:    B = current position
+; Input:    B  = start position of the victory path
+;           HL = Board QUEUE_AREA address
 ;
 ; Output:   -
 ;
@@ -1075,27 +1078,10 @@ Candidates_Red_Potential
 ; Destroys: A, BC, DE, HL, IY
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_BrightPath:
-                        push    bc                          ; store current position
-
-                        ld      a, (TOKEN_COLOR)            ; get current player color
-                        push    af                          ; store current player color
-                        cp      CYAN_COLOR                  ; check current token color
-                        jr      z, BrightPath_Cyan          ; prepare board if it is cyan
-
-                        ld      hl, RED_BOARD_LEFT_RIGHT+69 ; HL points to red board left-right address (last position)
-                        call    PathFinder_PrepareBoard     ; prepare RED board 
-                        call    PathFinder_Red_BrightPath   ; find RED victory path
-                        jr      BrightPath_Start            ; start bright path
-BrightPath_Cyan
-                        ld      hl, CYAN_BOARD_UP_DOWN+69   ; HL points to cyan board up-down address (last position)
-                        call    PathFinder_PrepareBoard     ; prepare CYAN board
-                        call    PathFinder_Cyan_BrightPath  ; find CYAN victory path
-BrightPath_Start
-                        pop     af                          ; restore current player color
+                        ld      a, (TOKEN_COLOR)            ; get current token color
+                        push    af                          ; store current token color
                         add     a, $40                      ; apply bright attribute
                         ld      (TOKEN_COLOR), a            ; save color
-
-                        pop     bc                          ; restore current position
 
                         inc     h                           ; HL points to the start position of the victory path
                         ld      l, b
@@ -1129,7 +1115,7 @@ BrightPath_Position
                         push    bc                          ; store victory path length
                         push    hl                          ; store current position pointer
                         call    Main_Board2Indexes          ; convert a board position into a board indexes
-                        call    Draw_Token                  ; draw token
+                        call    Draw_Token                  ; animate hexagon sprite on the screen
                         pop     hl                          ; restore current position pointer
                         pop     bc                          ; restore victory path length
                         dec     c                           ; decrement victory path length
@@ -1137,13 +1123,12 @@ BrightPath_Position
                         cp      VICTORY                     ; has reached victory path length?
                         jr      nz, BrightPath_Neighbor     ; repeat for each neighbor until reach VICTORY length
 
-                        ld      a, (TOKEN_COLOR)            ; restore token color
-                        sub     $40
+                        pop     af                          ; restore current token color
                         ld      (TOKEN_COLOR), a
                         ret
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; PathFinder_PrepareBoard: update '[color]_BOARD_XX_YY', changing WIN_CONDITION to 1, everything else to ENEMY.
+; PathFinder_PrepareBoard: update '[color]_BOARD_XX_YY', changing VICTORY+$40 to 1, everything else to ENEMY.
 ; Immediately after 'Path_Finder_[color]' returned VICTORY, you can execute this routine, then execute 'Path_Finder_
 ; [color]' again to find a victory path.
 ;

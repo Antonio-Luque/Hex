@@ -24,7 +24,7 @@ MAX_VALUE               equ     255                         ; alphaBeta pruning 
 ; Uses:     AI_PLAYER (speccy side)
 ;           AI_DEPTH (recursion depth level)
 ;
-; Destroys: A, BC, D, HL, IX, IY
+; Destroys: A, A', BC, D, HL, IX, IY
 ; ----------------------------------------------------------------------------------------------------------------------
 BRAINIAC_best_move:
                         ld      (AI_PLAYER), a              ; save speccy side
