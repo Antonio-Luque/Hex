@@ -1,5 +1,5 @@
 
-; File #0: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Hex2.z80asm
+; File #0: C:\Users\Antonio Luque\source\repos\Hex\Z80CodeFiles\Hex2.z80asm
 
 8000             0 1 ; ----------------------------------------------------------------------------------------------------------------------
 8000             0 2 ; Hex2.z80asm
@@ -8,7 +8,7 @@
 8000             0 5 ; Build file
 8000             0 6 ; ----------------------------------------------------------------------------------------------------------------------
 
-; File #1: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Data.z80asm
+; File #1: C:\Users\Antonio Luque\source\repos\Hex\Z80CodeFiles\Data.z80asm
 
 8000             1 1 ; ----------------------------------------------------------------------------------------------------------------------
 8000             1 2 ; Data.z80asm
@@ -992,7 +992,7 @@
 6BF0 00 14 28 00 1 387 
 6BF4 00 00 00 00 1 387 
 
-; File #2: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Main.z80asm
+; File #2: C:\Users\Antonio Luque\source\repos\Hex\Z80CodeFiles\Main.z80asm
 
 6BF8             2 1 ; ----------------------------------------------------------------------------------------------------------------------
 6BF8             2 2 ; Main.z80asm
@@ -1304,7 +1304,7 @@
 6D91 C1          2 352 pop     bc                          ; restore register
 6D92 C9          2 353 ret
 
-; File #3: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Draw.z80asm
+; File #3: C:\Users\Antonio Luque\source\repos\Hex\Z80CodeFiles\Draw.z80asm
 
 6D93             3 1 ; ----------------------------------------------------------------------------------------------------------------------
 6D93             3 2 ; Draw.z80asm
@@ -1513,7 +1513,7 @@
 6E2B DD 77 21    3 212 ld      (ix+33), a
 6E2E C9          3 213 ret
 
-; File #4: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Input.z80asm
+; File #4: C:\Users\Antonio Luque\source\repos\Hex\Z80CodeFiles\Input.z80asm
 
 6E2F             4 1 ; ----------------------------------------------------------------------------------------------------------------------
 6E2F             4 2 ; Input.z80asm
@@ -1676,7 +1676,7 @@
 6EF3 C1          4 176 pop     bc
 6EF4 C9          4 177 ret
 
-; File #5: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Print.z80asm
+; File #5: C:\Users\Antonio Luque\source\repos\Hex\Z80CodeFiles\Print.z80asm
 
 6EF5             5 1 ; ----------------------------------------------------------------------------------------------------------------------
 6EF5             5 2 ; Print.z80asm
@@ -1846,7 +1846,7 @@
 6F83 67          5 174 ld      h, a                        ; HL points to character screen address
 6F84 C9          5 175 ret
 
-; File #6: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Brainiac.z80asm
+; File #6: C:\Users\Antonio Luque\source\repos\Hex\Z80CodeFiles\Brainiac.z80asm
 
 6F85             6 1 ; ----------------------------------------------------------------------------------------------------------------------
 6F85             6 2 ; Brainiac.z80asm
@@ -2202,7 +2202,7 @@
 70F1 34          6 429 inc     (hl)                        ; (depth++)
 70F2 C9          6 430 ret
 
-; File #7: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\PathFinder.z80asm
+; File #7: C:\Users\Antonio Luque\source\repos\Hex\Z80CodeFiles\PathFinder.z80asm
 
 70F3             7 1 ; ----------------------------------------------------------------------------------------------------------------------
 70F3             7 2 ; PathFinder.z80asm
@@ -2614,7 +2614,7 @@
 727D             7 437 ;                edge number)
 727D             7 438 ;
 727D             7 439 ; Output:   A = 0, if there is a chain of connected tokens of the same color between the two edges.
-727D             7 440 ;           A = FRIEND ,IYL = current position, otherwise.
+727D             7 440 ;           A = FRIEND, IYL = current position, otherwise.
 727D             7 441 ;
 727D             7 442 ; Destroys: DE, HL
 727D             7 443 ; ----------------------------------------------------------------------------------------------------------------------
@@ -3260,7 +3260,7 @@
 75DB             7 1128 ; PathFinder_BrightPath: animate and highlight the hexagons included in shortest path when match ends
 75DB             7 1129 ;
 75DB             7 1130 ; Input:    B  = start position of the victory path
-75DB             7 1131 ;           HL = Board QUEUE_AREA address
+75DB             7 1131 ;           HL = [color]_QUEUE_AREA address
 75DB             7 1132 ;
 75DB             7 1133 ; Output:   -
 75DB             7 1134 ;
@@ -3273,7 +3273,7 @@
 75DE F5          7 1141 push    af                          ; store current token color
 75DF C6 40       7 1142 add     a, $40                      ; apply bright attribute
 75E1 32 9E 61    7 1143 ld      (TOKEN_COLOR), a            ; save color
-75E4 24          7 1145 inc     h                           ; HL points to the start position of the victory path
+75E4 24          7 1145 inc     h                           ; move HL to the start position of the victory path
 75E5 68          7 1146 ld      l, b
 75E6 4E          7 1147 ld      c, (hl)                     ; set victory path length in C
 75E7 18 1E       7 1148 jr      BrightPath_Position         ; animate and highlight the hexagon position
@@ -3316,7 +3316,7 @@
 7618 32 9E 61    7 1186 ld      (TOKEN_COLOR), a
 761B C9          7 1187 ret
 
-; File #8: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Timer.z80asm
+; File #8: C:\Users\Antonio Luque\source\repos\Hex\Z80CodeFiles\Timer.z80asm
 
 761C             8 1 ; ----------------------------------------------------------------------------------------------------------------------
 761C             8 2 ; Timer.z80asm
@@ -3487,7 +3487,7 @@
 76C3 36 00       8 182 ld      (hl), 0                     ; reset minutes counter
 76C5 C9          8 183 ret
 
-; File #9: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Sound.z80asm
+; File #9: C:\Users\Antonio Luque\source\repos\Hex\Z80CodeFiles\Sound.z80asm
 
 76C6             9 1 ; ----------------------------------------------------------------------------------------------------------------------
 76C6             9 2 ; Sound.z80asm
@@ -3544,7 +3544,7 @@
 7700 FB          9 57 ei                                  ; enable interrupts
 7701 C9          9 58 ret
 
-; File #10: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Screen.z80asm
+; File #10: C:\Users\Antonio Luque\source\repos\Hex\Z80CodeFiles\Screen.z80asm
 
 7702             10 1 ; ----------------------------------------------------------------------------------------------------------------------
 7702             10 2 ; Screen.z80asm
@@ -4346,7 +4346,7 @@
 7C9D EA 84 7C    10 856 jp      pe, Screen_ClearText_Loop   ; repeat for each row
 7CA0 C9          10 857 ret
 
-; File #0: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Hex2.z80asm
+; File #0: C:\Users\Antonio Luque\source\repos\Hex\Z80CodeFiles\Hex2.z80asm
 
 7CA1             0 19 ; ----------------------------------------------------------------------------------------------------------------------
 7CA1             0 20 ; Credits and acknowledgements:

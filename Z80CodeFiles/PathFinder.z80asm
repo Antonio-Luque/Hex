@@ -437,7 +437,7 @@ Path_Finder_First
 ;                edge number)
 ;
 ; Output:   A = 0, if there is a chain of connected tokens of the same color between the two edges.
-;           A = FRIEND ,IYL = current position, otherwise.
+;           A = FRIEND, IYL = current position, otherwise.
 ;
 ; Destroys: DE, HL
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -1128,7 +1128,7 @@ PrepareBoard_Next
 ; PathFinder_BrightPath: animate and highlight the hexagons included in shortest path when match ends
 ;
 ; Input:    B  = start position of the victory path
-;           HL = Board QUEUE_AREA address
+;           HL = [color]_QUEUE_AREA address
 ;
 ; Output:   -
 ;
@@ -1142,7 +1142,7 @@ PathFinder_BrightPath:
                         add     a, $40                      ; apply bright attribute
                         ld      (TOKEN_COLOR), a            ; save color
 
-                        inc     h                           ; HL points to the start position of the victory path
+                        inc     h                           ; move HL to the start position of the victory path
                         ld      l, b
                         ld      c, (hl)                     ; set victory path length in C
                         jr      BrightPath_Position         ; animate and highlight the hexagon position
