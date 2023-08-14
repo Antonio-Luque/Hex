@@ -67,7 +67,7 @@ AI_Main_Next
                         dec     ixl
                         ld      a, (ix+0)                   ;       A is our next candidate
                         or      a                           ;       repeat until no more candidates
-                        jr      nz, AI_Main_Loop            ; }
+                        jp      nz, AI_Main_Loop            ; }
                         ret
 
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -104,7 +104,7 @@ Alphabeta_Min:
 
                         call    PathFinder_Score            ; if (speccy won)
                         or      a
-                        jr      nz, Alphabeta_Min_Candidates
+                        jp      nz, Alphabeta_Min_Candidates
                         ld      a, (AI_DEPTH)
                         add     a, 192                      ;     return 192+depth
                         pop     de
@@ -118,7 +118,7 @@ Alphabeta_Min_Candidates
 
                         ld      hl, AI_DEPTH
                         dec     (hl)                        ; depth--
-                        jr      z, Heuristic_Min            ; if (depth == 0) return heuristic_min
+                        jp      z, Heuristic_Min            ; if (depth == 0) return heuristic_min
 
 Alphabeta_Min_Loop                                          ; for each candidate {
                         push    de                          ;       store alphaMax and betaMin
@@ -150,7 +150,7 @@ Alphabeta_Min_Next
                         dec     ixl
                         ld      a, (ix+0)                   ;       A is our next candidate
                         or      a                           ;       repeat until no more candidates
-                        jr      nz, Alphabeta_Min_Loop      ; }
+                        jp      nz, Alphabeta_Min_Loop      ; }
 
                         ld      a, e                        ; return betaMin
 
@@ -164,7 +164,7 @@ Alphabeta_Min_Exit
 Alphabeta_Min_Skip
                         dec     ixl
                         cp      (ix+0)
-                        jr      nz, Alphabeta_Min_Skip
+                        jp      nz, Alphabeta_Min_Skip
                         ld      a, e
 
                         ld      hl, AI_DEPTH
@@ -207,8 +207,8 @@ Heuristic_Min:                                              ; for each candidate
                         call    PathFinder_PutToken         ;       BRAINIAC_play
 
                         call    PathFinder_Score            ;       if (player won)
-                        cp      DEFEAT
-                        jr      nz, Heuristic_Min_Continue
+                        cp      -1
+                        jp      nz, Heuristic_Min_Continue
                         ld      a, 64                       ;           A = 64
 Heuristic_Min_Continue
                         pop     hl
@@ -229,7 +229,7 @@ Heuristic_Min_Next
                         dec     ixl
                         ld      a, (ix+0)                   ;       A is our next candidate
                         or      a                           ;       repeat until no more candidates
-                        jr      nz, Heuristic_Min           ; }
+                        jp      nz, Heuristic_Min           ; }
 
                         ld      a, e                        ; return betaMin
 
@@ -243,7 +243,7 @@ Heuristic_Min_Exit
 Heuristic_Min_Skip
                         dec     ixl
                         cp      (ix+0)
-                        jr      nz, Heuristic_Min_Skip
+                        jp      nz, Heuristic_Min_Skip
                         ld      a, e
 
                         ld      hl, AI_DEPTH
@@ -283,8 +283,8 @@ Alphabeta_Max:
                         ; check if last player move is a winner one
 
                         call    PathFinder_Score            ; if (player won)
-                        cp      DEFEAT
-                        jr      nz, Alphabeta_Max_Candidates
+                        cp      -1
+                        jp      nz, Alphabeta_Max_Candidates
                         ld      a, (AI_DEPTH)
                         cpl
                         add     a, 64+1                     ;     return 64-depth
@@ -299,7 +299,7 @@ Alphabeta_Max_Candidates
 
                         ld      hl, AI_DEPTH
                         dec     (hl)                        ; depth--
-                        jr      z, Heuristic_Max            ; if (depth == 0) return heuristic_max
+                        jp      z, Heuristic_Max            ; if (depth == 0) return heuristic_max
 
 Alphabeta_Max_Loop                                          ; for each candidate {
                         push    de                          ;       store alphaMax and betaMin
@@ -330,7 +330,7 @@ Alphabeta_Max_Next
                         dec     ixl
                         ld      a, (ix+0)                   ;       A is our next candidate
                         or      a                           ;       repeat until no more candidates
-                        jr      nz, Alphabeta_Max_Loop      ; }
+                        jp      nz, Alphabeta_Max_Loop      ; }
 
                         ld      a, d                        ; return alphaMax
 
@@ -344,7 +344,7 @@ Alphabeta_Max_Exit
 Alphabeta_Max_Skip
                         dec     ixl
                         cp      (ix+0)
-                        jr      nz, Alphabeta_Max_Skip
+                        jp      nz, Alphabeta_Max_Skip
                         ld      a, d
 
                         ld      hl, AI_DEPTH
@@ -387,7 +387,7 @@ Heuristic_Max:                                              ; for each candidate
 
                         call    PathFinder_Score            ;       if (speccy won)
                         or      a
-                        jr      nz, Heuristic_Max_Continue
+                        jp      nz, Heuristic_Max_Continue
                         ld      a, 192                      ;           A = 192
 Heuristic_Max_Continue
                         pop     hl                          ;       restore candidate position
@@ -408,7 +408,7 @@ Heuristic_Max_Next
                         dec     ixl
                         ld      a, (ix+0)                   ;       A is our next candidate
                         or      a                           ;       repeat until no more candidates
-                        jr      nz, Heuristic_Max           ; }
+                        jp      nz, Heuristic_Max           ; }
 
                         ld      a, d                        ; return alphaMax
 
@@ -422,7 +422,7 @@ Heuristic_Max_Exit
 Heuristic_Max_Skip
                         dec     ixl
                         cp      (ix+0)
-                        jr      nz, Heuristic_Max_Skip
+                        jp      nz, Heuristic_Max_Skip
                         ld      a, d
 
                         ld      hl, AI_DEPTH

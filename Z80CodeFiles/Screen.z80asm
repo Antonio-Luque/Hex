@@ -269,14 +269,14 @@ Screen_Last_Level:
                         ld      hl, $50AD                   ; HL points to string screen address
                         call    Print_String                ; print "Press any key"
                         ld      ix, $5AAD                   ; IX points to string attributes address
-                        ld      bc, (13*256)+WHITE_PAPER    ; B = string length (loop counter), C = color attributes
+                        ld      bc, 13*256+WHITE_PAPER      ; B = string length (loop counter), C = color attributes
                         call    Screen_Apply_Color_Loop     ; apply color to string area
                         call    Input_Key_Scan              ; wait for a key pressed
 
                         call    Screen_Clear                ; fill in black the whole screen area and attributes area
                         call    Screen_Hexagons             ; draw menu hexagons ("HEX 2")
                         ld      ix, $59C7                   ; IX points to "CONGRATULATIONS" string attributes address
-                        ld      bc, (17*256)+WHITE_FLASH1   ; B = string length (loop counter), C = color attributes
+                        ld      bc, 17*256+WHITE_FLASH1     ; B = string length (loop counter), C = color attributes
                         call    Screen_Apply_Color_Loop     ; apply color to string area
                         ld      de, STR_CONGRATS            ; DE points to string address
                         ld      hl, $48C7                   ; HL points to string screen address
@@ -286,7 +286,7 @@ Screen_Last_Level:
 
                         di                                  ; disable interrupts
                         ld      ix, $5A42                   ; IX points to "Well done!..." string attributes address
-                        ld      bc, (28*256)+WHITE          ; B = string length (loop counter), C = color attributes
+                        ld      bc, 28*256+WHITE            ; B = string length (loop counter), C = color attributes
                         call    Screen_Apply_Color_Loop     ; apply color to string area
                         ld      de, STR_LAST_LEVEL          ; DE points to string address
                         ld      hl, $5042                   ; HL points to string screen address
@@ -468,12 +468,12 @@ Screen_Menu_Strings
                         ld      hl, $5980                   ; HL points to menu text area attributes address
                         ld      de, $5981                   ; DE points to next byte of menu text area attr. address
                         ld      (hl), 0                     ; set first attribute text area in black
-                        ld      bc, (32*12)-1               ; length of text area attributes (-1 already set)
+                        ld      bc, 32*12-1                 ; length of text area attributes (-1 already set)
                         ldir                                ; set the rest of text area attributes in black
 
                         ld      ix, $59CA                   ; IX points to "Start new game" string attr. address (+1)
                         ld      (ix-1), WHITE_PAPER+BRIGHT  ; set color of first letter
-                        ld      bc, (13*256)+WHITE_FLASH0   ; B = string length-1 (loop counter), C = color attributes
+                        ld      bc, 13*256+WHITE_FLASH0     ; B = string length-1 (loop counter), C = color attributes
                         call    Screen_Apply_Color_Loop     ; apply color to string area
                         ld      de, STR_OPTIONS             ; DE points to string address
                         ld      hl, $48C9                   ; HL points to string screen address
@@ -529,7 +529,7 @@ Screen_How2Play_RED
                         ; text for RED
 
                         ld      ix, $5A01                   ; IX points to "Connect" string attributes address
-                        ld      bc, (7*256)+WHITE           ; B = string length (loop counter), C = color attributes
+                        ld      bc, 7*256+WHITE             ; B = string length (loop counter), C = color attributes
                         call    Screen_Apply_Color_Loop     ; apply color to string area
                         ld      de, STR_HELP1               ; DE points to string address
                         ld      hl, $5001                   ; HL points to string screen address
@@ -558,7 +558,7 @@ Screen_How2Play_RED
                         ld      l, $81                      ; HL points to string screen address
                         call    Print_String                ; print "to win"
                         ld      ix, $59E3                   ; IX points to "RED" string attributes address
-                        ld      bc, (3*256)+RED_COLOR+BRIGHT; B = string length (loop counter), C = color attributes
+                        ld      bc, 3*256+RED_COLOR+BRIGHT  ; B = string length (loop counter), C = color attributes
                         call    Screen_Apply_Color_Loop     ; apply color to string area
                         ld      de, STR_RED                 ; DE points to "RED" string address
                         ld      hl, $48E3                   ; HL points to string screen address
@@ -588,7 +588,7 @@ Screen_How2Play_RED
                         call    Screen_Apply_Color_Loop     ; hide "Back" string
                         ld      ixl, $DC                    ; IX points to "Next" string attribute address (+1)
                         ld      (ix-1), WHITE_PAPER+BRIGHT  ; set color of first letter
-                        ld      bc, (3*256)+WHITE_FLASH0    ; B = string length-1 (loop counter), C = color attributes
+                        ld      bc, 3*256+WHITE_FLASH0      ; B = string length-1 (loop counter), C = color attributes
                         call    Screen_Apply_Color_Loop     ; apply color to string area
 Screen_How2PlayRED_End
                         call    Input_Key_Scan              ; wait for a key pressed
@@ -610,7 +610,7 @@ Screen_How2Play_CYAN
                         ; text for CYAN
 
                         ld      ix, $5898                   ; IX points to "Connect" string attributes address
-                        ld      bc, (7*256)+WHITE           ; B = string length (loop counter), C = color attributes
+                        ld      bc, 7*256+WHITE             ; B = string length (loop counter), C = color attributes
                         call    Screen_Apply_Color_Loop     ; apply color to string area
                         ld      de, STR_HELP1               ; DE points to "Connect" string address
                         ld      hl, $4098                   ; HL points to string screen address
@@ -666,7 +666,7 @@ Screen_How2Play_CYAN
 
                         ld      ix, $5AC2                   ; IX points to "Back" string attributes address (+1)
                         ld      (ix-1), WHITE_PAPER+BRIGHT  ; set color of first letter
-                        ld      bc, (3*256)+WHITE_FLASH0    ; B = string length (-1), C = color attributes
+                        ld      bc, 3*256+WHITE_FLASH0      ; B = string length (-1), C = color attributes
                         call    Screen_Apply_Color_Loop     ; apply color to string area
 Screen_How2PlayCYAN_End
                         call    Input_Key_Scan              ; wait for a key pressed
@@ -682,7 +682,7 @@ Screen_How2Play_LevelUp
                         ; text for Level Up
 
                         ld      ix, $5A21                   ; IX points to "Win three" string attributes address
-                        ld      bc, (9*256)+WHITE           ; B = string length (loop counter), C = color attributes
+                        ld      bc, 9*256+WHITE             ; B = string length (loop counter), C = color attributes
                         call    Screen_Apply_Color_Loop     ; apply color to string area
                         ld      de, STR_HELP                ; DE points to "Win three" string address
                         ld      hl, $5021                   ; HL points to string screen address
@@ -745,7 +745,7 @@ Screen_How2Play_End
 ; ----------------------------------------------------------------------------------------------------------------------
 Screen_Menu_Credits
                         ld      ix, $5984                   ; IX points to "Design..." string attributes address
-                        ld      bc, (25*256)+WHITE_FLASH0   ; B = string length (loop counter), C = color attributes
+                        ld      bc, 25*256+WHITE_FLASH0     ; B = string length (loop counter), C = color attributes
                         call    Screen_Apply_Color_Loop     ; apply color to string area
                         ld      de, STR_CREDITS             ; DE points to "Design..." string address
                         ld      hl, $4884                   ; HL points to string screen address
@@ -781,7 +781,7 @@ Screen_Menu_Credits
                         ld      l, $84                      ; HL points to string screen address
                         call    Print_String                ; print "Antonio Luque"
                         ld      ixl, $E9                    ; IX points to "Press any key" string attributes address
-                        ld      bc, (13*256)+WHITE_PAPER    ; B = string length (loop counter), C = color attributes
+                        ld      bc, 13*256+WHITE_PAPER      ; B = string length (loop counter), C = color attributes
                         call    Screen_Apply_Color_Loop     ; apply color to string area
                         inc     de                          ; move DE to "Press any key" string address
                         ld      l, $E9                      ; HL points to string screen address

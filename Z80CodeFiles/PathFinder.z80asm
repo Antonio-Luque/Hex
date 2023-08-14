@@ -12,10 +12,8 @@ WIDTH                   equ     $08                         ; distance to up-lef
 EMPTY                   equ     $00                         ; empty positions on the board
 SKIPPED                 equ     $01                         ; skipped positions on the board
 FRIEND                  equ     $02                         ; positions occupied by friendly tokens on the board
-ENEMY                   equ     $7E                         ; positions occupied by opponent tokens on the board
 VICTORY                 equ     $03                         ; internal value if victory
-WINNER                  equ     $00                         ; return value if winner
-DEFEAT                  equ     $FF                         ; return value if defeat
+ENEMY                   equ     $7E                         ; positions occupied by opponent tokens on the board
 
 CYAN_POSITIONS          equ     $7D00                       ; a 256-aligned memory area reserved for cyan positions
 RED_POSITIONS           equ     $7E00                       ; a 256-aligned memory area reserved for red positions
@@ -155,7 +153,7 @@ PathFinder_Friendly
 ; if (HL) = EMPTY, then set (HL) = C+1 if current distance is friendly, set (HL) = SKIPPED otherwise
 PathFinder_EMPTY
                         bit     6, c                        ; is current distance friendly?
-                        jp      nz, PathFinder_Skipped      ; yes, set (HL) = C+1 and insert HL in queue tail
+                        jr      nz, PathFinder_Skipped      ; yes, set (HL) = C+1 and insert HL in queue tail
                         inc     (hl)                        ; set (HL) = SKIPPED to find the second lowest distance
                         ret
 
@@ -164,9 +162,9 @@ PathFinder_EMPTY
 ;
 ; Input:    -
 ;
-; Output:   A = DEFEAT, if down edge couldn't be reached
-;           A = WINNER, if there is chain of connected cyan tokens between the two edges
-;           A = X, otherwise
+; Output:   A = -1, if down edge couldn't be reached
+;           A =  0, if there is chain of connected cyan tokens between the two edges
+;           A = last edge position visited (-1), otherwise
 ;
 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
 ;
@@ -177,13 +175,13 @@ PathFinder_Cyan_UpDown:
                         ld      de, CYAN_BOARD_UP_DOWN+7    ; DE points to cyan board up-down address (up-right corner)
                         call    PathFinder_CopyPositions    ; copy from cyan positions to cyan board up-down
 
-; entry point for Main (check win condition)
+; entry point for PathFinder_VictoryPath
 PathFinder_Cyan_CheckPath:
                         ld      iy, $0900                   ; IYH = distance to check edge positions
-                                                            ; IYL = initialize return value of 'Path_Finder'
+                                                            ; IYL = last edge position visited
                         ld      hl, CYAN_QUEUE_AREA         ; HL points to cyan queue area address
-                        ld      (@Queue_Tail+1), hl         ; initialize cyan queue area
-                        push    hl                          ; store queue tail address
+                        ld      (@Queue_Tail+1), hl         ; initialize cyan queue tail
+                        push    hl                          ; store cyan queue head
 
                         ; set up cyan board (up-down) start positions distances
 
@@ -215,9 +213,9 @@ PathFinder_Cyan_CheckPath:
 ;
 ; Input:    -
 ;
-; Output:   A = DEFEAT, if up edge couldn't be reached
-;           A = WINNER, if there is chain of connected cyan tokens between the two edges
-;           A = X, otherwise
+; Output:   A = -1, if up edge couldn't be reached
+;           A =  0, if there is chain of connected cyan tokens between the two edges
+;           A = last edge position visited (-1), otherwise
 ;
 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
 ;
@@ -229,9 +227,9 @@ PathFinder_Cyan_DownUp:
                         call    PathFinder_CopyPositions    ; copy from cyan positions to cyan board down-up
 
                         ld      iy, $F700                   ; IYH = distance to check edge positions
-                                                            ; IYL = initialize return value of 'Path_Finder'
-                        ld      hl, (@Queue_Tail+1)         ; initialize cyan queue area
-                        push    hl                          ; store Queue Tail
+                                                            ; IYL = last edge position visited
+                        ld      hl, (@Queue_Tail+1)         ; retreive cyan queue tail
+                        push    hl                          ; initialize cyan queue head
 
                         ; set up cyan board (down-up) start positions distances
 
@@ -264,9 +262,9 @@ PathFinder_Cyan_DownUp:
 ;
 ; Input:    -
 ;
-; Output:   A = DEFEAT, if right edge couldn't be reached
-;           A = WINNER, if there is chain of connected cyan tokens between the two edges
-;           A = X, otherwise
+; Output:   A = -1, if right edge couldn't be reached
+;           A =  0, if there is chain of connected cyan tokens between the two edges
+;           A = last edge position visited (-1), otherwise
 ;
 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
 ;
@@ -277,13 +275,13 @@ PathFinder_Red_LeftRight:
                         ld      de, RED_BOARD_LEFT_RIGHT+7  ; DE points to red board left-right addr. (up-right corner)
                         call    PathFinder_CopyPositions    ; copy from red positions to red board left-right
 
-; entry point for Main (check win condition)
+; entry point for PathFinder_VictoryPath
 PathFinder_Red_CheckPath
                         ld      iy, $0100                   ; IYH = distance to check edge positions
-                                                            ; IYL = initialize return value of 'Path_Finder'
-                        ld      hl, RED_QUEUE_AREA          ; initialize red queue area
-                        ld      (@Queue_Tail+1), hl
-                        push    hl                          ; store Queue Tail
+                                                            ; IYL = last edge position visited
+                        ld      hl, RED_QUEUE_AREA          ; HL points to red queue area address
+                        ld      (@Queue_Tail+1), hl         ; initialize red queue tail
+                        push    hl                          ; store red queue head
 
                         ; set up red board (left-right) start positions distances
 
@@ -292,7 +290,7 @@ PathFinder_Red_CheckPath
                         ld      a, FRIEND                   ; set distance to compare with
                         cp      (hl)                        ; check 1st start position distance
                         call    nc, PathFinder_Update       ; if FRIEND >= distance, update distance
-                        ld      l, (RED_BOARD_LEFT_RIGHT+18)%256 ; move HL to next start position address
+                        ld      l, (RED_BOARD_LEFT_RIGHT+18)%256
                         cp      (hl)                        ; check 2nd start position distance
                         call    nc, PathFinder_Update       ; (repeat for each start position)
                         ld      l, (RED_BOARD_LEFT_RIGHT+27)%256
@@ -315,9 +313,9 @@ PathFinder_Red_CheckPath
 ;
 ; Input:    -
 ;
-; Output:   A = DEFEAT, if left edge couldn't be reached
-;           A = WINNER, if there is chain of connected cyan tokens between the two edges
-;           A = X, otherwise
+; Output:   A = -1, if left edge couldn't be reached
+;           A =  0, if there is chain of connected cyan tokens between the two edges
+;           A = last edge position visited (-1), otherwise
 ;
 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
 ;
@@ -329,9 +327,9 @@ PathFinder_Red_RightLeft:
                         call    PathFinder_CopyPositions    ; copy from red positions to red board right-left
 
                         ld      iy, $FF00                   ; IYH = distance to check edge positions
-                                                            ; IYL = initialize return value of 'Path_Finder'
-                        ld      hl, (@Queue_Tail+1)         ; initialize red queue area
-                        push    hl                          ; store queue tail
+                                                            ; IYL = last edge position visited
+                        ld      hl, (@Queue_Tail+1)         ; retreive red queue tail
+                        push    hl                          ; initialize red queue head
 
                         ; set up red board (right-left) start positions distances
 
@@ -341,7 +339,7 @@ PathFinder_Red_RightLeft:
                         ld      a, FRIEND                   ; set distance to compare with
                         cp      (hl)                        ; check 1st start position distance
                         call    nc, PathFinder_Update       ; if FRIEND >= distance, update distance
-                        ld      l, (RED_BOARD_RIGHT_LEFT+52)%256 ; move HL to next start position address
+                        ld      l, (RED_BOARD_RIGHT_LEFT+52)%256
                         cp      (hl)                        ; check 2nd start position distance
                         call    nc, PathFinder_Update       ; (repeat for each start position)
                         ld      l, (RED_BOARD_RIGHT_LEFT+43)%256
@@ -368,9 +366,9 @@ PathFinder_Red_RightLeft:
 ;           IYH = distance to check edge positions
 ;           IYL = 0
 ;
-; Output:   A = DEFEAT, if corresponding edge couldn't be reached
-;           A = WINNER, if there is chain of connected (color) tokens between the two edges
-;           A = X, otherwise
+; Output:   A = -1, if corresponding edge couldn't be reached
+;           A =  0, if there is chain of connected (color) tokens between the two edges
+;           A = last edge position visited (-1), otherwise
 ;
 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
 ;
@@ -418,13 +416,13 @@ Path_Finder_Neighbors
 Path_Finder_First
                         cp      (hl)                        ; check lower-right neighbor distance
                         call    nc, PathFinder_Update
-                        pop     hl                          ; restore queue tail address
-                        ld      a, (@Queue_Tail+1)          ; check queue
+                        pop     hl                          ; retreive queue head address
+                        ld      a, (@Queue_Tail+1)          ; get queue tail address (low-byte)
                         cp      l                           ; is queue empty?
                         jp      nz, Path_Finder             ; no, repeat until queue is empty
 
-                        ld      a, iyl                      ; get last position processed by 'Path_Finder_Adjacent'
-                        dec     a                           ; return A = DEFEAT, if the edge couldn't be reached
+                        ld      a, iyl                      ; get last edge position visited
+                        dec     a                           ; return A = -1, if the edge couldn't be reached
                         ret
 
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -438,7 +436,7 @@ Path_Finder_First
 ;           HL = current edge position address (a flag in 7th bit indicates an edge position and the lowest 3 bits the
 ;                edge number)
 ;
-; Output:   A = WINNER, if there is a chain of connected tokens of the same color between the two edges.
+; Output:   A = 0, if there is a chain of connected tokens of the same color between the two edges.
 ;           A = FRIEND, IYL = current position, otherwise.
 ;
 ; Destroys: DE, HL
@@ -458,12 +456,12 @@ Path_Finder_Adjacent
                         ld      d, (hl)                     ; get high byte of vector table routine address
                         ex      de, hl                      ; HL points to 'PathFinder_[COLOR]_Edge_[n]' routine address
                         dec     d                           ; move DE to cyan or red board address
-                        ld      e, b                        ; restore pointer to current position address
-                        ld      iyl, b                      ; store current position
+                        ld      e, b                        ; restore pointer to current position
+                        ld      iyl, b                      ; last edge position visited = current position
                         ld      a, FRIEND                   ; set distance to compare with
                         jp      (hl)                        ; jump to 'PathFinder_[COLOR]_Edge_[n]' routine
 Path_Finder_Abort
-                        pop     hl                          ; discard queue pointer
+                        pop     hl                          ; restore queue head address
                         xor     a                           ; return A = WINNER
                         ret
 
@@ -775,8 +773,8 @@ PathFinder_CYAN_Edge_6
 ;
 ; Input:    -
 ;
-; Output:   A = DEFEAT, if speccy can't reach his opposite edge
-;           A = WINNER, if speccy has a chain of connected tokens between the two edges or if player cant reach his edge
+; Output:   A = -1, if speccy can't reach his opposite edge
+;           A =  0, if speccy has a chain of connected tokens between the two edges or if player cant reach his edge
 ;           A = speccy heuristic evaluation, otherwise
 ;
 ; Uses:     AI_PLAYER (speccy side)
@@ -784,17 +782,17 @@ PathFinder_CYAN_Edge_6
 ; Destroys: A', BC, DE, HL, IY
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_Score:
-                        ld      a, (AI_PLAYER)
-                        cp      FRIEND                      ; if speccy is FRIEND, calculate CYAN score
-                        jr      z, PathFinder_CyanScore
+                        ld      a, (AI_PLAYER)              ; get speecy side
+                        cp      FRIEND                      ; is it FRIEND?
+                        jr      z, PathFinder_CyanScore     ; yes, calculate CYAN score
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; PathFinder_RedScore: calculate red score
 ;
 ; Input:    -
 ;
-; Output:   A = DEFEAT, if red can't reach his opposite edge
-;           A = WINNER, if there a chain of connected red tokens between the two edges or if cyan can't reach his edge
+; Output:   A = -1, if red can't reach his opposite edge
+;           A =  0, if there a chain of connected red tokens between the two edges or if cyan can't reach his edge
 ;           A = red heuristic evaluation, otherwise
 ;
 ; Uses:     POTENTIALS (board potential and attack mobility)
@@ -803,14 +801,14 @@ PathFinder_Score:
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_RedScore
                         call    PathFinder_Red_LeftRight    ; calculate RED two-distance from LEFT to RIGHT edge
-                        ret     z                           ; if red has a chain of connected tokens, return A = WINNER
+                        ret     z                           ; if red has a chain of connected tokens, return A = 0
                         ex      af, af'                     ; save first result
                         call    PathFinder_Red_RightLeft    ; calculate RED two-distance from RIGHT to LEFT edge
                         ld      b, a                        ; save second result
                         ex      af, af'                     ; restore first result
                         sub     b                           ; subtract both results
                         ld      a, b                        ; restore second result
-                        ret     z                           ; if red can't reach his opposite edge, return A = DEFEAT
+                        ret     z                           ; if red can't reach his opposite edge, return A = -1
 
                         call    PathFinder_Cyan_UpDown      ; calculate CYAN two-distance from UP to DOWN edge
                         ex      af, af'                     ; save result
@@ -818,7 +816,7 @@ PathFinder_RedScore
                         ld      b, a                        ; save second result
                         ex      af, af'                     ; restore first result
                         sub     b                           ; subtract both results
-                        ret     z                           ; if cyan can't reach his opposite edge, return A = WINNER
+                        ret     z                           ; if cyan can't reach his opposite edge, return A = 0
 
                         ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st position)
                         ld      de, RED_BOARD_RIGHT_LEFT+1  ; DE points to red board right-left address (1st position)
@@ -835,8 +833,8 @@ PathFinder_RedScore
 ;
 ; Input:    -
 ;
-; Output:   A = DEFEAT, if cyan can't reach his opposite edge
-;           A = WINNER, if there a chain of connected cyan tokens between the two edges or if red can't reach his edge
+; Output:   A = -1, if cyan can't reach his opposite edge
+;           A =  0, if there a chain of connected cyan tokens between the two edges or if red can't reach his edge
 ;           A = cyan heuristic evaluation, otherwise
 ;
 ; Uses:     POTENTIALS (board potential and attack mobility)
@@ -845,14 +843,14 @@ PathFinder_RedScore
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_CyanScore
                         call    PathFinder_Cyan_UpDown      ; calculate CYAN two-distance from UP to DOWN edge
-                        ret     z                           ; if cyan has a chain of connected tokens, return A = WINNER
+                        ret     z                           ; if cyan has a chain of connected tokens, return A = 0
                         ex      af, af'                     ; save result
                         call    PathFinder_Cyan_DownUp      ; calculate CYAN two-distance from DOWN to UP edge
                         ld      b, a                        ; save second result
                         ex      af, af'                     ; restore first result
                         sub     b                           ; subtract both results
                         ld      a, b                        ; restore second result
-                        ret     z                           ; if cyan can't reach his opposite edge, return A = DEFEAT
+                        ret     z                           ; if cyan can't reach his opposite edge, return A = -1
 
                         call    PathFinder_Red_LeftRight    ; calculate RED two-distance from LEFT to RIGHT edge
                         ex      af, af'                     ; save result
@@ -860,7 +858,7 @@ PathFinder_CyanScore
                         ld      b, a                        ; save second result
                         ex      af, af'                     ; restore first result
                         sub     b                           ; subtract both results
-                        ret     z                           ; if red can't reach his opposite edge, return A = WINNER
+                        ret     z                           ; if red can't reach his opposite edge, return A = 0
 
                         ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
                         ld      de, CYAN_BOARD_DOWN_UP+1    ; DE points to cyan board down-up address (1st position)
@@ -945,14 +943,14 @@ Potentials_Mobility
                         jp      nz, Potentials_Next         ; if (potential <> last potential) skip to next cell
                         inc     b                           ; else, increment attack mobility
 Potentials_Next
-                        inc     e                           ; move to next cells of each board
+                        inc     e                           ; move to next cell of each board
                         inc     l
                         dec     iyl                         ; decrement loop counter
                         jp      nz, Potentials_Loop         ; repeat until end of boards
                         ret
 Potentials_Infinite
                         set     7, (hl)                     ; set cell potential as "infinite"
-                        inc     e                           ; move to next cells of each board
+                        inc     e                           ; move to next cell of each board
                         inc     l
                         dec     iyl                         ; decrement loop counter
                         jp      nz, Potentials_Loop         ; repeat until end of boards
@@ -961,7 +959,7 @@ Potentials_Infinite
 ; ----------------------------------------------------------------------------------------------------------------------
 ; PathFinder_Candidates: search candidates based on score result and boards potentials
 ;
-; Input:    A  = DEFEAT, WINNER or heuristic result
+; Input:    A  = -1, 0 or heuristic result
 ;           IX = candidates area address
 ;
 ; Output:   IX = first candidate address
@@ -973,12 +971,12 @@ Potentials_Infinite
 PathFinder_Candidates:
                         ld      (ix+0), 0                   ; set candidates endmarker
 
-                        or      a                           ; A = WINNER?
+                        or      a                           ; A = 0?
                         jr      z, Candidates_Winner        ; yes, fill candidates for winner color
-                        inc     a                           ; A = DEFEAT?
+                        inc     a                           ; A = -1?
                         jr      z, Candidates_Defeat        ; yes, fill candidates for defeated color
 
-                        ; if score is not DEFEAT nor WINNER, fill candidates from total potentials
+                        ; if score is not -1 nor 0, fill candidates from total potentials
 
                         ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
                         ld      de, RED_BOARD_LEFT_RIGHT+9  ; DE points to red board left-right address (1st position)
@@ -1066,10 +1064,71 @@ Candidates_Red_Potential
                         jp      Candidates_Best             ; fill only the best candidates
 
 ; ----------------------------------------------------------------------------------------------------------------------
+; PathFinder_VictoryPath: calculate current player victory path
+;
+; Input:    -
+;
+; Output:   A = -1, if there isn't a victory path
+;           A = start position (-1) of the victory path, otherwise
+;
+; Uses:     TOKEN_COLOR (current token color)
+;
+; Destroys: BC, DE, HL, IY
+; ----------------------------------------------------------------------------------------------------------------------
+PathFinder_VictoryPath:
+                        ld      a, (TOKEN_COLOR)            ; get current token color
+                        cp      CYAN_COLOR                  ; if it is cyan, check victory path for cyan player
+                        jr      z, PathFinder_VictoryPath_Cyan
+
+                        call    PathFinder_Red_LeftRight    ; execute Path_Finder RED two-distance from LEFT to RIGHT
+                        ld      hl, RED_BOARD_LEFT_RIGHT+69 ; HL points to red board left-right address (last position)
+                        call    PathFinder_PrepareBoard     ; prepare board to calculate victory path
+                        jp      PathFinder_Red_CheckPath    ; calculate RED victory path
+
+PathFinder_VictoryPath_Cyan
+                        call    PathFinder_Cyan_UpDown      ; execute Path_Finder CYAN two-distance from UP to DOWN
+                        ld      hl, CYAN_BOARD_UP_DOWN+69   ; HL points to cyan board up-down address (last position)
+                        call    PathFinder_PrepareBoard     ; prepare board to calculate victory path
+                        jp      PathFinder_Cyan_CheckPath   ; calculate CYAN victory path
+
+; ----------------------------------------------------------------------------------------------------------------------
+; PathFinder_PrepareBoard: update '[color]_BOARD_XX_YY', changing VICTORY+$40 to 1, everything else to ENEMY.
+; Immediately after 'Path_Finder_[color]' returned VICTORY, you can execute this routine, then execute 'Path_Finder_
+; [color]' again to find a victory path.
+;
+; Coded by Einar Saukas
+;
+; Input:    HL = pointer to last position of [color]_BOARD
+;
+; Output:   -
+;
+; Destroys: A, BC, HL
+; ----------------------------------------------------------------------------------------------------------------------
+PathFinder_PrepareBoard:
+                        ld      a, VICTORY+$40              ; set victory distance + friendly flag
+                        ld      c, 7                        ; 7 rows
+PrepareBoard_Row
+                        ld      b, 7                        ; 7 columns
+PrepareBoard_Column
+                        cp      (hl)                        ; is it win condition?
+                        ld      (hl), 1                     ; save 1 by default
+                        jr      z, PrepareBoard_Next        ; yes, next position
+                        ld      (hl), ENEMY                 ; no, save ENEMY
+PrepareBoard_Next
+                        dec     l                           ; HL points to next board position
+                        djnz    PrepareBoard_Column         ; repeat for each column
+
+                        dec     l                           ; skip borders
+                        dec     l
+                        dec     c                           ; decrement rows
+                        jr      nz, PrepareBoard_Row        ; repeat for each row
+                        ret
+
+; ----------------------------------------------------------------------------------------------------------------------
 ; PathFinder_BrightPath: animate and highlight the hexagons included in shortest path when match ends
 ;
 ; Input:    B  = start position of the victory path
-;           HL = Board QUEUE_AREA address
+;           HL = [color]_QUEUE_AREA address
 ;
 ; Output:   -
 ;
@@ -1083,7 +1142,7 @@ PathFinder_BrightPath:
                         add     a, $40                      ; apply bright attribute
                         ld      (TOKEN_COLOR), a            ; save color
 
-                        inc     h                           ; HL points to the start position of the victory path
+                        inc     h                           ; move HL to the start position of the victory path
                         ld      l, b
                         ld      c, (hl)                     ; set victory path length in C
                         jr      BrightPath_Position         ; animate and highlight the hexagon position
@@ -1125,37 +1184,4 @@ BrightPath_Position
 
                         pop     af                          ; restore current token color
                         ld      (TOKEN_COLOR), a
-                        ret
-
-; ----------------------------------------------------------------------------------------------------------------------
-; PathFinder_PrepareBoard: update '[color]_BOARD_XX_YY', changing VICTORY+$40 to 1, everything else to ENEMY.
-; Immediately after 'Path_Finder_[color]' returned VICTORY, you can execute this routine, then execute 'Path_Finder_
-; [color]' again to find a victory path.
-;
-; Coded by Einar Saukas
-;
-; Input:    HL = pointer to last position of [color]_BOARD
-;
-; Output:   -
-;
-; Destroys: A, BC, HL
-; ----------------------------------------------------------------------------------------------------------------------
-PathFinder_PrepareBoard:
-                        ld      a, VICTORY+$40              ; set victory distance + friendly flag
-                        ld      c, 7                        ; 7 rows
-PrepareBoard_Row
-                        ld      b, 7                        ; 7 columns
-PrepareBoard_Column
-                        cp      (hl)                        ; is it win condition?
-                        ld      (hl), 1                     ; save 1 by default
-                        jr      z, PrepareBoard_Next        ; yes, next position
-                        ld      (hl), ENEMY                 ; no, save ENEMY
-PrepareBoard_Next
-                        dec     l                           ; HL points to next board position
-                        djnz    PrepareBoard_Column         ; repeat for each column
-
-                        dec     l                           ; skip borders
-                        dec     l
-                        dec     c                           ; decrement rows
-                        jr      nz, PrepareBoard_Row        ; repeat for each row
                         ret

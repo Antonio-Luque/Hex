@@ -32,7 +32,7 @@ Main                    ent     $
                         ; https://wiki.speccy.org/cursos/ensamblador/interrupciones#curiosidades-y-consideraciones
                         ;
                         ; The value pointed at ROM address $2EFF is $5CA1. This address belongs to the calculator's
-                        ; memory area and it is used by some ROM routines, but it is no longer used by HEX2 program.
+                        ; memory area and it is used by some ROM routines, but none of them are called by HEX2 program.
 
                         ld      sp, STACK                   ; move stack
 
@@ -96,7 +96,7 @@ Main_Start_Match
                         ld      hl, CYAN_POSITIONS          ; HL points to cyan positions address
                         ld      de, CYAN_POSITIONS+1        ; DE points to cyan positions (+1) address
                         ld      (hl), EMPTY                 ; set first position as empty
-                        ld      bc, (256*2)-1               ; length of cyan + red positions areas (-1 already set)
+                        ld      bc, 256*2-1                 ; length of cyan + red positions areas (-1 already set)
                         ldir                                ; fill the rest of positions as empty
 
                         call    Draw_Board                  ; draw an empty hexagons board
@@ -132,7 +132,7 @@ Main_Update_Board
 
                         ; check for a winner
 
-                        call    Main_Victory_Path           ; check current player victory path
+                        call    PathFinder_VictoryPath      ; check current player victory path
                         inc     a                           ; is there a victory path?
                         jr      nz, Main_Match_End          ; yes, match ends
 
@@ -327,33 +327,6 @@ Main_Board2Indexes_Col
                         dec     hl                          ; skip borders
                         dec     c                           ; decrement row
                         jr      Main_Board2Indexes_Row      ; loop until find position
-
-; ----------------------------------------------------------------------------------------------------------------------
-; Main_Victory_Path: calculate current player victory path
-;
-; Input:    -
-;
-; Output:   A = -1, if there isn't a victory path
-;           A = start position (-1) of the victory path, otherwise
-;
-; Uses:     TOKEN_COLOR (current token color)
-;
-; Destroys: C, DE, HL, IY
-; ----------------------------------------------------------------------------------------------------------------------
-Main_Victory_Path:
-                        ld      a, (TOKEN_COLOR)            ; get current token color
-                        cp      CYAN_COLOR                  ; is it cyan?
-                        jr      z, Main_Victory_PathCyan    ; yes, check path for cyan player
-
-                        call    PathFinder_Red_LeftRight    ; execute Path_Finder RED two-distance from LEFT to RIGHT
-                        ld      hl, RED_BOARD_LEFT_RIGHT+69 ; HL points to red board left-right address (last position)
-                        call    PathFinder_PrepareBoard     ; prepare board to calculate victory path
-                        jp      PathFinder_Red_CheckPath    ; calculate RED victory path
-Main_Victory_PathCyan
-                        call    PathFinder_Cyan_UpDown      ; execute Path_Finder CYAN two-distance from UP to DOWN
-                        ld      hl, CYAN_BOARD_UP_DOWN+69   ; HL points to cyan board up-down address (last position)
-                        call    PathFinder_PrepareBoard     ; prepare board to calculate victory path
-                        jp      PathFinder_Cyan_CheckPath   ; calculate CYAN victory path
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Main_Delay: execute a delay
