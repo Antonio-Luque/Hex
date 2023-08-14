@@ -46,7 +46,7 @@ Draw_Token:
                         ld      a, (hl)                     ; save current status
                         ld      (hl), 0                     ; stop timer
                         push    af                          ; store previous timer status
-                        call    Draw_GetHex_Screen          ; get hexagon screen address
+                        call    Draw_GetHEX_Screen          ; get hexagon screen address
                         ld      bc, $0604                   ; B = number of sprites, C = sprite number to change color
                         ld      de, HEXAGON_SPRITE          ; DE points to hexagon sprite address
 Draw_Token_Loop
@@ -95,7 +95,7 @@ Draw_GetHEX_Screen:
 ; ----------------------------------------------------------------------------------------------------------------------
 Draw_Sprite_Hexagon:
                         ld      ixl, 16                     ; hexagon sprite height in bytes (loop counter)
-Draw_Sprite_HeXLoop
+Draw_Sprite_HexLoop
                         ld      a, (de)                     ; get sprite byte
                         ld      (hl), a                     ; put sprite byte on screen
                         inc     de                          ; move DE to next sprite byte address
