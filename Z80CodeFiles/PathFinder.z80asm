@@ -462,7 +462,7 @@ Path_Finder_Adjacent
                         jp      (hl)                        ; jump to 'PathFinder_[COLOR]_Edge_[n]' routine
 Path_Finder_Abort
                         pop     hl                          ; restore queue head address
-                        xor     a                           ; return A = WINNER
+                        xor     a                           ; return A = 0
                         ret
 
 ; ----------------------------------------------------------------------------------------------------------------------
