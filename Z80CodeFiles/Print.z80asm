@@ -151,7 +151,7 @@ Print_String:
 Print_Char:
                         ld      de, CHAR_SET                ; DE points to charset address
 Print_Tile:
-                        push    hl                          ; store pointer to character screen address
+                        push    hl                          ; store pointer to character/tile screen address
                         ld      h, 0                        ; set character/tile index in HL
                         ld      l, a
                         add     hl, hl                      ; a character/tile is 8 bytes long
@@ -159,8 +159,9 @@ Print_Tile:
                         add     hl, hl
                         add     hl, de                      ; move HL to character/tile address
                         ex      de, hl                      ; DE points to character/tile address
-                        pop     hl                          ; restore pointer to character screen address
+                        pop     hl                          ; restore pointer to character/tile screen address
                         push    bc                          ; store BC register
+                        ld      c, h                        ; save high byte of character/tile screen address
                         ld      b, 8                        ; number of character/tile bytes (loop counter)
 Print_Tile_Pixels
                         ld      a, (de)                     ; get character/tile byte
@@ -168,8 +169,6 @@ Print_Tile_Pixels
                         inc     de                          ; move DE to next character/tile byte
                         inc     h                           ; move HL down one pixel-line
                         djnz    Print_Tile_Pixels           ; repeat for each character/tile bytes
+                        ld      h, c                        ; restore high byte of character/tile screen address
                         pop     bc                          ; restore BC register
-                        ld      a, h                        ; get high byte of character screen address
-                        sub     8                           ; subtract number of character/tile bytes
-                        ld      h, a                        ; HL points to character screen address
                         ret
