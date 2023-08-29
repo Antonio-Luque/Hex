@@ -1,6 +1,6 @@
 ﻿; ----------------------------------------------------------------------------------------------------------------------
 ; Sound.z80asm
-; Coded with BeepFX player tool by Shiru: https://opengameart.org/content/zx-spectrum-beeper-sound-effects
+; Coded with BeepFX player tool by Shiru: https://shiru.untergrund.net/software.shtml
 ;
 ; Adapted for Hex game by Antonio Luque
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -21,36 +21,39 @@ Sound_FX:
                         ld      b, (ix+1)
                         ld      e, (ix+2)                   ; DE = frame length
                         ld      d, (ix+3)
-                        push    de                          ; (simulate 'ld iy,de')
-                        pop     iy                          ; store frame length in IY
+                        push    de                          ; store frame length in IY
+                        pop     iy
                         ld      e, (ix+4)                   ; DE = pitch
                         ld      d, (ix+5)
                         ld      hl, 0                       ; reset HL
+
 Sound_FX_Frames
                         push    bc                          ; store frames
-                        push    iy                          ; (simulate 'ld bc,iy')
-                        pop     bc                          ; restore frame length in BC
+                        push    iy                          ; restore frame length in BC
+                        pop     bc
 Sound_FX_FrameLength
                         add     hl, de                      ; HL = incremented pitch
-                        ld      a, h                        ; set high-byte in A
-                        cp      128                         ; compares with duty cycle, the timbre of the tone
-                                                            ; (128 for 50% square wave)
-                        sbc     a, a                        ; subtract with carry
-                        and     16                          ; mask result
-                        out     (254), a                    ; play sound
+                        ld      a, h                        ; compares with fixed duty cycle ($80 for 50% square wave)
+                        cp      $80                         ; if (incremented pitch < duty cycle)
+                        sbc     a, a                        ;    { A = %11111111 } else { A = %00000000 }
+                        and     %00010000                   ; toggling bit 4 controls the internal speaker
+                        or      0                           ; keep border unchanged, dummy (7t)
+                        out     ($FE), a                    ; send bit to internal speaker
+                        ld      a, (0)                      ; dummy (13t)
                         dec     bc                          ; decrement frame length
-                        ld      a, b
+                        ld      a, b                        ; check frame length
                         or      c                           ; frame length = 0?
-                        jr      nz, Sound_FX_FrameLength    ; no, repeat "frame length" times
+                        jp      nz, Sound_FX_FrameLength    ; no, repeat "frame length" times (loop = 88t)
 
                         ld      c, (ix+6)                   ; BC = pitch slide
                         ld      b, (ix+7)
-                        ex      de, hl                      ; HL = pitch
-                        add     hl, bc                      ; add pitch slide
-                        ex      de, hl                      ; DE = incremented pitch
+                        ex      de, hl                      ; HL = current pitch
+                        add     hl, bc                      ; increment pitch with pitch slide
+                        ex      de, hl                      ; DE = new pitch
+
                         pop     bc                          ; restore frames
                         dec     bc                          ; decrement frames
-                        ld      a, b
+                        ld      a, b                        ; check frames
                         or      c                           ; frames = 0?
                         jr      nz, Sound_FX_Frames         ; no, repeat "frames" times
 
