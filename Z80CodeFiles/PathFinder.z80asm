@@ -1134,7 +1134,7 @@ PrepareBoard_Next
 ;
 ; Uses:     TOKEN_COLOR (current token color)
 ;
-; Destroys: A, BC, DE, HL, IY
+; Destroys: A, BC, DE, HL, IX
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_BrightPath:
                         ld      a, (TOKEN_COLOR)            ; get current token color
@@ -1175,6 +1175,8 @@ BrightPath_Position
                         push    hl                          ; store current position pointer
                         call    Main_Board2Indexes          ; convert a board position into a board indexes
                         call    Draw_Token                  ; animate hexagon sprite on the screen
+                        ld      ix, TOKEN_FX                ; IX points to token tone parameters address
+                        call    Sound_FX                    ; play sound effect
                         pop     hl                          ; restore current position pointer
                         pop     bc                          ; restore victory path length
                         dec     c                           ; decrement victory path length

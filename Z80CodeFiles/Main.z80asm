@@ -91,7 +91,7 @@ Main_Start_Match
                         ld      (PLAYER_COLOR), a           ; save swapped player color
                         call    Print_Players               ; print "Player" and "Speccy" strings
 
-                        ; initialize boards
+                        ; initialize positions
 
                         ld      hl, CYAN_POSITIONS          ; HL points to cyan positions address
                         ld      de, CYAN_POSITIONS+1        ; DE points to cyan positions (+1) address
@@ -128,7 +128,14 @@ Main_Update_Board
 
                         call    PathFinder_Friend           ; get player/speccy side
                         call    PathFinder_PutToken         ; put token on cyan and red positions
+
+                        ; draw token on the board
+
+                        call    Timer_Pause                 ; pause current timer
                         call    Draw_Token                  ; animate hexagon sprite on the screen
+                        ld      ix, TOKEN_FX                ; IX points to token tone parameters address
+                        call    Sound_FX                    ; play sound effect
+                        call    Timer_Restart               ; restart current timer
 
                         ; check for a winner
 

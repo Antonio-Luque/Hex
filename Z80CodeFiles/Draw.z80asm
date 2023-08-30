@@ -37,15 +37,9 @@ Draw_Board_Column
 ;
 ; Output:   -
 ;
-; Uses:     TIMER_FLAG (0 = timer stopped, 1 = cyan timer on, 2 = red timer on)
-;
-; Destroys: A, BC, DE, HL, IX
+; Destroys: A, BC, DE, HL, IXL
 ; ----------------------------------------------------------------------------------------------------------------------
 Draw_Token:
-                        ld      hl, TIMER_FLAG              ; HL points to timer flag address
-                        ld      a, (hl)                     ; save current status
-                        ld      (hl), 0                     ; stop timer
-                        push    af                          ; store previous timer status
                         call    Draw_GetHEX_Screen          ; get hexagon screen address
                         ld      bc, $0604                   ; B = number of sprites, C = sprite number to change color
                         ld      de, HEXAGON_SPRITE          ; DE points to hexagon sprite address
@@ -60,10 +54,6 @@ Draw_Token_Delay
                         ld      a, 0                        ; set delay duration (changed before calling this routine)
                         call    Main_Delay                  ; execute delay
                         djnz    Draw_Token_Loop             ; repeat for each hexagon sprite
-                        ld      ix, TOKEN_FX                ; IX points to token tone parameters address
-                        call    Sound_FX                    ; play sound effect
-                        pop     af                          ; restore previous timer status
-                        ld      (TIMER_FLAG), a             ; restart timer
                         ret
 
 ; ----------------------------------------------------------------------------------------------------------------------
