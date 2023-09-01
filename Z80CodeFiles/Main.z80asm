@@ -91,21 +91,21 @@ Main_Start_Match
                         ld      (PLAYER_COLOR), a           ; save swapped player color
                         call    Print_Players               ; print "Player" and "Speccy" strings
 
-                        ; initialize positions
+                        ; initialize positions and draw empty board
 
                         ld      hl, CYAN_POSITIONS          ; HL points to cyan positions address
                         ld      de, CYAN_POSITIONS+1        ; DE points to cyan positions (+1) address
                         ld      (hl), EMPTY                 ; set first position as empty
                         ld      bc, 256*2-1                 ; length of cyan + red positions areas (-1 already set)
                         ldir                                ; fill the rest of positions as empty
-
                         call    Draw_Board                  ; draw an empty hexagons board
 
-                        ld      a, 10
-                        ld      (Draw_Token_Delay+1), a     ; set delay duration for animate hexagons
-                        ld      a, 1
-                        ld      (MOVE_NUMBER), a            ; initialize move number
-                        ld      (TIMER_FLAG), a             ; set cyan timer on
+                        ; initialize draw token delay, move number and token color
+
+                        ld      a, 10                       ; set delay duration for animate hexagons
+                        ld      (Draw_Token_Delay+1), a
+                        ld      a, 1                        ; initialize move number
+                        ld      (MOVE_NUMBER), a
                         ld      a, CYAN_COLOR               ; first player token color
 
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -131,11 +131,11 @@ Main_Update_Board
 
                         ; draw token on the board
 
-                        call    Timer_Pause                 ; pause current timer
+                        xor     a                           ; stop timers
+                        ld      (TIMER_FLAG), a
                         call    Draw_Token                  ; animate hexagon sprite on the screen
                         ld      ix, TOKEN_FX                ; IX points to token tone parameters address
                         call    Sound_FX                    ; play sound effect
-                        call    Timer_Restart               ; restart current timer
 
                         ; check for a winner
 
@@ -146,11 +146,7 @@ Main_Update_Board
                         ld      hl, MOVE_NUMBER             ; HL points to move number address
                         inc     (hl)                        ; increment move number
 
-                        ; swap players' timers and token color
-
-                        ld      a, (TIMER_FLAG)             ; get current timer flag
-                        xor     %00000011                   ; swap timer flag
-                        ld      (TIMER_FLAG), a             ; save swapped timer flag
+                        ; swap players' token color
 
                         ld      a, (TOKEN_COLOR)            ; get current token color
                         xor     %00000111                   ; swap token color
@@ -160,9 +156,7 @@ Main_Update_Board
 ; Current player wins the match
 ; ----------------------------------------------------------------------------------------------------------------------
 Main_Match_End
-                        ld      b, a                        ; set start position of victory path
-                        xor     a                           ; stop timers
-                        ld      (TIMER_FLAG), a
+                        ld      b, a                        ; set start position of victory path in B
                         ld      a, 4                        ; set delay duration for animate hexagons
                         ld      (Draw_Token_Delay+1), a
 
@@ -192,7 +186,7 @@ Main_ThreeRow_Show
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Main_GetSpeccy_Move: get the speccy move
 ;
-; Input:    -
+; Input:     A = current token color
 ;
 ; Output:   BC = hexagon board indexes (B:column, C:row)
 ;           HL = CYAN_POSITIONS move address
@@ -205,8 +199,10 @@ Main_ThreeRow_Show
 ; Destroys: A, DE, IX, IY
 ; ----------------------------------------------------------------------------------------------------------------------
 Main_GetSpeccy_Move:
-                        call    Print_Wait                  ; print "WAIT" message
+                        and     %00000011                   ; calculate speccy's timer flag based on current token color
+                        ld      (TIMER_FLAG), a             ; (re)start speccy timer
 
+                        call    Print_Wait                  ; print "WAIT" message
                         ld      a, (MOVE_NUMBER)            ; get move number
                         dec     a                           ; is it cyan first move?
                         jr      z, Main_GetSpeccy_Book      ; yes, get move from opening book
@@ -214,6 +210,7 @@ Main_GetSpeccy_Move:
                         ld      ix, CANDIDATES              ; IX points to candidates list address
                         ld      a, (GAME_LEVEL)             ; get game level
                         ld      (AI_DEPTH), a               ; save recursion depth level
+
                         call    PathFinder_Friend           ; get speccy side
                         call    BRAINIAC_best_move          ; get speccy best move
                         ld      l, e                        ; set node index in L
@@ -247,7 +244,7 @@ Main_GetSpeccy_Book
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Main_GetPlayer_Move: get a legal (empty hexagon) move from player
 ;
-; Input:    -
+; Input:     A = current token color
 ;
 ; Output:   BC = hexagon board indexes (B:column, C:row)
 ;           HL = CYAN_POSITIONS move address
@@ -257,6 +254,9 @@ Main_GetSpeccy_Book
 ; Destroys: A, DE, IX
 ; ----------------------------------------------------------------------------------------------------------------------
 Main_GetPlayer_Move:
+                        and     %00000011                   ; calculate player's timer flag based on current token color
+                        ld      (TIMER_FLAG), a             ; (re)start player timer
+Main_GetPlayer_Input
                         call    Print_Clear_Move            ; clear player last move
                         call    Input_Move                  ; wait for input player move
                         call    Print_Move                  ; print player move
@@ -284,7 +284,7 @@ Main_GetPlayer_Move:
                         ld      a, 80                       ; set delay counter
                         call    Main_Delay                  ; execute delay
                         call    Print_Clear_Alert           ; clear alert message
-                        jr      Main_GetPlayer_Move         ; repeat player process until move is legal
+                        jr      Main_GetPlayer_Input        ; repeat player input until move is legal
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Main_Search_Table: search an element in a 8x8 bytes table

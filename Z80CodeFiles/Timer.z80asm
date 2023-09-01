@@ -181,37 +181,3 @@ Timer_Reset:
                         inc     hl                          ; move HL to red's minutes counter address
                         ld      (hl), 0                     ; reset minutes counter
                         ret
-
-; ----------------------------------------------------------------------------------------------------------------------
-; Timer_Pause: pause the current timer
-;
-; Input:    -
-;
-; Output:   -
-;
-; Uses:     TIMER_FLAG (0 = timer stopped, 1 = cyan timer on, 2 = red timer on)
-;
-; Destroys: A, HL
-; ----------------------------------------------------------------------------------------------------------------------
-Timer_Pause:
-                        ld      hl, TIMER_FLAG              ; HL points to timer flag address
-                        ld      a, (hl)                     ; set timer flag in A
-                        ld      (hl), 0                     ; stop timers
-                        ld      (Timer_Restart+1), a        ; save timer flag for later restart
-                        ret
-
-; ----------------------------------------------------------------------------------------------------------------------
-; Timer_Restart: restart the current timer
-;
-; Input:    -
-;
-; Output:   -
-;
-; Uses:     TIMER_FLAG (0 = timer stopped, 1 = cyan timer on, 2 = red timer on)
-;
-; Destroys: A
-; ----------------------------------------------------------------------------------------------------------------------
-Timer_Restart:
-                        ld      a, 0                        ; restore paused timer flag (saved by 'Timer_Pause')
-                        ld      (TIMER_FLAG), a             ; restart timer
-                        ret
