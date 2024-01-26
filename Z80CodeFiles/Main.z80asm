@@ -156,10 +156,6 @@ Main_Update_Board
 ; Current player wins the match
 ; ----------------------------------------------------------------------------------------------------------------------
 Main_Match_End
-                        ld      b, a                        ; set start position of victory path in B
-                        ld      a, 4                        ; set delay duration for animate hexagons
-                        ld      (Draw_Token_Delay+1), a
-
                         call    PathFinder_BrightPath       ; animate and highlight the winner path
 
                         ld      de, STR_WINNER              ; DE points to "WINS" string address

@@ -446,10 +446,8 @@ Path_Finder_Adjacent
                         cp      c                           ; is current distance victory and friendly?
                         jr      z, Path_Finder_Abort        ; yes, abort path_finder
 
-                        ld      a, (hl)                     ; get current edge position
-                        and     %00000111                   ; convert to edge number (0..6)
-                        add     a, a                        ; calculate vector table routine index
-                        ld      l, a                        ; set index in L
+                        ld      l, (hl)                     ; get current edge position
+                        sla     l                           ; calculate vector table routine index
                         inc     h                           ; move HL to (cyan or red) vector table routine address
                         ld      e, (hl)                     ; get low byte of vector table routine address
                         inc     l                           ; move HL to high byte of vector table routine address
@@ -1127,7 +1125,7 @@ PrepareBoard_Next
 ; ----------------------------------------------------------------------------------------------------------------------
 ; PathFinder_BrightPath: animate and highlight the hexagons included in shortest path when match ends
 ;
-; Input:    B  = start position of the victory path
+; Input:    A  = start position of the victory path
 ;           HL = [color]_QUEUE_AREA address
 ;
 ; Output:   -
@@ -1137,53 +1135,51 @@ PrepareBoard_Next
 ; Destroys: A, BC, DE, HL, IX
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_BrightPath:
-                        ld      a, (TOKEN_COLOR)            ; get current token color
-                        push    af                          ; store current token color
-                        add     a, $40                      ; apply bright attribute
-                        ld      (TOKEN_COLOR), a            ; save color
-
-                        inc     h                           ; move HL to the start position of the victory path
-                        ld      l, b
-                        ld      c, (hl)                     ; set victory path length in C
+                        ld      b, h                        ; store high byte of QUEUE_AREA address
+                        ld      hl, TOKEN_COLOR             ; get current token color address
+                        set     6, (hl)                     ; switch on bright attribute
+                        ld      hl, Draw_Token_Delay+1      ; set delay duration for animate hexagons
+                        ld      (hl), 4
+                        ld      h, b                        ; restore high byte of QUEUE_AREA address
+                        ld      l, a                        ; move HL to the start position of the victory path
+                        inc     h
+                        ld      c, (hl)                     ; set current victory path length in C
+                        ld      b, VICTORY                  ; set victory length in B
                         jr      BrightPath_Position         ; animate and highlight the hexagon position
 BrightPath_Neighbor
                         inc     l                           ; move HL to left neighbor address
-                        cp      (hl)                        ; is it the same as victory path length?
+                        cp      (hl)                        ; is it the same as current victory path length?
                         jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
+                        dec     l                           ; move HL to right neighbor address
                         dec     l
-                        dec     l                           ; right neighbor
-                        cp      (hl)                        ; is it the same as victory path length?
+                        cp      (hl)                        ; is it the same as current victory path length?
                         jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
-                        ld      a, l
-                        sub     WIDTH
-                        ld      l, a                        ; move HL to upper-right neighbor address
-                        ld      a, c                        ; restore victory path length in A
-                        cp      (hl)                        ; is it the same as victory path length?
+                        ld      de, -WIDTH                  ; move HL to upper-right neighbor address
+                        add     hl, de
+                        cp      (hl)                        ; is it the same as current victory path length?
                         jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
-                        inc     l                           ; upper-left neighbor
-                        cp      (hl)                        ; is it the same as victory path length?
+                        inc     l                           ; move HL to upper-left neighbor address
+                        cp      (hl)                        ; is it the same as current victory path length?
                         jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
-                        ld      a, l
-                        add     a, WIDTH*2
-                        ld      l, a                        ; move HL to lower-right neighbor address
-                        ld      a, c                        ; restore victory path length in A
-                        cp      (hl)                        ; is it the same as victory path length?
+                        ld      de, WIDTH*2                 ; move HL to lower-right neighbor address
+                        add     hl, de
+                        cp      (hl)                        ; is it the same as current victory path length?
                         jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
                         inc     l                           ; move HL to lower-left neighbor address
 BrightPath_Position
-                        push    bc                          ; store victory path length
+                        push    bc                          ; store current victory path length
                         push    hl                          ; store current position pointer
                         call    Main_Board2Indexes          ; convert a board position into a board indexes
                         call    Draw_Token                  ; animate hexagon sprite on the screen
                         ld      ix, TOKEN_FX                ; IX points to token tone parameters address
                         call    Sound_FX                    ; play sound effect
                         pop     hl                          ; restore current position pointer
-                        pop     bc                          ; restore victory path length
-                        dec     c                           ; decrement victory path length
-                        ld      a, c                        ; set victory path length in A
-                        cp      VICTORY                     ; has reached victory path length?
-                        jr      nz, BrightPath_Neighbor     ; repeat for each neighbor until reach VICTORY length
+                        pop     bc                          ; restore current victory path length
+                        dec     c                           ; decrement current victory path length
+                        ld      a, c                        ; set current victory path length in A
+                        cp      b                           ; has reached victory length?
+                        jr      nz, BrightPath_Neighbor     ; repeat for each neighbor until reach victory length
 
-                        pop     af                          ; restore current token color
-                        ld      (TOKEN_COLOR), a
+                        ld      hl, TOKEN_COLOR             ; get current token color address
+                        res     6, (hl)                     ; switch off bright attribute
                         ret

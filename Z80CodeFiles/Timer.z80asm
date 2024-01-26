@@ -67,28 +67,28 @@ Timer_Exit
 ; Destroys: A, BC, DE, HL
 ; ----------------------------------------------------------------------------------------------------------------------
 Timer_Display:
-                        ld      de, RED_TIMER+2             ; DE points to red's minutes counter address
-                        ld      bc, $48E2                   ; BC points to red's minutes screen address
+                        ld      bc, RED_TIMER+2             ; BC points to red's minutes counter address
+                        ld      de, $48E2                   ; DE points to red's minutes screen address
                         ld      a, (TIMER_FLAG)             ; check timer flag
                         dec     a                           ; is cyan timer on?
                         jp      nz, Timer_Display_Min       ; no, jump to display minutes counter
-                        ld      de, CYAN_TIMER+2            ; DE points to cyan's minutes counter address
-                        ld      bc, $4078                   ; BC points to cyan's minutes screen address
+                        ld      bc, CYAN_TIMER+2            ; BC points to cyan's minutes counter address
+                        ld      de, $4078                   ; DE points to cyan's minutes screen address
 Timer_Display_Min
                         call    Timer_Display_MinSec        ; display minutes counter on screen
-                        dec     de                          ; DE points to seconds counter address
-                        inc     c                           ; BC points to seconds screen address
+                        dec     bc                          ; BC points to seconds counter address
+                        inc     e                           ; DE points to seconds screen address
 Timer_Display_MinSec:
-                        ld      a, (de)                     ; set min/sec counter in A
+                        ld      a, (bc)                     ; set min/sec counter in A
                         rra                                 ; move tens digit to the first 4th bits of A
                         rra
                         rra
                         rra
                         call    Timer_Display_Digit         ; display tens digit on screen
-                        ld      a, (de)                     ; set min/sec counter in A 
+                        ld      a, (bc)                     ; set min/sec counter in A 
 Timer_Display_Digit:
                         and     %00001111                   ; discard the last 4th bits of the digit
-                        push    bc                          ; store digit screen address
+                        push    de                          ; store digit screen address
 
                         ld      hl, TIMER_DIGITS            ; HL points to timer digits (graphics) address
                         add     a, a                        ; a digit is 8 bytes long
@@ -98,38 +98,38 @@ Timer_Display_Digit:
                         ld      l, a
 
                         ld      a, (hl)                     ; get digit tile
-                        ld      (bc), a                     ; put it on screen address
-                        inc     b                           ; move BC to next pixel-line address
+                        ld      (de), a                     ; put it on screen address
+                        inc     d                           ; move DE to next pixel-line address
                         inc     l                           ; move HL to next digit tile address
                         ld      a, (hl)                     ; (repeat 7 more times)
-                        ld      (bc), a
-                        inc     b
+                        ld      (de), a
+                        inc     d
                         inc     l
                         ld      a, (hl)
-                        ld      (bc), a
-                        inc     b
+                        ld      (de), a
+                        inc     d
                         inc     l
                         ld      a, (hl)
-                        ld      (bc), a
-                        inc     b
+                        ld      (de), a
+                        inc     d
                         inc     l
                         ld      a, (hl)
-                        ld      (bc), a
-                        inc     b
+                        ld      (de), a
+                        inc     d
                         inc     l
                         ld      a, (hl)
-                        ld      (bc), a
-                        inc     b
+                        ld      (de), a
+                        inc     d
                         inc     l
                         ld      a, (hl)
-                        ld      (bc), a
-                        inc     b
+                        ld      (de), a
+                        inc     d
                         inc     l
                         ld      a, (hl)
-                        ld      (bc), a
+                        ld      (de), a
 
-                        pop     bc                          ; restore digit screen address
-                        inc     c                           ; move screen address to next column
+                        pop     de                          ; restore digit screen address
+                        inc     e                           ; move screen address to next column
                         ret
 
 ; ----------------------------------------------------------------------------------------------------------------------

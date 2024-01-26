@@ -106,7 +106,7 @@ Alphabeta_Min:
                         or      a
                         jp      nz, Alphabeta_Min_Candidates
                         ld      a, (AI_DEPTH)
-                        add     a, 192                      ;     return 192+depth
+                        add     a, 224                      ;     return 224+depth
                         pop     de
                         ret
 
@@ -209,7 +209,7 @@ Heuristic_Min:                                              ; for each candidate
                         call    PathFinder_Score            ;       if (player won)
                         cp      -1
                         jp      nz, Heuristic_Min_Continue
-                        ld      a, 64                       ;           A = 64
+                        ld      a, 32                       ;           A = 32
 Heuristic_Min_Continue
                         pop     hl
                         call    PathFinder_EraseToken       ;       BRAINIAC_undo
@@ -287,7 +287,7 @@ Alphabeta_Max:
                         jp      nz, Alphabeta_Max_Candidates
                         ld      a, (AI_DEPTH)
                         cpl
-                        add     a, 64+1                     ;     return 64-depth
+                        add     a, 32+1                     ;     return 32-depth
                         pop     de
                         ret
 
@@ -388,7 +388,7 @@ Heuristic_Max:                                              ; for each candidate
                         call    PathFinder_Score            ;       if (speccy won)
                         or      a
                         jp      nz, Heuristic_Max_Continue
-                        ld      a, 192                      ;           A = 192
+                        ld      a, 224                      ;           A = 224
 Heuristic_Max_Continue
                         pop     hl                          ;       restore candidate position
                         call    PathFinder_EraseToken       ;       BRAINIAC_undo
