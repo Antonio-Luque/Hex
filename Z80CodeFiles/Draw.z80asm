@@ -50,7 +50,7 @@ Draw_Token_Loop
                         ld      a, b                        ; check loop counter
                         cp      c                           ; is it 4?
                         call    z, Draw_Hexagon_Color       ; yes, apply color to hexagon area
-Draw_Token_Delay
+@Token_Delay
                         ld      a, 0                        ; set delay duration (changed before calling this routine)
                         call    Main_Delay                  ; execute delay
                         djnz    Draw_Token_Loop             ; repeat for each hexagon sprite

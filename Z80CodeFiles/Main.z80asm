@@ -103,7 +103,7 @@ Main_Start_Match
                         ; initialize draw token delay, move number and token color
 
                         ld      a, 10                       ; set delay duration for animate hexagons
-                        ld      (Draw_Token_Delay+1), a
+                        ld      (@Token_Delay+1), a
                         ld      a, 1                        ; initialize move number
                         ld      (MOVE_NUMBER), a
                         ld      a, CYAN_COLOR               ; first player token color

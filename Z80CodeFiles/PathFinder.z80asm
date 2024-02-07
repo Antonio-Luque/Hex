@@ -1135,16 +1135,19 @@ PrepareBoard_Next
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_BrightPath:
                         ld      b, h                        ; store high byte of QUEUE_AREA address
+
                         ld      hl, TOKEN_COLOR             ; get current token color address
                         set     6, (hl)                     ; switch on bright attribute
-                        ld      hl, Draw_Token_Delay+1      ; set delay duration for animate hexagons
+                        ld      hl, @Token_Delay+1          ; set delay duration for animate hexagons
                         ld      (hl), 4
+
                         ld      h, b                        ; restore high byte of QUEUE_AREA address
                         ld      l, a                        ; move HL to the start position of the victory path
                         inc     h
                         ld      c, (hl)                     ; set current victory path length in C
                         ld      b, VICTORY                  ; set victory length in B
                         jr      BrightPath_Position         ; animate and highlight the hexagon position
+
 BrightPath_Neighbor
                         inc     l                           ; move HL to left neighbor address
                         cp      (hl)                        ; is it the same as current victory path length?
@@ -1168,12 +1171,15 @@ BrightPath_Neighbor
 BrightPath_Position
                         push    bc                          ; store current victory path length
                         push    hl                          ; store current position pointer
+
                         call    Main_Board2Indexes          ; convert a board position into a board indexes
                         call    Draw_Token                  ; animate hexagon sprite on the screen
                         ld      ix, TOKEN_FX                ; IX points to token tone parameters address
                         call    Sound_FX                    ; play sound effect
+
                         pop     hl                          ; restore current position pointer
                         pop     bc                          ; restore current victory path length
+
                         dec     c                           ; decrement current victory path length
                         ld      a, c                        ; set current victory path length in A
                         cp      b                           ; has reached victory length?

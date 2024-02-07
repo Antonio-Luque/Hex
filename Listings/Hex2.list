@@ -1,5 +1,5 @@
 
-; File #0: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Hex2.z80asm
+; File #0: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Hex2.z80asm
 
 8000             0 1 ; ----------------------------------------------------------------------------------------------------------------------
 8000             0 2 ; Hex2.z80asm
@@ -8,7 +8,7 @@
 8000             0 5 ; Build file
 8000             0 6 ; ----------------------------------------------------------------------------------------------------------------------
 
-; File #1: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Data.z80asm
+; File #1: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Data.z80asm
 
 8000             1 1 ; ----------------------------------------------------------------------------------------------------------------------
 8000             1 2 ; Data.z80asm
@@ -991,7 +991,7 @@
 6BF8 FF 81 81 81 1 385 
 6BFC 81 81 81 FF 1 385 
 
-; File #2: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Main.z80asm
+; File #2: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Main.z80asm
 
 6C00             2 1 ; ----------------------------------------------------------------------------------------------------------------------
 6C00             2 2 ; Main.z80asm
@@ -1079,7 +1079,7 @@
 6C74 CD 9B 6D    2 101 call    Draw_Board                  ; draw an empty hexagons board
 6C77             2 103 ; initialize draw token delay, move number and token color
 6C77 3E 0A       2 105 ld      a, 10                       ; set delay duration for animate hexagons
-6C79 32 CA 6D    2 106 ld      (Draw_Token_Delay+1), a
+6C79 32 CA 6D    2 106 ld      (@Token_Delay+1), a
 6C7C 3E 01       2 107 ld      a, 1                        ; initialize move number
 6C7E 32 9B 61    2 108 ld      (MOVE_NUMBER), a
 6C81 3E 05       2 109 ld      a, CYAN_COLOR               ; first player token color
@@ -1305,7 +1305,7 @@
 6D99 C1          2 355 pop     bc                          ; restore register
 6D9A C9          2 356 ret
 
-; File #3: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Draw.z80asm
+; File #3: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Draw.z80asm
 
 6D9B             3 1 ; ----------------------------------------------------------------------------------------------------------------------
 6D9B             3 2 ; Draw.z80asm
@@ -1357,7 +1357,7 @@
 6DC4 78          3 50 ld      a, b                        ; check loop counter
 6DC5 B9          3 51 cp      c                           ; is it 4?
 6DC6 CC 09 6E    3 52 call    z, Draw_Hexagon_Color       ; yes, apply color to hexagon area
-6DC9             3 53 Draw_Token_Delay
+6DC9             3 53 @Token_Delay
 6DC9 3E 00       3 54 ld      a, 0                        ; set delay duration (changed before calling this routine)
 6DCB CD 8C 6D    3 55 call    Main_Delay                  ; execute delay
 6DCE 10 EF       3 56 djnz    Draw_Token_Loop             ; repeat for each hexagon sprite
@@ -1504,7 +1504,7 @@
 6E21 DD 77 21    3 202 ld      (ix+33), a
 6E24 C9          3 203 ret
 
-; File #4: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Input.z80asm
+; File #4: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Input.z80asm
 
 6E25             4 1 ; ----------------------------------------------------------------------------------------------------------------------
 6E25             4 2 ; Input.z80asm
@@ -1667,7 +1667,7 @@
 6EE9 C1          4 176 pop     bc
 6EEA C9          4 177 ret
 
-; File #5: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Print.z80asm
+; File #5: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Print.z80asm
 
 6EEB             5 1 ; ----------------------------------------------------------------------------------------------------------------------
 6EEB             5 2 ; Print.z80asm
@@ -1836,7 +1836,7 @@
 6F77 C1          5 173 pop     bc                          ; restore BC register
 6F78 C9          5 174 ret
 
-; File #6: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Brainiac.z80asm
+; File #6: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Brainiac.z80asm
 
 6F79             6 1 ; ----------------------------------------------------------------------------------------------------------------------
 6F79             6 2 ; Brainiac.z80asm
@@ -2192,7 +2192,7 @@
 70E5 34          6 429 inc     (hl)                        ; (depth++)
 70E6 C9          6 430 ret
 
-; File #7: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\PathFinder.z80asm
+; File #7: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\PathFinder.z80asm
 
 70E7             7 1 ; ----------------------------------------------------------------------------------------------------------------------
 70E7             7 2 ; PathFinder.z80asm
@@ -3257,54 +3257,54 @@
 75CC             7 1135 ; ----------------------------------------------------------------------------------------------------------------------
 75CC             7 1136 PathFinder_BrightPath:
 75CC 44          7 1137 ld      b, h                        ; store high byte of QUEUE_AREA address
-75CD 21 9E 61    7 1138 ld      hl, TOKEN_COLOR             ; get current token color address
-75D0 CB F6       7 1139 set     6, (hl)                     ; switch on bright attribute
-75D2 21 CA 6D    7 1140 ld      hl, Draw_Token_Delay+1      ; set delay duration for animate hexagons
-75D5 36 04       7 1141 ld      (hl), 4
-75D7 60          7 1142 ld      h, b                        ; restore high byte of QUEUE_AREA address
-75D8 6F          7 1143 ld      l, a                        ; move HL to the start position of the victory path
-75D9 24          7 1144 inc     h
-75DA 4E          7 1145 ld      c, (hl)                     ; set current victory path length in C
-75DB 06 03       7 1146 ld      b, VICTORY                  ; set victory length in B
-75DD 18 1C       7 1147 jr      BrightPath_Position         ; animate and highlight the hexagon position
-75DF             7 1148 BrightPath_Neighbor
-75DF 2C          7 1149 inc     l                           ; move HL to left neighbor address
-75E0 BE          7 1150 cp      (hl)                        ; is it the same as current victory path length?
-75E1 28 18       7 1151 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
-75E3 2D          7 1152 dec     l                           ; move HL to right neighbor address
-75E4 2D          7 1153 dec     l
-75E5 BE          7 1154 cp      (hl)                        ; is it the same as current victory path length?
-75E6 28 13       7 1155 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
-75E8 11 F8 FF    7 1156 ld      de, -WIDTH                  ; move HL to upper-right neighbor address
-75EB 19          7 1157 add     hl, de
-75EC BE          7 1158 cp      (hl)                        ; is it the same as current victory path length?
-75ED 28 0C       7 1159 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
-75EF 2C          7 1160 inc     l                           ; move HL to upper-left neighbor address
-75F0 BE          7 1161 cp      (hl)                        ; is it the same as current victory path length?
-75F1 28 08       7 1162 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
-75F3 11 10 00    7 1163 ld      de, WIDTH*2                 ; move HL to lower-right neighbor address
-75F6 19          7 1164 add     hl, de
-75F7 BE          7 1165 cp      (hl)                        ; is it the same as current victory path length?
-75F8 28 01       7 1166 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
-75FA 2C          7 1167 inc     l                           ; move HL to lower-left neighbor address
-75FB             7 1168 BrightPath_Position
-75FB C5          7 1169 push    bc                          ; store current victory path length
-75FC E5          7 1170 push    hl                          ; store current position pointer
-75FD CD 7B 6D    7 1171 call    Main_Board2Indexes          ; convert a board position into a board indexes
-7600 CD B6 6D    7 1172 call    Draw_Token                  ; animate hexagon sprite on the screen
-7603 DD 21 E7 64 7 1173 ld      ix, TOKEN_FX                ; IX points to token tone parameters address
-7607 CD C1 76    7 1174 call    Sound_FX                    ; play sound effect
-760A E1          7 1175 pop     hl                          ; restore current position pointer
-760B C1          7 1176 pop     bc                          ; restore current victory path length
-760C 0D          7 1177 dec     c                           ; decrement current victory path length
-760D 79          7 1178 ld      a, c                        ; set current victory path length in A
-760E B8          7 1179 cp      b                           ; has reached victory length?
-760F 20 CE       7 1180 jr      nz, BrightPath_Neighbor     ; repeat for each neighbor until reach victory length
-7611 21 9E 61    7 1182 ld      hl, TOKEN_COLOR             ; get current token color address
-7614 CB B6       7 1183 res     6, (hl)                     ; switch off bright attribute
-7616 C9          7 1184 ret
+75CD 21 9E 61    7 1139 ld      hl, TOKEN_COLOR             ; get current token color address
+75D0 CB F6       7 1140 set     6, (hl)                     ; switch on bright attribute
+75D2 21 CA 6D    7 1141 ld      hl, @Token_Delay+1          ; set delay duration for animate hexagons
+75D5 36 04       7 1142 ld      (hl), 4
+75D7 60          7 1144 ld      h, b                        ; restore high byte of QUEUE_AREA address
+75D8 6F          7 1145 ld      l, a                        ; move HL to the start position of the victory path
+75D9 24          7 1146 inc     h
+75DA 4E          7 1147 ld      c, (hl)                     ; set current victory path length in C
+75DB 06 03       7 1148 ld      b, VICTORY                  ; set victory length in B
+75DD 18 1C       7 1149 jr      BrightPath_Position         ; animate and highlight the hexagon position
+75DF             7 1151 BrightPath_Neighbor
+75DF 2C          7 1152 inc     l                           ; move HL to left neighbor address
+75E0 BE          7 1153 cp      (hl)                        ; is it the same as current victory path length?
+75E1 28 18       7 1154 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
+75E3 2D          7 1155 dec     l                           ; move HL to right neighbor address
+75E4 2D          7 1156 dec     l
+75E5 BE          7 1157 cp      (hl)                        ; is it the same as current victory path length?
+75E6 28 13       7 1158 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
+75E8 11 F8 FF    7 1159 ld      de, -WIDTH                  ; move HL to upper-right neighbor address
+75EB 19          7 1160 add     hl, de
+75EC BE          7 1161 cp      (hl)                        ; is it the same as current victory path length?
+75ED 28 0C       7 1162 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
+75EF 2C          7 1163 inc     l                           ; move HL to upper-left neighbor address
+75F0 BE          7 1164 cp      (hl)                        ; is it the same as current victory path length?
+75F1 28 08       7 1165 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
+75F3 11 10 00    7 1166 ld      de, WIDTH*2                 ; move HL to lower-right neighbor address
+75F6 19          7 1167 add     hl, de
+75F7 BE          7 1168 cp      (hl)                        ; is it the same as current victory path length?
+75F8 28 01       7 1169 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
+75FA 2C          7 1170 inc     l                           ; move HL to lower-left neighbor address
+75FB             7 1171 BrightPath_Position
+75FB C5          7 1172 push    bc                          ; store current victory path length
+75FC E5          7 1173 push    hl                          ; store current position pointer
+75FD CD 7B 6D    7 1175 call    Main_Board2Indexes          ; convert a board position into a board indexes
+7600 CD B6 6D    7 1176 call    Draw_Token                  ; animate hexagon sprite on the screen
+7603 DD 21 E7 64 7 1177 ld      ix, TOKEN_FX                ; IX points to token tone parameters address
+7607 CD C1 76    7 1178 call    Sound_FX                    ; play sound effect
+760A E1          7 1180 pop     hl                          ; restore current position pointer
+760B C1          7 1181 pop     bc                          ; restore current victory path length
+760C 0D          7 1183 dec     c                           ; decrement current victory path length
+760D 79          7 1184 ld      a, c                        ; set current victory path length in A
+760E B8          7 1185 cp      b                           ; has reached victory length?
+760F 20 CE       7 1186 jr      nz, BrightPath_Neighbor     ; repeat for each neighbor until reach victory length
+7611 21 9E 61    7 1188 ld      hl, TOKEN_COLOR             ; get current token color address
+7614 CB B6       7 1189 res     6, (hl)                     ; switch off bright attribute
+7616 C9          7 1190 ret
 
-; File #8: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Timer.z80asm
+; File #8: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Timer.z80asm
 
 7617             8 1 ; ----------------------------------------------------------------------------------------------------------------------
 7617             8 2 ; Timer.z80asm
@@ -3475,7 +3475,7 @@
 76BE 36 00       8 182 ld      (hl), 0                     ; reset minutes counter
 76C0 C9          8 183 ret
 
-; File #9: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Sound.z80asm
+; File #9: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Sound.z80asm
 
 76C1             9 1 ; ----------------------------------------------------------------------------------------------------------------------
 76C1             9 2 ; Sound.z80asm
@@ -3533,7 +3533,7 @@
 7701 FB          9 60 ei                                  ; enable interrupts
 7702 C9          9 61 ret
 
-; File #10: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Screen.z80asm
+; File #10: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Screen.z80asm
 
 7703             10 1 ; ----------------------------------------------------------------------------------------------------------------------
 7703             10 2 ; Screen.z80asm
@@ -4335,7 +4335,7 @@
 7C9E EA 85 7C    10 856 jp      pe, Screen_ClearText_Loop   ; repeat for each row
 7CA1 C9          10 857 ret
 
-; File #0: C:\Users\Antonio Luque\source\Repos\Hex\Z80CodeFiles\Hex2.z80asm
+; File #0: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Hex2.z80asm
 
 7CA2             0 19 ; ----------------------------------------------------------------------------------------------------------------------
 7CA2             0 20 ; Credits and acknowledgements:
