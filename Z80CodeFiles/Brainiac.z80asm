@@ -16,8 +16,9 @@ MAX_VALUE               equ     255                         ; alphaBeta pruning 
 ;
 ; Original source code by Einar Saukas: https://spectrumcomputing.co.uk/entry/31171/ZX-Spectrum/BRAINIAC
 ;
-; Input:    A  = speccy side (FRIEND or ENEMY)
-;           IX = candidates vector address
+; Input:    A   = speccy side (FRIEND or ENEMY)
+;           IX  = candidates vector address
+;           P/V = flag unset if speccy side is FRIEND, flag set if speccy side is ENEMY
 ;
 ; Output:   E  = selected position (speccy move)
 ;
@@ -86,9 +87,10 @@ AI_Main_Next
 ;
 ; Original source code by Einar Saukas: https://spectrumcomputing.co.uk/entry/31171/ZX-Spectrum/BRAINIAC
 ;
-; Input:    A = speccy side (FRIEND or ENEMY)
-;           D = alphaMax
-;           E = betaMin
+; Input:    A   = speccy side (FRIEND or ENEMY)
+;           D   = alphaMax
+;           E   = betaMin
+;           P/V = flag unset if speccy side is FRIEND, flag set if speccy side is ENEMY
 ;
 ; Output:   A = "improved" betaMin
 ;           D = alphaMax
@@ -267,9 +269,10 @@ Heuristic_Min_Skip
 ;
 ; Original source code by Einar Saukas: https://spectrumcomputing.co.uk/entry/31171/ZX-Spectrum/BRAINIAC
 ;
-; Input:    A = speccy side (FRIEND or ENEMY)
-;           D = alphaMax
-;           E = betaMin
+; Input:    A   = speccy side (FRIEND or ENEMY)
+;           D   = alphaMax
+;           E   = betaMin
+;           P/V = flag unset if speccy side is FRIEND, flag set if speccy side is ENEMY
 ;
 ; Output:   A = "improved" alphaMax
 ;           D = "improved" alphaMax

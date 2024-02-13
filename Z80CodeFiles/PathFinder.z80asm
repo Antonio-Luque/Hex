@@ -964,9 +964,9 @@ Potentials_Infinite
 PathFinder_Candidates:
                         ld      (ix+0), 0                   ; set candidates endmarker
 
-                        or      a                           ; A = 0?
+                        or      a                           ; is speccy the winner?
                         jr      z, Candidates_Winner        ; yes, fill candidates for winner color
-                        inc     a                           ; A = -1?
+                        inc     a                           ; is speccy defeated?
                         jr      z, Candidates_Defeat        ; yes, fill candidates for defeated color
 
                         ; if score is not -1 nor 0, fill candidates from total potentials

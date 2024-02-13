@@ -1854,348 +1854,351 @@
 6F79             6 16 ;
 6F79             6 17 ; Original source code by Einar Saukas: https://spectrumcomputing.co.uk/entry/31171/ZX-Spectrum/BRAINIAC
 6F79             6 18 ;
-6F79             6 19 ; Input:    A  = speccy side (FRIEND or ENEMY)
-6F79             6 20 ;           IX = candidates vector address
-6F79             6 21 ;
-6F79             6 22 ; Output:   E  = selected position (speccy move)
-6F79             6 23 ;
-6F79             6 24 ; Uses:     AI_PLAYER (speccy side)
-6F79             6 25 ;           AI_DEPTH (recursion depth level)
-6F79             6 26 ;
-6F79             6 27 ; Destroys: A, A', BC, D, HL, IX, IY
-6F79             6 28 ; ----------------------------------------------------------------------------------------------------------------------
-6F79             6 29 BRAINIAC_best_move:
-6F79 32 99 61    6 30 ld      (AI_PLAYER), a              ; save speccy side
-6F7C CD 77 74    6 32 call    PathFinder_Score            ; get board score
-6F7F CD 1A 75    6 33 call    PathFinder_Candidates       ; get candidates from board potentials
-6F82             6 35 ; BRAINIAC start
-6F82             6 36 AI_First_Candidate
-6F82 DD 7E 00    6 37 ld      a, (ix+0)                   ; A is our first candidate
-6F85 5F          6 39 ld      e, a                        ; E = best speccy move (initialization)
-6F86 16 00       6 40 ld      d, MIN_VALUE                ; D = alphaMax
-6F88             6 42 AI_Main_Loop                                                ; for each candidate {
-6F88 D5          6 43 push    de                          ;       store alphaMax and best speccy move
-6F89 26 7D       6 45 ld      h, CYAN_POSITIONS/256       ;       get and store candidate position on board
-6F8B 6F          6 46 ld      l, a
-6F8C E5          6 47 push    hl
-6F8D 3A 99 61    6 49 ld      a, (AI_PLAYER)              ;       get speccy side
-6F90 CD F6 70    6 50 call    PathFinder_PutToken         ;       BRAINIAC_play
-6F93 EE 7C       6 51 xor     $7C                         ;       restore speccy side
-6F95 1E FF       6 52 ld      e, MAX_VALUE                ;       E = betaMin
-6F97 CD B0 6F    6 53 call    Alphabeta_Min               ;       A = alphabeta_min(alphaMax, betaMin)
-6F9A E1          6 55 pop     hl                          ;       restore candidate position
-6F9B CD FC 70    6 56 call    PathFinder_EraseToken       ;       BRAINIAC_undo
-6F9E D1          6 58 pop     de                          ;       restore alphaMax and best player node
-6F9F BA          6 60 cp      d
-6FA0 38 04       6 61 jr      c, AI_Main_Next
-6FA2 28 02       6 62 jr      z, AI_Main_Next             ;       if (A <= alphaMax) continue
-6FA4 57          6 64 ld      d, a                        ;       alphaMax = A
-6FA5 5D          6 65 ld      e, l                        ;       best move = E
-6FA6             6 67 AI_Main_Next
-6FA6 DD 2D       6 68 dec     ixl
-6FA8 DD 7E 00    6 69 ld      a, (ix+0)                   ;       A is our next candidate
-6FAB B7          6 70 or      a                           ;       repeat until no more candidates
-6FAC C2 88 6F    6 71 jp      nz, AI_Main_Loop            ; }
-6FAF C9          6 72 ret
-6FB0             6 74 ; ----------------------------------------------------------------------------------------------------------------------
-6FB0             6 75 ; Alphabeta_Min: Process a tree node of the Minimax search tree with alpha-beta pruning, when it requires MINIMIZING
-6FB0             6 76 ; Speccy's score.
-6FB0             6 77 ;
-6FB0             6 78 ; This implementation is different from conventional alpha-beta pruning because it returns the best (lowest) betaMin
-6FB0             6 79 ; value obtained so far at this subtree depth (from previous sibling nodes), when it's even lower than the best (lowest)
-6FB0             6 80 ; score at this tree node only. In practice that's OK, since the existence of a lower betaMin in a previous sibling node
-6FB0             6 81 ; would make parent node discard the node's betaMin value and adopt the even lower betaMin value from a previous sibling
-6FB0             6 82 ; node anyway. This change was useful to allow a highly optimized Assembly implementation with a more efficient register
-6FB0             6 83 ; allocation. The only drawback was that, whenever a parent node obtains the same best score from 2 child nodes, it must
-6FB0             6 84 ; always choose the child node evaluated first, since the other child node node may not really have the same score and
-6FB0             6 85 ; could be just reproducing the best score from its sibling.
-6FB0             6 86 ;
-6FB0             6 87 ; Original source code by Einar Saukas: https://spectrumcomputing.co.uk/entry/31171/ZX-Spectrum/BRAINIAC
-6FB0             6 88 ;
-6FB0             6 89 ; Input:    A = speccy side (FRIEND or ENEMY)
-6FB0             6 90 ;           D = alphaMax
-6FB0             6 91 ;           E = betaMin
-6FB0             6 92 ;
-6FB0             6 93 ; Output:   A = "improved" betaMin
-6FB0             6 94 ;           D = alphaMax
-6FB0             6 95 ;           E = "improved" betaMin
-6FB0             6 96 ;
-6FB0             6 97 ; Uses:     AI_PLAYER (speccy side)
-6FB0             6 98 ;           AI_DEPTH (recursion depth level)
-6FB0             6 99 ;
-6FB0             6 100 ; Destroys: BC, HL, IX, IY
-6FB0             6 101 ; ----------------------------------------------------------------------------------------------------------------------
-6FB0             6 102 Alphabeta_Min:
-6FB0 D5          6 103 push    de
-6FB1             6 105 ; check if last speccy move is a winner one
-6FB1 CD 77 74    6 107 call    PathFinder_Score            ; if (speccy won)
-6FB4 B7          6 108 or      a
-6FB5 C2 BF 6F    6 109 jp      nz, Alphabeta_Min_Candidates
-6FB8 3A 9A 61    6 110 ld      a, (AI_DEPTH)
-6FBB C6 E0       6 111 add     a, 224                      ;     return 224+depth
-6FBD D1          6 112 pop     de
-6FBE C9          6 113 ret
-6FBF             6 115 Alphabeta_Min_Candidates
-6FBF CD 1A 75    6 116 call    PathFinder_Candidates       ; find candidates for next move
-6FC2 D1          6 117 pop     de
-6FC3 DD 7E 00    6 119 ld      a, (ix+0)                   ; A is our first candidate
-6FC6 21 9A 61    6 121 ld      hl, AI_DEPTH
-6FC9 35          6 122 dec     (hl)                        ; depth--
-6FCA CA 0A 70    6 123 jp      z, Heuristic_Min            ; if (depth == 0) return heuristic_min
-6FCD             6 125 Alphabeta_Min_Loop                                          ; for each candidate {
-6FCD D5          6 126 push    de                          ;       store alphaMax and betaMin
-6FCE 26 7D       6 128 ld      h, CYAN_POSITIONS/256       ;       get and store candidate position on board
-6FD0 6F          6 129 ld      l, a
-6FD1 E5          6 130 push    hl
-6FD2 3A 99 61    6 132 ld      a, (AI_PLAYER)              ;       get speccy side
-6FD5 EE 7C       6 133 xor     $7C                         ;       switch to player side
-6FD7 CD F6 70    6 134 call    PathFinder_PutToken         ;       BRAINIAC_play
-6FDA CD 4E 70    6 135 call    Alphabeta_Max               ;       A = alphabeta_max(alphaMax, betaMin)
-6FDD E1          6 137 pop     hl                          ;       restore candidate position
-6FDE CD FC 70    6 138 call    PathFinder_EraseToken       ;       BRAINIAC_undo
-6FE1 D1          6 140 pop     de                          ;       restore alphaMax and betaMin
-6FE2 BB          6 142 cp      e
-6FE3 30 06       6 143 jr      nc, Alphabeta_Min_Next      ;       if (A >= betaMin) continue
-6FE5 BA          6 145 cp      d
-6FE6 38 12       6 146 jr      c, Alphabeta_Min_Exit
-6FE8 28 10       6 147 jr      z, Alphabeta_Min_Exit       ;       if (A <= alphaMax) { depth++; return A }
-6FEA 5F          6 149 ld      e, a                        ;       betaMin = A
-6FEB             6 151 Alphabeta_Min_Next
-6FEB DD 2D       6 152 dec     ixl
-6FED DD 7E 00    6 153 ld      a, (ix+0)                   ;       A is our next candidate
-6FF0 B7          6 154 or      a                           ;       repeat until no more candidates
-6FF1 C2 CD 6F    6 155 jp      nz, Alphabeta_Min_Loop      ; }
-6FF4 7B          6 157 ld      a, e                        ; return betaMin
-6FF5 21 9A 61    6 159 ld      hl, AI_DEPTH
-6FF8 34          6 160 inc     (hl)                        ; depth++
-6FF9 C9          6 161 ret
-6FFA             6 163 Alphabeta_Min_Exit
-6FFA 5F          6 164 ld      e, a                        ; (discard remaining candidates)
-6FFB AF          6 165 xor     a
-6FFC             6 166 Alphabeta_Min_Skip
-6FFC DD 2D       6 167 dec     ixl
-6FFE DD BE 00    6 168 cp      (ix+0)
-7001 C2 FC 6F    6 169 jp      nz, Alphabeta_Min_Skip
-7004 7B          6 170 ld      a, e
-7005 21 9A 61    6 172 ld      hl, AI_DEPTH
-7008 34          6 173 inc     (hl)                        ; (depth++)
-7009 C9          6 174 ret
-700A             6 176 ; ----------------------------------------------------------------------------------------------------------------------
-700A             6 177 ; Heuristic_Min: Specialized routine to process the lowest tree node (depth zero) of the Minimax search tree with alpha-
-700A             6 178 ; beta pruning, when it requires MINIMIZING Speccy's score.
-700A             6 179 ;
-700A             6 180 ; Technically "Heuristic_Min" works exactly like "Alphabeta_Min_Loop", except it directly evaluates board for each child
-700A             6 181 ; node instead of calling "Alphabeta_Max" recursively. Although it would be easier to just let it invoke "Alphabeta_Max"
-700A             6 182 ; again to obtain the evaluated board, this simple optimization is responsible for making BRAINIAC almost 2 seconds
-700A             6 183 ; faster.
-700A             6 184 ;
-700A             6 185 ; Original source code by Einar Saukas: https://spectrumcomputing.co.uk/entry/31171/ZX-Spectrum/BRAINIAC
+6F79             6 19 ; Input:    A   = speccy side (FRIEND or ENEMY)
+6F79             6 20 ;           IX  = candidates vector address
+6F79             6 21 ;           P/V = flag unset if speccy side is FRIEND, flag set if speccy side is ENEMY
+6F79             6 22 ;
+6F79             6 23 ; Output:   E  = selected position (speccy move)
+6F79             6 24 ;
+6F79             6 25 ; Uses:     AI_PLAYER (speccy side)
+6F79             6 26 ;           AI_DEPTH (recursion depth level)
+6F79             6 27 ;
+6F79             6 28 ; Destroys: A, A', BC, D, HL, IX, IY
+6F79             6 29 ; ----------------------------------------------------------------------------------------------------------------------
+6F79             6 30 BRAINIAC_best_move:
+6F79 32 99 61    6 31 ld      (AI_PLAYER), a              ; save speccy side
+6F7C CD 77 74    6 33 call    PathFinder_Score            ; get board score
+6F7F CD 1A 75    6 34 call    PathFinder_Candidates       ; get candidates from board potentials
+6F82             6 36 ; BRAINIAC start
+6F82             6 37 AI_First_Candidate
+6F82 DD 7E 00    6 38 ld      a, (ix+0)                   ; A is our first candidate
+6F85 5F          6 40 ld      e, a                        ; E = best speccy move (initialization)
+6F86 16 00       6 41 ld      d, MIN_VALUE                ; D = alphaMax
+6F88             6 43 AI_Main_Loop                                                ; for each candidate {
+6F88 D5          6 44 push    de                          ;       store alphaMax and best speccy move
+6F89 26 7D       6 46 ld      h, CYAN_POSITIONS/256       ;       get and store candidate position on board
+6F8B 6F          6 47 ld      l, a
+6F8C E5          6 48 push    hl
+6F8D 3A 99 61    6 50 ld      a, (AI_PLAYER)              ;       get speccy side
+6F90 CD F6 70    6 51 call    PathFinder_PutToken         ;       BRAINIAC_play
+6F93 EE 7C       6 52 xor     $7C                         ;       restore speccy side
+6F95 1E FF       6 53 ld      e, MAX_VALUE                ;       E = betaMin
+6F97 CD B0 6F    6 54 call    Alphabeta_Min               ;       A = alphabeta_min(alphaMax, betaMin)
+6F9A E1          6 56 pop     hl                          ;       restore candidate position
+6F9B CD FC 70    6 57 call    PathFinder_EraseToken       ;       BRAINIAC_undo
+6F9E D1          6 59 pop     de                          ;       restore alphaMax and best player node
+6F9F BA          6 61 cp      d
+6FA0 38 04       6 62 jr      c, AI_Main_Next
+6FA2 28 02       6 63 jr      z, AI_Main_Next             ;       if (A <= alphaMax) continue
+6FA4 57          6 65 ld      d, a                        ;       alphaMax = A
+6FA5 5D          6 66 ld      e, l                        ;       best move = E
+6FA6             6 68 AI_Main_Next
+6FA6 DD 2D       6 69 dec     ixl
+6FA8 DD 7E 00    6 70 ld      a, (ix+0)                   ;       A is our next candidate
+6FAB B7          6 71 or      a                           ;       repeat until no more candidates
+6FAC C2 88 6F    6 72 jp      nz, AI_Main_Loop            ; }
+6FAF C9          6 73 ret
+6FB0             6 75 ; ----------------------------------------------------------------------------------------------------------------------
+6FB0             6 76 ; Alphabeta_Min: Process a tree node of the Minimax search tree with alpha-beta pruning, when it requires MINIMIZING
+6FB0             6 77 ; Speccy's score.
+6FB0             6 78 ;
+6FB0             6 79 ; This implementation is different from conventional alpha-beta pruning because it returns the best (lowest) betaMin
+6FB0             6 80 ; value obtained so far at this subtree depth (from previous sibling nodes), when it's even lower than the best (lowest)
+6FB0             6 81 ; score at this tree node only. In practice that's OK, since the existence of a lower betaMin in a previous sibling node
+6FB0             6 82 ; would make parent node discard the node's betaMin value and adopt the even lower betaMin value from a previous sibling
+6FB0             6 83 ; node anyway. This change was useful to allow a highly optimized Assembly implementation with a more efficient register
+6FB0             6 84 ; allocation. The only drawback was that, whenever a parent node obtains the same best score from 2 child nodes, it must
+6FB0             6 85 ; always choose the child node evaluated first, since the other child node node may not really have the same score and
+6FB0             6 86 ; could be just reproducing the best score from its sibling.
+6FB0             6 87 ;
+6FB0             6 88 ; Original source code by Einar Saukas: https://spectrumcomputing.co.uk/entry/31171/ZX-Spectrum/BRAINIAC
+6FB0             6 89 ;
+6FB0             6 90 ; Input:    A   = speccy side (FRIEND or ENEMY)
+6FB0             6 91 ;           D   = alphaMax
+6FB0             6 92 ;           E   = betaMin
+6FB0             6 93 ;           P/V = flag unset if speccy side is FRIEND, flag set if speccy side is ENEMY
+6FB0             6 94 ;
+6FB0             6 95 ; Output:   A = "improved" betaMin
+6FB0             6 96 ;           D = alphaMax
+6FB0             6 97 ;           E = "improved" betaMin
+6FB0             6 98 ;
+6FB0             6 99 ; Uses:     AI_PLAYER (speccy side)
+6FB0             6 100 ;           AI_DEPTH (recursion depth level)
+6FB0             6 101 ;
+6FB0             6 102 ; Destroys: BC, HL, IX, IY
+6FB0             6 103 ; ----------------------------------------------------------------------------------------------------------------------
+6FB0             6 104 Alphabeta_Min:
+6FB0 D5          6 105 push    de
+6FB1             6 107 ; check if last speccy move is a winner one
+6FB1 CD 77 74    6 109 call    PathFinder_Score            ; if (speccy won)
+6FB4 B7          6 110 or      a
+6FB5 C2 BF 6F    6 111 jp      nz, Alphabeta_Min_Candidates
+6FB8 3A 9A 61    6 112 ld      a, (AI_DEPTH)
+6FBB C6 E0       6 113 add     a, 224                      ;     return 224+depth
+6FBD D1          6 114 pop     de
+6FBE C9          6 115 ret
+6FBF             6 117 Alphabeta_Min_Candidates
+6FBF CD 1A 75    6 118 call    PathFinder_Candidates       ; find candidates for next move
+6FC2 D1          6 119 pop     de
+6FC3 DD 7E 00    6 121 ld      a, (ix+0)                   ; A is our first candidate
+6FC6 21 9A 61    6 123 ld      hl, AI_DEPTH
+6FC9 35          6 124 dec     (hl)                        ; depth--
+6FCA CA 0A 70    6 125 jp      z, Heuristic_Min            ; if (depth == 0) return heuristic_min
+6FCD             6 127 Alphabeta_Min_Loop                                          ; for each candidate {
+6FCD D5          6 128 push    de                          ;       store alphaMax and betaMin
+6FCE 26 7D       6 130 ld      h, CYAN_POSITIONS/256       ;       get and store candidate position on board
+6FD0 6F          6 131 ld      l, a
+6FD1 E5          6 132 push    hl
+6FD2 3A 99 61    6 134 ld      a, (AI_PLAYER)              ;       get speccy side
+6FD5 EE 7C       6 135 xor     $7C                         ;       switch to player side
+6FD7 CD F6 70    6 136 call    PathFinder_PutToken         ;       BRAINIAC_play
+6FDA CD 4E 70    6 137 call    Alphabeta_Max               ;       A = alphabeta_max(alphaMax, betaMin)
+6FDD E1          6 139 pop     hl                          ;       restore candidate position
+6FDE CD FC 70    6 140 call    PathFinder_EraseToken       ;       BRAINIAC_undo
+6FE1 D1          6 142 pop     de                          ;       restore alphaMax and betaMin
+6FE2 BB          6 144 cp      e
+6FE3 30 06       6 145 jr      nc, Alphabeta_Min_Next      ;       if (A >= betaMin) continue
+6FE5 BA          6 147 cp      d
+6FE6 38 12       6 148 jr      c, Alphabeta_Min_Exit
+6FE8 28 10       6 149 jr      z, Alphabeta_Min_Exit       ;       if (A <= alphaMax) { depth++; return A }
+6FEA 5F          6 151 ld      e, a                        ;       betaMin = A
+6FEB             6 153 Alphabeta_Min_Next
+6FEB DD 2D       6 154 dec     ixl
+6FED DD 7E 00    6 155 ld      a, (ix+0)                   ;       A is our next candidate
+6FF0 B7          6 156 or      a                           ;       repeat until no more candidates
+6FF1 C2 CD 6F    6 157 jp      nz, Alphabeta_Min_Loop      ; }
+6FF4 7B          6 159 ld      a, e                        ; return betaMin
+6FF5 21 9A 61    6 161 ld      hl, AI_DEPTH
+6FF8 34          6 162 inc     (hl)                        ; depth++
+6FF9 C9          6 163 ret
+6FFA             6 165 Alphabeta_Min_Exit
+6FFA 5F          6 166 ld      e, a                        ; (discard remaining candidates)
+6FFB AF          6 167 xor     a
+6FFC             6 168 Alphabeta_Min_Skip
+6FFC DD 2D       6 169 dec     ixl
+6FFE DD BE 00    6 170 cp      (ix+0)
+7001 C2 FC 6F    6 171 jp      nz, Alphabeta_Min_Skip
+7004 7B          6 172 ld      a, e
+7005 21 9A 61    6 174 ld      hl, AI_DEPTH
+7008 34          6 175 inc     (hl)                        ; (depth++)
+7009 C9          6 176 ret
+700A             6 178 ; ----------------------------------------------------------------------------------------------------------------------
+700A             6 179 ; Heuristic_Min: Specialized routine to process the lowest tree node (depth zero) of the Minimax search tree with alpha-
+700A             6 180 ; beta pruning, when it requires MINIMIZING Speccy's score.
+700A             6 181 ;
+700A             6 182 ; Technically "Heuristic_Min" works exactly like "Alphabeta_Min_Loop", except it directly evaluates board for each child
+700A             6 183 ; node instead of calling "Alphabeta_Max" recursively. Although it would be easier to just let it invoke "Alphabeta_Max"
+700A             6 184 ; again to obtain the evaluated board, this simple optimization is responsible for making BRAINIAC almost 2 seconds
+700A             6 185 ; faster.
 700A             6 186 ;
-700A             6 187 ; Input:    A = first candidate
-700A             6 188 ;           D = alphaMax
-700A             6 189 ;           E = betaMin
-700A             6 190 ;
-700A             6 191 ; Output:   A = "improved" betaMin
-700A             6 192 ;           D = alphaMax
-700A             6 193 ;           E = "improved" betaMin
-700A             6 194 ;
-700A             6 195 ; Uses:     AI_PLAYER (speccy side)
-700A             6 196 ;           AI_DEPTH (recursion depth level)
-700A             6 197 ;
-700A             6 198 ; Destroys: BC, HL, IX, IY
-700A             6 199 ; ----------------------------------------------------------------------------------------------------------------------
-700A             6 200 Heuristic_Min:                                              ; for each candidate {
-700A D5          6 201 push    de                          ;       store alphaMax and betaMin
-700B 26 7D       6 203 ld      h, CYAN_POSITIONS/256       ;       get and store candidate position on board
-700D 6F          6 204 ld      l, a
-700E E5          6 205 push    hl
-700F 3A 99 61    6 207 ld      a, (AI_PLAYER)              ;       get speccy side
-7012 EE 7C       6 208 xor     $7C                         ;       switch to player side
-7014 CD F6 70    6 209 call    PathFinder_PutToken         ;       BRAINIAC_play
-7017 CD 77 74    6 211 call    PathFinder_Score            ;       if (player won)
-701A FE FF       6 212 cp      -1
-701C C2 21 70    6 213 jp      nz, Heuristic_Min_Continue
-701F 3E 20       6 214 ld      a, 32                       ;           A = 32
-7021             6 215 Heuristic_Min_Continue
-7021 E1          6 216 pop     hl
-7022 CD FC 70    6 217 call    PathFinder_EraseToken       ;       BRAINIAC_undo
-7025 D1          6 219 pop     de
-7026 BB          6 221 cp      e
-7027 30 06       6 222 jr      nc, Heuristic_Min_Next      ;       if (A >= betaMin) continue
-7029 BA          6 224 cp      d
-702A 38 12       6 225 jr      c, Heuristic_Min_Exit
-702C 28 10       6 226 jr      z, Heuristic_Min_Exit       ;       if (A <= alphaMax) { depth++; return A }
-702E 5F          6 228 ld      e, a                        ;       betaMin = A
-702F             6 230 Heuristic_Min_Next
-702F DD 2D       6 231 dec     ixl
-7031 DD 7E 00    6 232 ld      a, (ix+0)                   ;       A is our next candidate
-7034 B7          6 233 or      a                           ;       repeat until no more candidates
-7035 C2 0A 70    6 234 jp      nz, Heuristic_Min           ; }
-7038 7B          6 236 ld      a, e                        ; return betaMin
-7039 21 9A 61    6 238 ld      hl, AI_DEPTH
-703C 34          6 239 inc     (hl)                        ; depth++
-703D C9          6 240 ret
-703E             6 242 Heuristic_Min_Exit
-703E 5F          6 243 ld      e, a                        ; (discard remaining candidates)
-703F AF          6 244 xor     a
-7040             6 245 Heuristic_Min_Skip
-7040 DD 2D       6 246 dec     ixl
-7042 DD BE 00    6 247 cp      (ix+0)
-7045 C2 40 70    6 248 jp      nz, Heuristic_Min_Skip
-7048 7B          6 249 ld      a, e
-7049 21 9A 61    6 251 ld      hl, AI_DEPTH
-704C 34          6 252 inc     (hl)                        ; (depth++)
-704D C9          6 253 ret
-704E             6 255 ; ----------------------------------------------------------------------------------------------------------------------
-704E             6 256 ; Alphabeta_Max: Process a tree node of the Minimax search tree with alpha-beta pruning, when it requires MAXIMIZING
-704E             6 257 ; Speccy's score.
-704E             6 258 ;
-704E             6 259 ; This implementation is different from conventional alpha-beta pruning because it returns the best (highest) alphaMax
-704E             6 260 ; value obtained so far at this subtree depth (from previous sibling nodes), when it's even higher than the best
-704E             6 261 ; (highest) score at this tree node only. In practice that's OK, since the existence of a higher alphaMax in a previous
-704E             6 262 ; sibling node would make parent node discard the node's alphaMax value and adopt the even higher alphaMax value from a
-704E             6 263 ; previous sibling node anyway. This change was useful to allow a highly optimized Assembly implementation with a more
-704E             6 264 ; efficient register allocation. The only drawback was that, whenever a parent node obtains the same best score from 2
-704E             6 265 ; child nodes, it must always choose the child node evaluated first, since the other child node node may not really have
-704E             6 266 ; the same score and could be just reproducing the best score from its sibling.
-704E             6 267 ;
-704E             6 268 ; Original source code by Einar Saukas: https://spectrumcomputing.co.uk/entry/31171/ZX-Spectrum/BRAINIAC
+700A             6 187 ; Original source code by Einar Saukas: https://spectrumcomputing.co.uk/entry/31171/ZX-Spectrum/BRAINIAC
+700A             6 188 ;
+700A             6 189 ; Input:    A = first candidate
+700A             6 190 ;           D = alphaMax
+700A             6 191 ;           E = betaMin
+700A             6 192 ;
+700A             6 193 ; Output:   A = "improved" betaMin
+700A             6 194 ;           D = alphaMax
+700A             6 195 ;           E = "improved" betaMin
+700A             6 196 ;
+700A             6 197 ; Uses:     AI_PLAYER (speccy side)
+700A             6 198 ;           AI_DEPTH (recursion depth level)
+700A             6 199 ;
+700A             6 200 ; Destroys: BC, HL, IX, IY
+700A             6 201 ; ----------------------------------------------------------------------------------------------------------------------
+700A             6 202 Heuristic_Min:                                              ; for each candidate {
+700A D5          6 203 push    de                          ;       store alphaMax and betaMin
+700B 26 7D       6 205 ld      h, CYAN_POSITIONS/256       ;       get and store candidate position on board
+700D 6F          6 206 ld      l, a
+700E E5          6 207 push    hl
+700F 3A 99 61    6 209 ld      a, (AI_PLAYER)              ;       get speccy side
+7012 EE 7C       6 210 xor     $7C                         ;       switch to player side
+7014 CD F6 70    6 211 call    PathFinder_PutToken         ;       BRAINIAC_play
+7017 CD 77 74    6 213 call    PathFinder_Score            ;       if (player won)
+701A FE FF       6 214 cp      -1
+701C C2 21 70    6 215 jp      nz, Heuristic_Min_Continue
+701F 3E 20       6 216 ld      a, 32                       ;           A = 32
+7021             6 217 Heuristic_Min_Continue
+7021 E1          6 218 pop     hl
+7022 CD FC 70    6 219 call    PathFinder_EraseToken       ;       BRAINIAC_undo
+7025 D1          6 221 pop     de
+7026 BB          6 223 cp      e
+7027 30 06       6 224 jr      nc, Heuristic_Min_Next      ;       if (A >= betaMin) continue
+7029 BA          6 226 cp      d
+702A 38 12       6 227 jr      c, Heuristic_Min_Exit
+702C 28 10       6 228 jr      z, Heuristic_Min_Exit       ;       if (A <= alphaMax) { depth++; return A }
+702E 5F          6 230 ld      e, a                        ;       betaMin = A
+702F             6 232 Heuristic_Min_Next
+702F DD 2D       6 233 dec     ixl
+7031 DD 7E 00    6 234 ld      a, (ix+0)                   ;       A is our next candidate
+7034 B7          6 235 or      a                           ;       repeat until no more candidates
+7035 C2 0A 70    6 236 jp      nz, Heuristic_Min           ; }
+7038 7B          6 238 ld      a, e                        ; return betaMin
+7039 21 9A 61    6 240 ld      hl, AI_DEPTH
+703C 34          6 241 inc     (hl)                        ; depth++
+703D C9          6 242 ret
+703E             6 244 Heuristic_Min_Exit
+703E 5F          6 245 ld      e, a                        ; (discard remaining candidates)
+703F AF          6 246 xor     a
+7040             6 247 Heuristic_Min_Skip
+7040 DD 2D       6 248 dec     ixl
+7042 DD BE 00    6 249 cp      (ix+0)
+7045 C2 40 70    6 250 jp      nz, Heuristic_Min_Skip
+7048 7B          6 251 ld      a, e
+7049 21 9A 61    6 253 ld      hl, AI_DEPTH
+704C 34          6 254 inc     (hl)                        ; (depth++)
+704D C9          6 255 ret
+704E             6 257 ; ----------------------------------------------------------------------------------------------------------------------
+704E             6 258 ; Alphabeta_Max: Process a tree node of the Minimax search tree with alpha-beta pruning, when it requires MAXIMIZING
+704E             6 259 ; Speccy's score.
+704E             6 260 ;
+704E             6 261 ; This implementation is different from conventional alpha-beta pruning because it returns the best (highest) alphaMax
+704E             6 262 ; value obtained so far at this subtree depth (from previous sibling nodes), when it's even higher than the best
+704E             6 263 ; (highest) score at this tree node only. In practice that's OK, since the existence of a higher alphaMax in a previous
+704E             6 264 ; sibling node would make parent node discard the node's alphaMax value and adopt the even higher alphaMax value from a
+704E             6 265 ; previous sibling node anyway. This change was useful to allow a highly optimized Assembly implementation with a more
+704E             6 266 ; efficient register allocation. The only drawback was that, whenever a parent node obtains the same best score from 2
+704E             6 267 ; child nodes, it must always choose the child node evaluated first, since the other child node node may not really have
+704E             6 268 ; the same score and could be just reproducing the best score from its sibling.
 704E             6 269 ;
-704E             6 270 ; Input:    A = speccy side (FRIEND or ENEMY)
-704E             6 271 ;           D = alphaMax
-704E             6 272 ;           E = betaMin
-704E             6 273 ;
-704E             6 274 ; Output:   A = "improved" alphaMax
-704E             6 275 ;           D = "improved" alphaMax
-704E             6 276 ;           E = betaMin
-704E             6 277 ;
-704E             6 278 ; Uses:     AI_PLAYER (speccy side)
-704E             6 279 ;           AI_DEPTH (recursion depth level)
+704E             6 270 ; Original source code by Einar Saukas: https://spectrumcomputing.co.uk/entry/31171/ZX-Spectrum/BRAINIAC
+704E             6 271 ;
+704E             6 272 ; Input:    A   = speccy side (FRIEND or ENEMY)
+704E             6 273 ;           D   = alphaMax
+704E             6 274 ;           E   = betaMin
+704E             6 275 ;           P/V = flag unset if speccy side is FRIEND, flag set if speccy side is ENEMY
+704E             6 276 ;
+704E             6 277 ; Output:   A = "improved" alphaMax
+704E             6 278 ;           D = "improved" alphaMax
+704E             6 279 ;           E = betaMin
 704E             6 280 ;
-704E             6 281 ; Destroys: BC, HL, IX, IY
-704E             6 282 ; ----------------------------------------------------------------------------------------------------------------------
-704E             6 283 Alphabeta_Max:
-704E D5          6 284 push    de
-704F             6 286 ; check if last player move is a winner one
-704F CD 77 74    6 288 call    PathFinder_Score            ; if (player won)
-7052 FE FF       6 289 cp      -1
-7054 C2 5F 70    6 290 jp      nz, Alphabeta_Max_Candidates
-7057 3A 9A 61    6 291 ld      a, (AI_DEPTH)
-705A 2F          6 292 cpl
-705B C6 21       6 293 add     a, 32+1                     ;     return 32-depth
-705D D1          6 294 pop     de
-705E C9          6 295 ret
-705F             6 297 Alphabeta_Max_Candidates
-705F CD 1A 75    6 298 call    PathFinder_Candidates       ; find candidates for next move
-7062 D1          6 299 pop     de
-7063 DD 7E 00    6 301 ld      a, (ix+0)                   ; A is our first candidate
-7066 21 9A 61    6 303 ld      hl, AI_DEPTH
-7069 35          6 304 dec     (hl)                        ; depth--
-706A CA AA 70    6 305 jp      z, Heuristic_Max            ; if (depth == 0) return heuristic_max
-706D             6 307 Alphabeta_Max_Loop                                          ; for each candidate {
-706D D5          6 308 push    de                          ;       store alphaMax and betaMin
-706E 26 7D       6 310 ld      h, CYAN_POSITIONS/256       ;       get and store candidate position on board
-7070 6F          6 311 ld      l, a
-7071 E5          6 312 push    hl
-7072 3A 99 61    6 314 ld      a, (AI_PLAYER)              ;       get speccy side
-7075 CD F6 70    6 315 call    PathFinder_PutToken         ;       BRAINIAC_play
-7078 EE 7C       6 316 xor     $7C                         ;       restore speccy side
-707A CD B0 6F    6 317 call    Alphabeta_Min               ;       A = alphabeta_min(alphaMax, betaMin)
-707D E1          6 319 pop     hl                          ;       restore candidate position
-707E CD FC 70    6 320 call    PathFinder_EraseToken       ;       BRAINIAC_undo
-7081 D1          6 322 pop     de                          ;       restore alphaMax and betaMin
-7082 BA          6 324 cp      d
-7083 38 06       6 325 jr      c, Alphabeta_Max_Next
-7085 28 04       6 326 jr      z, Alphabeta_Max_Next       ;       if (A <= alphaMax) continue
-7087 BB          6 328 cp      e
-7088 30 10       6 329 jr      nc, Alphabeta_Max_Exit      ;       if (A >= betaMin) { depth++; return A }
-708A 57          6 331 ld      d, a                        ;       alphaMax = A
-708B             6 333 Alphabeta_Max_Next
-708B DD 2D       6 334 dec     ixl
-708D DD 7E 00    6 335 ld      a, (ix+0)                   ;       A is our next candidate
-7090 B7          6 336 or      a                           ;       repeat until no more candidates
-7091 C2 6D 70    6 337 jp      nz, Alphabeta_Max_Loop      ; }
-7094 7A          6 339 ld      a, d                        ; return alphaMax
-7095 21 9A 61    6 341 ld      hl, AI_DEPTH
-7098 34          6 342 inc     (hl)                        ; depth++
-7099 C9          6 343 ret
-709A             6 345 Alphabeta_Max_Exit
-709A 57          6 346 ld      d, a                        ; (discard remaining candidates)
-709B AF          6 347 xor     a
-709C             6 348 Alphabeta_Max_Skip
-709C DD 2D       6 349 dec     ixl
-709E DD BE 00    6 350 cp      (ix+0)
-70A1 C2 9C 70    6 351 jp      nz, Alphabeta_Max_Skip
-70A4 7A          6 352 ld      a, d
-70A5 21 9A 61    6 354 ld      hl, AI_DEPTH
-70A8 34          6 355 inc     (hl)                        ; (depth++)
-70A9 C9          6 356 ret
-70AA             6 358 ; ----------------------------------------------------------------------------------------------------------------------
-70AA             6 359 ; Heuristic_Max: Specialized routine to process the lowest tree node (depth zero) of the Minimax search tree with alpha-
-70AA             6 360 ; beta pruning, when it requires MAXIMIZING Speccy's score.
-70AA             6 361 ;
-70AA             6 362 ; Technically "Heuristic_Max" works exactly like "Alphabeta_Max_Loop", except it directly evaluates board for each child
-70AA             6 363 ; node instead of calling "Alphabeta_Min" recursively. Although it would be easier to just let it invoke "Alphabeta_Min"
-70AA             6 364 ; again to obtain the evaluated board, this simple optimization is responsible for making BRAINIAC almost 2 seconds
-70AA             6 365 ; faster.
-70AA             6 366 ;
-70AA             6 367 ; Original source code by Einar Saukas: https://spectrumcomputing.co.uk/entry/31171/ZX-Spectrum/BRAINIAC
-70AA             6 368 ;
-70AA             6 369 ; Input:    A = first candidate
-70AA             6 370 ;           D = alphaMax
-70AA             6 371 ;           E = betaMin
-70AA             6 372 ;
-70AA             6 373 ; Returns:  A = "improved" alphaMax
-70AA             6 374 ;           D = "improved" alphaMax
-70AA             6 375 ;           E = betaMin
-70AA             6 376 ;
-70AA             6 377 ; Uses:     AI_PLAYER (speccy side)
-70AA             6 378 ;           AI_DEPTH (recursion depth level)
+704E             6 281 ; Uses:     AI_PLAYER (speccy side)
+704E             6 282 ;           AI_DEPTH (recursion depth level)
+704E             6 283 ;
+704E             6 284 ; Destroys: BC, HL, IX, IY
+704E             6 285 ; ----------------------------------------------------------------------------------------------------------------------
+704E             6 286 Alphabeta_Max:
+704E D5          6 287 push    de
+704F             6 289 ; check if last player move is a winner one
+704F CD 77 74    6 291 call    PathFinder_Score            ; if (player won)
+7052 FE FF       6 292 cp      -1
+7054 C2 5F 70    6 293 jp      nz, Alphabeta_Max_Candidates
+7057 3A 9A 61    6 294 ld      a, (AI_DEPTH)
+705A 2F          6 295 cpl
+705B C6 21       6 296 add     a, 32+1                     ;     return 32-depth
+705D D1          6 297 pop     de
+705E C9          6 298 ret
+705F             6 300 Alphabeta_Max_Candidates
+705F CD 1A 75    6 301 call    PathFinder_Candidates       ; find candidates for next move
+7062 D1          6 302 pop     de
+7063 DD 7E 00    6 304 ld      a, (ix+0)                   ; A is our first candidate
+7066 21 9A 61    6 306 ld      hl, AI_DEPTH
+7069 35          6 307 dec     (hl)                        ; depth--
+706A CA AA 70    6 308 jp      z, Heuristic_Max            ; if (depth == 0) return heuristic_max
+706D             6 310 Alphabeta_Max_Loop                                          ; for each candidate {
+706D D5          6 311 push    de                          ;       store alphaMax and betaMin
+706E 26 7D       6 313 ld      h, CYAN_POSITIONS/256       ;       get and store candidate position on board
+7070 6F          6 314 ld      l, a
+7071 E5          6 315 push    hl
+7072 3A 99 61    6 317 ld      a, (AI_PLAYER)              ;       get speccy side
+7075 CD F6 70    6 318 call    PathFinder_PutToken         ;       BRAINIAC_play
+7078 EE 7C       6 319 xor     $7C                         ;       restore speccy side
+707A CD B0 6F    6 320 call    Alphabeta_Min               ;       A = alphabeta_min(alphaMax, betaMin)
+707D E1          6 322 pop     hl                          ;       restore candidate position
+707E CD FC 70    6 323 call    PathFinder_EraseToken       ;       BRAINIAC_undo
+7081 D1          6 325 pop     de                          ;       restore alphaMax and betaMin
+7082 BA          6 327 cp      d
+7083 38 06       6 328 jr      c, Alphabeta_Max_Next
+7085 28 04       6 329 jr      z, Alphabeta_Max_Next       ;       if (A <= alphaMax) continue
+7087 BB          6 331 cp      e
+7088 30 10       6 332 jr      nc, Alphabeta_Max_Exit      ;       if (A >= betaMin) { depth++; return A }
+708A 57          6 334 ld      d, a                        ;       alphaMax = A
+708B             6 336 Alphabeta_Max_Next
+708B DD 2D       6 337 dec     ixl
+708D DD 7E 00    6 338 ld      a, (ix+0)                   ;       A is our next candidate
+7090 B7          6 339 or      a                           ;       repeat until no more candidates
+7091 C2 6D 70    6 340 jp      nz, Alphabeta_Max_Loop      ; }
+7094 7A          6 342 ld      a, d                        ; return alphaMax
+7095 21 9A 61    6 344 ld      hl, AI_DEPTH
+7098 34          6 345 inc     (hl)                        ; depth++
+7099 C9          6 346 ret
+709A             6 348 Alphabeta_Max_Exit
+709A 57          6 349 ld      d, a                        ; (discard remaining candidates)
+709B AF          6 350 xor     a
+709C             6 351 Alphabeta_Max_Skip
+709C DD 2D       6 352 dec     ixl
+709E DD BE 00    6 353 cp      (ix+0)
+70A1 C2 9C 70    6 354 jp      nz, Alphabeta_Max_Skip
+70A4 7A          6 355 ld      a, d
+70A5 21 9A 61    6 357 ld      hl, AI_DEPTH
+70A8 34          6 358 inc     (hl)                        ; (depth++)
+70A9 C9          6 359 ret
+70AA             6 361 ; ----------------------------------------------------------------------------------------------------------------------
+70AA             6 362 ; Heuristic_Max: Specialized routine to process the lowest tree node (depth zero) of the Minimax search tree with alpha-
+70AA             6 363 ; beta pruning, when it requires MAXIMIZING Speccy's score.
+70AA             6 364 ;
+70AA             6 365 ; Technically "Heuristic_Max" works exactly like "Alphabeta_Max_Loop", except it directly evaluates board for each child
+70AA             6 366 ; node instead of calling "Alphabeta_Min" recursively. Although it would be easier to just let it invoke "Alphabeta_Min"
+70AA             6 367 ; again to obtain the evaluated board, this simple optimization is responsible for making BRAINIAC almost 2 seconds
+70AA             6 368 ; faster.
+70AA             6 369 ;
+70AA             6 370 ; Original source code by Einar Saukas: https://spectrumcomputing.co.uk/entry/31171/ZX-Spectrum/BRAINIAC
+70AA             6 371 ;
+70AA             6 372 ; Input:    A = first candidate
+70AA             6 373 ;           D = alphaMax
+70AA             6 374 ;           E = betaMin
+70AA             6 375 ;
+70AA             6 376 ; Returns:  A = "improved" alphaMax
+70AA             6 377 ;           D = "improved" alphaMax
+70AA             6 378 ;           E = betaMin
 70AA             6 379 ;
-70AA             6 380 ; Destroys: BC, HL, IX, IY
-70AA             6 381 ; ----------------------------------------------------------------------------------------------------------------------
-70AA             6 382 Heuristic_Max:                                              ; for each candidate {
-70AA D5          6 383 push    de                          ;       store alphaMax and betaMin
-70AB 26 7D       6 385 ld      h, CYAN_POSITIONS/256       ;       get and store candidate position on board
-70AD 6F          6 386 ld      l, a
-70AE E5          6 387 push    hl
-70AF 3A 99 61    6 389 ld      a, (AI_PLAYER)              ;       get speccy side
-70B2 CD F6 70    6 390 call    PathFinder_PutToken         ;       (BRAINIAC_play)
-70B5 EE 7C       6 391 xor     $7C                         ;       restore speccy side
-70B7 CD 77 74    6 393 call    PathFinder_Score            ;       if (speccy won)
-70BA B7          6 394 or      a
-70BB C2 C0 70    6 395 jp      nz, Heuristic_Max_Continue
-70BE 3E E0       6 396 ld      a, 224                      ;           A = 224
-70C0             6 397 Heuristic_Max_Continue
-70C0 E1          6 398 pop     hl                          ;       restore candidate position
-70C1 CD FC 70    6 399 call    PathFinder_EraseToken       ;       BRAINIAC_undo
-70C4 D1          6 401 pop     de                          ;       restore alphaMax and betaMin
-70C5 BA          6 403 cp      d
-70C6 38 06       6 404 jr      c, Heuristic_Max_Next
-70C8 28 04       6 405 jr      z, Heuristic_Max_Next       ;       if (A <= alphaMax) continue
-70CA BB          6 407 cp      e
-70CB 30 10       6 408 jr      nc, Heuristic_Max_Exit      ;       if (A >= betaMin) { depth++; return A }
-70CD 57          6 410 ld      d, a                        ;       alphaMax = A
-70CE             6 412 Heuristic_Max_Next
-70CE DD 2D       6 413 dec     ixl
-70D0 DD 7E 00    6 414 ld      a, (ix+0)                   ;       A is our next candidate
-70D3 B7          6 415 or      a                           ;       repeat until no more candidates
-70D4 C2 AA 70    6 416 jp      nz, Heuristic_Max           ; }
-70D7 7A          6 418 ld      a, d                        ; return alphaMax
-70D8 21 9A 61    6 420 ld      hl, AI_DEPTH
-70DB 34          6 421 inc     (hl)                        ; depth++
-70DC C9          6 422 ret
-70DD             6 424 Heuristic_Max_Exit
-70DD 57          6 425 ld      d, a                        ; (discard remaining candidates)
-70DE AF          6 426 xor     a
-70DF             6 427 Heuristic_Max_Skip
-70DF DD 2D       6 428 dec     ixl
-70E1 DD BE 00    6 429 cp      (ix+0)
-70E4 C2 DF 70    6 430 jp      nz, Heuristic_Max_Skip
-70E7 7A          6 431 ld      a, d
-70E8 21 9A 61    6 433 ld      hl, AI_DEPTH
-70EB 34          6 434 inc     (hl)                        ; (depth++)
-70EC C9          6 435 ret
+70AA             6 380 ; Uses:     AI_PLAYER (speccy side)
+70AA             6 381 ;           AI_DEPTH (recursion depth level)
+70AA             6 382 ;
+70AA             6 383 ; Destroys: BC, HL, IX, IY
+70AA             6 384 ; ----------------------------------------------------------------------------------------------------------------------
+70AA             6 385 Heuristic_Max:                                              ; for each candidate {
+70AA D5          6 386 push    de                          ;       store alphaMax and betaMin
+70AB 26 7D       6 388 ld      h, CYAN_POSITIONS/256       ;       get and store candidate position on board
+70AD 6F          6 389 ld      l, a
+70AE E5          6 390 push    hl
+70AF 3A 99 61    6 392 ld      a, (AI_PLAYER)              ;       get speccy side
+70B2 CD F6 70    6 393 call    PathFinder_PutToken         ;       (BRAINIAC_play)
+70B5 EE 7C       6 394 xor     $7C                         ;       restore speccy side
+70B7 CD 77 74    6 396 call    PathFinder_Score            ;       if (speccy won)
+70BA B7          6 397 or      a
+70BB C2 C0 70    6 398 jp      nz, Heuristic_Max_Continue
+70BE 3E E0       6 399 ld      a, 224                      ;           A = 224
+70C0             6 400 Heuristic_Max_Continue
+70C0 E1          6 401 pop     hl                          ;       restore candidate position
+70C1 CD FC 70    6 402 call    PathFinder_EraseToken       ;       BRAINIAC_undo
+70C4 D1          6 404 pop     de                          ;       restore alphaMax and betaMin
+70C5 BA          6 406 cp      d
+70C6 38 06       6 407 jr      c, Heuristic_Max_Next
+70C8 28 04       6 408 jr      z, Heuristic_Max_Next       ;       if (A <= alphaMax) continue
+70CA BB          6 410 cp      e
+70CB 30 10       6 411 jr      nc, Heuristic_Max_Exit      ;       if (A >= betaMin) { depth++; return A }
+70CD 57          6 413 ld      d, a                        ;       alphaMax = A
+70CE             6 415 Heuristic_Max_Next
+70CE DD 2D       6 416 dec     ixl
+70D0 DD 7E 00    6 417 ld      a, (ix+0)                   ;       A is our next candidate
+70D3 B7          6 418 or      a                           ;       repeat until no more candidates
+70D4 C2 AA 70    6 419 jp      nz, Heuristic_Max           ; }
+70D7 7A          6 421 ld      a, d                        ; return alphaMax
+70D8 21 9A 61    6 423 ld      hl, AI_DEPTH
+70DB 34          6 424 inc     (hl)                        ; depth++
+70DC C9          6 425 ret
+70DD             6 427 Heuristic_Max_Exit
+70DD 57          6 428 ld      d, a                        ; (discard remaining candidates)
+70DE AF          6 429 xor     a
+70DF             6 430 Heuristic_Max_Skip
+70DF DD 2D       6 431 dec     ixl
+70E1 DD BE 00    6 432 cp      (ix+0)
+70E4 C2 DF 70    6 433 jp      nz, Heuristic_Max_Skip
+70E7 7A          6 434 ld      a, d
+70E8 21 9A 61    6 436 ld      hl, AI_DEPTH
+70EB 34          6 437 inc     (hl)                        ; (depth++)
+70EC C9          6 438 ret
 
 ; File #7: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\PathFinder.z80asm
 
@@ -3109,9 +3112,9 @@
 751A             7 963 ; ----------------------------------------------------------------------------------------------------------------------
 751A             7 964 PathFinder_Candidates:
 751A DD 36 00 00 7 965 ld      (ix+0), 0                   ; set candidates endmarker
-751E B7          7 967 or      a                           ; A = 0?
+751E B7          7 967 or      a                           ; is speccy the winner?
 751F 28 3D       7 968 jr      z, Candidates_Winner        ; yes, fill candidates for winner color
-7521 3C          7 969 inc     a                           ; A = -1?
+7521 3C          7 969 inc     a                           ; is speccy defeated?
 7522 28 4E       7 970 jr      z, Candidates_Defeat        ; yes, fill candidates for defeated color
 7524             7 972 ; if score is not -1 nor 0, fill candidates from total potentials
 7524 21 09 61    7 974 ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
