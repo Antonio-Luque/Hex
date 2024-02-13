@@ -6,14 +6,12 @@
 ; Based on chapter 5 of Jack van Rijswijck's thesis - https://webdocs.cs.ualberta.ca/~hayward/theses/jackmsc.pdf
 ; ----------------------------------------------------------------------------------------------------------------------
 
-CYAN                    equ     $01                         ; cyan side
-RED                     equ     $02                         ; red side
-WIDTH                   equ     $08                         ; distance to up-left/down-right neighbor
 EMPTY                   equ     $00                         ; empty positions on the board
 SKIPPED                 equ     $01                         ; skipped positions on the board
 FRIEND                  equ     $02                         ; positions occupied by friendly tokens on the board
-VICTORY                 equ     $03                         ; internal value if victory
 ENEMY                   equ     $7E                         ; positions occupied by opponent tokens on the board
+VICTORY                 equ     $03                         ; internal value if victory
+WIDTH                   equ     $08                         ; distance to up-left/down-right neighbor
 
 CYAN_POSITIONS          equ     $7D00                       ; a 256-aligned memory area reserved for cyan positions
 RED_POSITIONS           equ     $7E00                       ; a 256-aligned memory area reserved for red positions
@@ -24,8 +22,8 @@ CANDIDATES              equ     $7F00                       ; a 256-aligned memo
 ;
 ; Input:    -
 ;
-; Output:   A = FRIEND, if current token color is cyan
-;           A = ENEMY, if current token color is red
+; Output:   A   = FRIEND if current token color is cyan, or A = ENEMY if current token color is red
+;           P/V = flag unset if speccy side is FRIEND, flag set if speccy side is ENEMY
 ;
 ; Uses:     TOKEN_COLOR (current token color)
 ;
@@ -33,10 +31,9 @@ CANDIDATES              equ     $7F00                       ; a 256-aligned memo
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_Friend:
                         ld      a, (TOKEN_COLOR)            ; get current player color
-                        rra                                 ; is current player color cyan?
-                        ld      a, FRIEND                   ; set FRIEND in A
-                        ret     c                           ; yes, return FRIEND 
-                        xor     $7C                         ; no, return ENEMY
+                        xor     $07                         ; is current player color cyan?
+                        ret     po                          ; yes, return FRIEND 
+                        ld      a, ENEMY                    ; no, return ENEMY
                         ret
 
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -45,7 +42,8 @@ PathFinder_Friend:
 ; Input:    A  = either FRIEND or ENEMY from the perspective of cyan player
 ;           HL = CYAN_POSITIONS token address
 ;
-; Output:   -
+; Output:   A   = inverted side (FRIEND or ENEMY)
+;           P/V = flag unset if speccy side is FRIEND, flag set if speccy side is ENEMY
 ;
 ; Destroys: -
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -768,20 +766,18 @@ PathFinder_CYAN_Edge_6
 ; ----------------------------------------------------------------------------------------------------------------------
 ; PathFinder_Score: calculate board score depending on speccy color
 ;
-; Input:    -
+; Input:    P/V = flag unset if speccy side is FRIEND, flag set if speccy side is ENEMY
 ;
 ; Output:   A = -1, if speccy can't reach his opposite edge
 ;           A =  0, if speccy has a chain of connected tokens between the two edges or if player cant reach his edge
 ;           A = speccy heuristic evaluation, otherwise
 ;
-; Uses:     AI_PLAYER (speccy side)
+; Uses:     -
 ;
 ; Destroys: A', BC, DE, HL, IY
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_Score:
-                        ld      a, (AI_PLAYER)              ; get speecy side
-                        cp      FRIEND                      ; is it FRIEND?
-                        jr      z, PathFinder_CyanScore     ; yes, calculate CYAN score
+                        jp      po, PathFinder_CyanScore    ; if speccy side is FRIEND, calculate CYAN score
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; PathFinder_RedScore: calculate red score
@@ -932,13 +928,13 @@ Potentials_Loop
                         jr      c, Potentials_Infinite      ; yes, set cell potential as "infinite" and skip
                         add     a, (hl)                     ; sum both two-distances (calculate cell potential)
                         ld      (hl), a                     ; save potential in the cell pointed by HL
-                        cp      c                           ; is the new potential >= board potential?
-                        jp      nc, Potentials_Mobility     ; yes, check attack mobility
-                        ld      c, a                        ; no, board potential = new potential
-                        ld      b, 1                        ; restart attack mobility
-Potentials_Mobility
-                        jp      nz, Potentials_Next         ; if (potential <> last potential) skip to next cell
-                        inc     b                           ; else, increment attack mobility
+                        cp      c                           ; is the new potential = board potential?
+                        jr      z, Potentials_Increment     ; yes, increment attack mobility
+                        jr      nc, Potentials_Next         ; if (new potential > board potential) skip to next cell
+                        ld      c, a                        ; board potential = new potential
+                        ld      b, 0                        ; restart attack mobility
+Potentials_Increment
+                        inc     b                           ; increment attack mobility
 Potentials_Next
                         inc     e                           ; move to next cell of each board
                         inc     l
@@ -991,6 +987,7 @@ Candidates_2ndBest
                         ld      a, c                        ; A = second best potential
                         cp      $20                         ; is potential >= $20? (2nd best max potential)
                         jr      nc, Candidates_2ndBest_Exit ; yes, stop searching 2nd best potential
+
                         ld      b, 61                       ; number of cells to be checked (loop counter)
 Candidates_2ndBest_Loop
                         cp      (hl)                        ; is current board potential = 2nd best board potential?
@@ -1003,6 +1000,7 @@ Candidates_2ndBest_Next
                         ld      a, ixl                      ; A = current candidates position
                         cp      e                           ; new candidates inserted?
                         jr      z, Candidates_2ndBest       ; no, repeat until new candidates inserted
+
 Candidates_2ndBest_Exit
                         ld      b, d                        ; restore attack mobility
                         ex      af, af'                     ; restore board potential
@@ -1024,23 +1022,28 @@ Candidates_Best_Loop
 ; ----------------------------------------------------------------------------------------------------------------------
 Candidates_Winner
                         ld      a, (AI_PLAYER)              ; check speccy side
-                        cp      FRIEND                      ; is it friend?
-                        jp      z, Candidates_Cyan_Potential; yes, fill candidates from cyan potentials
-                        jp      Candidates_Red_Potential    ; no, fill candidates from red potentials
+                        or      a                           ; is it FRIEND?
+                        jp      pe, Candidates_Red_Potential; no, fill candidates from red potentials
+
+                        ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
+                        ld      de, CYAN_BOARD_DOWN_UP+1    ; DE points to cyan board down-up address (1st position)
+                        call    PathFinder_Potentials       ; calculate cyan potentials
+
+                        ld      a, c                        ; set board potential in A
+                        jp      Candidates_Best             ; fill only the best candidates
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Fill candidates for defeated color
 ; ----------------------------------------------------------------------------------------------------------------------
 Candidates_Defeat
                         ld      a, (AI_PLAYER)              ; check speccy side
-                        cp      FRIEND                      ; is it friend?
-                        jr      z, Candidates_Red           ; yes, fill candidates from red potentials
+                        or      a                           ; is it FRIEND?
+                        jp      po, Candidates_Red          ; yes, fill candidates from red potentials
 
                         ; if RED is defeated, candidates are chosen from cyan board potentials
 
                         call    PathFinder_Cyan_UpDown      ; calculate cyan two-distance from UP to DOWN edge
                         call    PathFinder_Cyan_DownUp      ; calculate cyan two-distance from DOWN to UP edge
-Candidates_Cyan_Potential
                         ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
                         ld      de, CYAN_BOARD_DOWN_UP+1    ; DE points to cyan board down-up address (1st position)
                         call    PathFinder_Potentials       ; calculate cyan potentials
