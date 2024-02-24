@@ -23,7 +23,7 @@ CANDIDATES              equ     $7F00                       ; a 256-aligned memo
 ; Input:    -
 ;
 ; Output:   A   = FRIEND if current token color is cyan, or A = ENEMY if current token color is red
-;           P/V = flag unset if speccy side is FRIEND, flag set if speccy side is ENEMY
+;           P/V = flag unset if A is FRIEND, flag set if A is ENEMY
 ;
 ; Uses:     TOKEN_COLOR (current token color)
 ;
@@ -43,7 +43,7 @@ PathFinder_Friend:
 ;           HL = CYAN_POSITIONS token address
 ;
 ; Output:   A   = inverted side (FRIEND or ENEMY)
-;           P/V = flag unset if speccy side is FRIEND, flag set if speccy side is ENEMY
+;           P/V = flag unset if inverted side is FRIEND, flag set if inverted side is ENEMY
 ;
 ; Destroys: -
 ; ----------------------------------------------------------------------------------------------------------------------
