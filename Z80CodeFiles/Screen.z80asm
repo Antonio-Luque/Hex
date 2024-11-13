@@ -3,14 +3,14 @@
 ; Coded by Antonio Luque
 ; ----------------------------------------------------------------------------------------------------------------------
 
-BLUE_INK                equ     %00000001                   ; attributes: flash 0, bright 0, paper 0, ink 1
-BLUE_PAPER              equ     %00001000                   ; attributes: flash 0, bright 0, paper 1, ink 0
-WHITE_PAPER             equ     %00111000                   ; attributes: flash 0, bright 0, paper 7, ink 0
-WHITE                   equ     %00000111                   ; attributes: flash 0, bright 0, paper 0, ink 7
-BRIGHT                  equ     %01000000                   ; mask to apply bright to attributes
-FLASH                   equ     %10000000                   ; mask to apply flash to attributes
-WHITE_FLASH0            equ     WHITE+BRIGHT                ; attributes: flash 0, bright 1, paper 0, ink 7
-WHITE_FLASH1            equ     WHITE+BRIGHT+FLASH          ; attributes: flash 1, bright 1, paper 0, ink 7
+BLUE_INK                EQU     %00000001                   ; attributes: flash 0, bright 0, paper 0, ink 1
+BLUE_PAPER              EQU     %00001000                   ; attributes: flash 0, bright 0, paper 1, ink 0
+WHITE_PAPER             EQU     %00111000                   ; attributes: flash 0, bright 0, paper 7, ink 0
+WHITE                   EQU     %00000111                   ; attributes: flash 0, bright 0, paper 0, ink 7
+BRIGHT                  EQU     %01000000                   ; mask to apply bright to attributes
+FLASH                   EQU     %10000000                   ; mask to apply flash to attributes
+WHITE_FLASH0            EQU     WHITE+BRIGHT                ; attributes: flash 0, bright 1, paper 0, ink 7
+WHITE_FLASH1            EQU     WHITE+BRIGHT+FLASH          ; attributes: flash 1, bright 1, paper 0, ink 7
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Screen_Clear: fill in black the whole screen area and attributes area

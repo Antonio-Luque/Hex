@@ -6,16 +6,16 @@
 ; Based on chapter 5 of Jack van Rijswijck's thesis - https://webdocs.cs.ualberta.ca/~hayward/theses/jackmsc.pdf
 ; ----------------------------------------------------------------------------------------------------------------------
 
-EMPTY                   equ     $00                         ; empty positions on the board
-SKIPPED                 equ     $01                         ; skipped positions on the board
-FRIEND                  equ     $02                         ; positions occupied by friendly tokens on the board
-ENEMY                   equ     $7E                         ; positions occupied by opponent tokens on the board
-VICTORY                 equ     $03                         ; internal value if victory
-WIDTH                   equ     $08                         ; distance to up-left/down-right neighbor
+EMPTY                   EQU     $00                         ; empty positions on the board
+SKIPPED                 EQU     $01                         ; skipped positions on the board
+FRIEND                  EQU     $02                         ; positions occupied by friendly tokens on the board
+ENEMY                   EQU     $7E                         ; positions occupied by opponent tokens on the board
+VICTORY                 EQU     $03                         ; internal value if victory
+WIDTH                   EQU     $08                         ; distance to up-left/down-right neighbor
 
-CYAN_POSITIONS          equ     $7D00                       ; a 256-aligned memory area reserved for cyan positions
-RED_POSITIONS           equ     $7E00                       ; a 256-aligned memory area reserved for red positions
-CANDIDATES              equ     $7F00                       ; a 256-aligned memory area reserved to store candidates
+CYAN_POSITIONS          EQU     $7D00                       ; a 256-aligned memory area reserved for cyan positions
+RED_POSITIONS           EQU     $7E00                       ; a 256-aligned memory area reserved for red positions
+CANDIDATES              EQU     $7F00                       ; a 256-aligned memory area reserved to store candidates
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; PathFinder_Friend: return if current player is FRIEND or ENEMY from the perspective of the cyan player
@@ -23,7 +23,7 @@ CANDIDATES              equ     $7F00                       ; a 256-aligned memo
 ; Input:    -
 ;
 ; Output:   A   = FRIEND if current token color is cyan, or A = ENEMY if current token color is red
-;           P/V = flag unset if A is FRIEND, flag set if A is ENEMY
+;           P/V = flag unset if speccy side is FRIEND, flag set if speccy side is ENEMY
 ;
 ; Uses:     TOKEN_COLOR (current token color)
 ;
@@ -43,7 +43,7 @@ PathFinder_Friend:
 ;           HL = CYAN_POSITIONS token address
 ;
 ; Output:   A   = inverted side (FRIEND or ENEMY)
-;           P/V = flag unset if inverted side is FRIEND, flag set if inverted side is ENEMY
+;           P/V = flag unset if speccy side is FRIEND, flag set if speccy side is ENEMY
 ;
 ; Destroys: -
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -122,7 +122,7 @@ PathFinder_CopyLoop
 PathFinder_Update:
                         jr      z, PathFinder_Friendly      ; if Z flag is set, update friend distance
                         ld      b, (hl)                     ; check current position
-                        djnz    PathFinder_EMPTY
+                        djnz    PathFinder_EMPTY            ; if (hl) = EMPTY, jump below
 ; if (HL) = SKIPPED, then set (HL) = C+1 and insert HL at queue tail
 PathFinder_Skipped:
                         ld      (hl), c                     ; save current distance in current position

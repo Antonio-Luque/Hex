@@ -3,7 +3,7 @@
 ; Coded by Antonio Luque
 ; ----------------------------------------------------------------------------------------------------------------------
 
-CHAR_SET                equ     FONT-256                    ; address of character set data, adjusted for ASCII codes
+CHAR_SET                EQU     FONT-256                    ; address of character set data, adjusted for ASCII codes
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Print_Players: print "Player" and "Speccy" strings in the corresponding positions
@@ -27,7 +27,7 @@ Print_Players_Strings
                         ld      d, b                        ; DE points to "Player" or "Speccy" string address
                         ld      e, c
                         ld      hl, $4098                   ; HL points to cyan string screen address
-                        jr      Print_String                ; print "Player" or "Speccy"
+                        jp      Print_String                ; print "Player" or "Speccy"
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Print_Clear_Alert: clear a printed alert message below the current player input move
@@ -39,7 +39,7 @@ Print_Players_Strings
 Print_Clear_Alert:
                         ld      de, STR_EMPTY6              ; DE points to a 6 blanks string address
                         ld      c, WHITE_FLASH0             ; set (clear) alert message color
-                        jr      Print_Alert_XY              ; print (clear) alert string
+                        jp      Print_Alert_XY              ; print (clear) alert string
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Print_Alert: print an alert message below the current player input move
@@ -62,7 +62,7 @@ Print_Alert_XY
                         jr      z, Print_String_Color       ; yes, print alert string with color
                         ld      ix, $5938                   ; IX points to cyan alert string attribute address
                         ld      hl, $4838                   ; HL points to cyan alert string screen address
-                        jr      Print_String_Color          ; print alert string with color
+                        jp      Print_String_Color          ; print alert string with color
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Print_Wait: print "WAIT" message at current player input move location 
@@ -76,7 +76,7 @@ Print_Alert_XY
 Print_Wait:
                         ld      de, STR_WAIT                ; DE points to "WAIT" string address
                         ld      c, WHITE_FLASH1             ; set wait message color
-                        jr      Print_Move_XY               ; print wait string
+                        jp      Print_Move_XY               ; print wait string
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Clear_Move: clear a printed player move at current player input move location 
@@ -90,7 +90,7 @@ Print_Wait:
 Print_Clear_Move:
                         ld      de, STR_EMPTY4              ; DE points to a 4 blanks string address
                         ld      c, WHITE_FLASH0             ; set (clear) move string color
-                        jr      Print_Move_XY               ; print (clear) move string
+                        jp      Print_Move_XY               ; print (clear) move string
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Print_Move: print a formatted move at current player input move location 
@@ -136,7 +136,7 @@ Print_String:
                         pop     de                          ; restore pointer to string address
                         inc     de                          ; move DE to next string character
                         inc     l                           ; move HL to next screen column
-                        jr      Print_String                ; repeat until end of string
+                        jp      Print_String                ; repeat until end of string
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Print_Char: print a character on the screen

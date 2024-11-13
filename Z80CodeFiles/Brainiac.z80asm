@@ -5,8 +5,8 @@
 ; Adapted for Hex game by Einar Saukas
 ; ----------------------------------------------------------------------------------------------------------------------
 
-MIN_VALUE               equ     0                           ; alphaBeta pruning minimum value
-MAX_VALUE               equ     255                         ; alphaBeta pruning maximum value
+MIN_VALUE               EQU     0                           ; alphaBeta pruning minimum value
+MAX_VALUE               EQU     255                         ; alphaBeta pruning maximum value
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; BRAINIAC_best_move: execute BRAINIAC algorithm to determine best choice for specified player's next move, according to
@@ -30,7 +30,7 @@ MAX_VALUE               equ     255                         ; alphaBeta pruning 
 BRAINIAC_best_move:
                         ld      (AI_PLAYER), a              ; save speccy side
 
-                        call    PathFinder_Score            ; get board score
+                        call    PathFinder_Score            ; get board score (needed to get candidates)
                         call    PathFinder_Candidates       ; get candidates from board potentials
 
                         ; BRAINIAC start

@@ -3,7 +3,7 @@
 ; Coded by Antonio Luque
 ; ----------------------------------------------------------------------------------------------------------------------
 
-MAX_CHARS               equ     2                           ; maximum of input chars
+MAX_CHARS               EQU     2                           ; maximum of input chars
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Input_Move: wait for input a move from keyboard

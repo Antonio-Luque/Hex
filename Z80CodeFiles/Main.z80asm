@@ -3,13 +3,13 @@
 ; Coded by Antonio Luque
 ; ----------------------------------------------------------------------------------------------------------------------
 
-CYAN_COLOR              equ     %00000101                   ; attributes: flash 0, bright 0, paper 0, ink 5
-RED_COLOR               equ     %00000010                   ; attributes: flash 0, bright 0, paper 0, ink 2
+CYAN_COLOR              EQU     %00000101                   ; attributes: flash 0, bright 0, paper 0, ink 5
+RED_COLOR               EQU     %00000010                   ; attributes: flash 0, bright 0, paper 0, ink 2
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Entry point of the program - Initialization
 ; ----------------------------------------------------------------------------------------------------------------------
-Main                    ent     $
+Main                    ENT     $                           ; SpectNet IDE pragma: defines the entry code of the program
 
                         di                                  ; disable interrupts
 
@@ -36,8 +36,8 @@ Main                    ent     $
 
                         ld      sp, STACK                   ; move stack
 
-                        xor     a                           ; A = 0
-                        out     ($FE), a                    ; set border color (black)
+                        xor     a                           ; set border color (black)
+                        out     ($FE), a
                         call    Screen_Menu                 ; show main menu and wait for an option
 
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -68,8 +68,8 @@ Main_Increment_Level
                         inc     (hl)                        ; increment game level
                         call    Screen_Frame_Color          ; set up frame color depending on current level
                         call    Screen_Clear_ThreeRow       ; clear all three-in-a-row marks
-                        xor     a                           ; A = 0
-                        ld      (THREE_ROW), a              ; initialize three-in-a-row counter
+                        xor     a                           ; initialize three-in-a-row counter
+                        ld      (THREE_ROW), a
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Start new match
@@ -116,13 +116,11 @@ Main_Match_Loop
 
                         ld      (TOKEN_COLOR), a            ; save current token color
                         ld      hl, PLAYER_COLOR            ; HL points to player color address
-                        cp      (hl)                        ; is player color = current token color?
-                        jr      z, Main_Player_Move         ; yes, process player move
-
-                        call    Main_GetSpeccy_Move         ; get the speccy move
-                        jr      Main_Update_Board           ; update board position
-Main_Player_Move
-                        call    Main_GetPlayer_Move         ; get a legal (empty position) player move 
+                        cp      (hl)                        ; check player color
+                        ld      de, Main_Update_Board       ; set return address from jumps below
+                        push    de                          ; put return address on stack
+                        jr      nz, Main_GetSpeccy_Move     ; if player color <> current token color, get speccy move
+                        jp      Main_GetPlayer_Move         ; otherwise, get a legal (empty position) player move 
 Main_Update_Board
                         ; update positions with player/speccy move
 
@@ -150,7 +148,7 @@ Main_Update_Board
 
                         ld      a, (TOKEN_COLOR)            ; get current token color
                         xor     %00000111                   ; swap token color
-                        jr      Main_Match_Loop             ; repeat match loop
+                        jp      Main_Match_Loop             ; repeat match loop
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Current player wins the match
@@ -224,7 +222,7 @@ Main_GetSpeccy_Positions
                         call    Print_Move                  ; print Speccy move
                         pop     bc                          ; restore hexagon board indexes
                         pop     hl                          ; restore CYAN_POSITIONS move address
-                        ret
+                        ret                                 ; return to Main_Update_Board
 Main_GetSpeccy_Book
                         ld      a, r                        ; get a pseudo-random number (0..127)
                         and     %00011111                   ; number is in range (0..31)
@@ -235,7 +233,7 @@ Main_GetSpeccy_Book
                         ld      e, a
                         add     hl, de                      ; HL points to move index address
                         ld      l, (hl)                     ; get move from opening book
-                        jr      Main_GetSpeccy_Positions    ; get speccy move positions
+                        jp      Main_GetSpeccy_Positions    ; get speccy move positions
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Main_GetPlayer_Move: get a legal (empty hexagon) move from player
@@ -269,7 +267,7 @@ Main_GetPlayer_Input
                         ld      h, CYAN_POSITIONS/256       ; HL points to CYAN_POSITIONS move address
                         ld      a, EMPTY                    ; check position
                         cp      (hl)                        ; is position empty?
-                        ret     z                           ; yes, return
+                        ret     z                           ; yes, return to Main_Update_Board
 
                         ; illegal player move (position not empty)
 
@@ -280,7 +278,7 @@ Main_GetPlayer_Input
                         ld      a, 80                       ; set delay counter
                         call    Main_Delay                  ; execute delay
                         call    Print_Clear_Alert           ; clear alert message
-                        jr      Main_GetPlayer_Input        ; repeat player input until move is legal
+                        jp      Main_GetPlayer_Input        ; repeat player input until move is legal
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Main_Search_Table: search an element in a 8x8 bytes table
@@ -329,7 +327,7 @@ Main_Board2Indexes_Col
                         djnz    Main_Board2Indexes_Col      ; repeat for each column
                         dec     hl                          ; skip borders
                         dec     c                           ; decrement row
-                        jr      Main_Board2Indexes_Row      ; loop until find position
+                        jp      Main_Board2Indexes_Row      ; loop until find position
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Main_Delay: execute a delay
