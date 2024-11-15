@@ -117,11 +117,9 @@ Main_Match_Loop
                         ld      (TOKEN_COLOR), a            ; save current token color
                         ld      hl, PLAYER_COLOR            ; HL points to player color address
                         cp      (hl)                        ; check player color
-                        ld      de, Main_Update_Board       ; set return address from jumps below
-                        push    de                          ; put return address on stack
-                        jr      nz, Main_GetSpeccy_Move     ; if player color <> current token color, get speccy move
-                        jp      Main_GetPlayer_Move         ; otherwise, get a legal (empty position) player move 
-Main_Update_Board
+                        call    z, Main_GetPlayer_Move      ; if player color = current token color, get player move
+                        call    nz, Main_GetSpeccy_Move     ; else, get speccy move (previous call always set Z flag)
+
                         ; update positions with player/speccy move
 
                         call    PathFinder_Friend           ; get player/speccy side
@@ -204,7 +202,6 @@ Main_GetSpeccy_Move:
                         ld      ix, CANDIDATES              ; IX points to candidates list address
                         ld      a, (GAME_LEVEL)             ; get game level
                         ld      (AI_DEPTH), a               ; save recursion depth level
-
                         call    PathFinder_Friend           ; get speccy side
                         call    BRAINIAC_best_move          ; get speccy best move
                         ld      l, e                        ; set node index in L
@@ -222,7 +219,7 @@ Main_GetSpeccy_Positions
                         call    Print_Move                  ; print Speccy move
                         pop     bc                          ; restore hexagon board indexes
                         pop     hl                          ; restore CYAN_POSITIONS move address
-                        ret                                 ; return to Main_Update_Board
+                        ret
 Main_GetSpeccy_Book
                         ld      a, r                        ; get a pseudo-random number (0..127)
                         and     %00011111                   ; number is in range (0..31)
@@ -242,6 +239,7 @@ Main_GetSpeccy_Book
 ;
 ; Output:   BC = hexagon board indexes (B:column, C:row)
 ;           HL = CYAN_POSITIONS move address
+;           Z  = flag set
 ;
 ; Uses:     STR_MOVE (formatted move string)
 ;
@@ -267,7 +265,7 @@ Main_GetPlayer_Input
                         ld      h, CYAN_POSITIONS/256       ; HL points to CYAN_POSITIONS move address
                         ld      a, EMPTY                    ; check position
                         cp      (hl)                        ; is position empty?
-                        ret     z                           ; yes, return to Main_Update_Board
+                        ret     z                           ; yes, return with Z flag set
 
                         ; illegal player move (position not empty)
 
@@ -340,15 +338,16 @@ Main_Board2Indexes_Col
 ; ----------------------------------------------------------------------------------------------------------------------
 Main_Delay:
                         push    bc                          ; store register
-Main_Delay_Loop
-                        ld      c, 10                       ; set outer loop counter
-Main_Delay_Loop1
-                        ld      b, 0                        ; set inner loop counter (256)
-Main_Delay_Loop2
-                        djnz    Main_Delay_Loop2            ; repeat until B=0
-                        dec     c                           ; decrement outer loop counter
-                        jr      nz, Main_Delay_Loop1        ; repeat until C=0
-                        dec     a                           ; decrement delay counter
-                        jr      nz, Main_Delay_Loop         ; repeat until A=0
-                        pop     bc                          ; restore register
+Main_Delay_Outer
+                        push    af
+                        ld      bc, 1600
+Main_Delay_Inner
+                        dec     bc
+                        ld      a, b
+                        or      c
+                        jr      nz, Main_Delay_Inner
+                        pop     af
+                        dec     a
+                        jr      nz, Main_Delay_Outer
+                        pop     bc
                         ret

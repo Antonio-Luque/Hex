@@ -1023,12 +1023,11 @@ Candidates_Best_Loop
 Candidates_Winner
                         ld      a, (AI_PLAYER)              ; check speccy side
                         or      a                           ; is it FRIEND?
-                        jp      pe, Candidates_Red_Potential; no, fill candidates from red potentials
+                        jp      po, Candidates_Winner_Cyan  ; yes, fill candidates from cyan potentials
 
-                        ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
-                        ld      de, CYAN_BOARD_DOWN_UP+1    ; DE points to cyan board down-up address (1st position)
-                        call    PathFinder_Potentials       ; calculate cyan potentials
-
+                        ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st pos.)
+                        ld      de, RED_BOARD_RIGHT_LEFT+1  ; DE points to red board right-left address (1st position)
+                        call    PathFinder_Potentials       ; calculate red potentials
                         ld      a, c                        ; set board potential in A
                         jp      Candidates_Best             ; fill only the best candidates
 
@@ -1038,28 +1037,26 @@ Candidates_Winner
 Candidates_Defeat
                         ld      a, (AI_PLAYER)              ; check speccy side
                         or      a                           ; is it FRIEND?
-                        jp      po, Candidates_Red          ; yes, fill candidates from red potentials
+                        jp      po, Candidates_Defeat_Red   ; yes, fill candidates from red potentials
 
                         ; if RED is defeated, candidates are chosen from cyan board potentials
 
                         call    PathFinder_Cyan_UpDown      ; calculate cyan two-distance from UP to DOWN edge
                         call    PathFinder_Cyan_DownUp      ; calculate cyan two-distance from DOWN to UP edge
+Candidates_Winner_Cyan
                         ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
                         ld      de, CYAN_BOARD_DOWN_UP+1    ; DE points to cyan board down-up address (1st position)
                         call    PathFinder_Potentials       ; calculate cyan potentials
-
                         ld      a, c                        ; set board potential in A
                         jp      Candidates_Best             ; fill only the best candidates
 
                         ; if CYAN is defeated, candidates are chosen from red board potentials
-Candidates_Red
+Candidates_Defeat_Red
                         call    PathFinder_Red_LeftRight    ; calculate red two-distance from LEFT to RIGHT edge
                         call    PathFinder_Red_RightLeft    ; calculate red two-distance from RIGHT to LEFT edge
-Candidates_Red_Potential
                         ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st pos.)
                         ld      de, RED_BOARD_RIGHT_LEFT+1  ; DE points to red board right-left address (1st position)
                         call    PathFinder_Potentials       ; calculate red potentials
-
                         ld      a, c                        ; set board potential in A
                         jp      Candidates_Best             ; fill only the best candidates
 
@@ -1110,10 +1107,10 @@ PathFinder_PrepareBoard:
 PrepareBoard_Row
                         ld      b, 7                        ; 7 columns
 PrepareBoard_Column
-                        cp      (hl)                        ; is it win condition?
+                        cp      (hl)                        ; check win condition
                         ld      (hl), 1                     ; save 1 by default
-                        jr      z, PrepareBoard_Next        ; yes, next position
-                        ld      (hl), ENEMY                 ; no, save ENEMY
+                        jr      z, PrepareBoard_Next        ; if win condition, skip to position
+                        ld      (hl), ENEMY                 ; else, save ENEMY
 PrepareBoard_Next
                         dec     l                           ; HL points to next board position
                         djnz    PrepareBoard_Column         ; repeat for each column
@@ -1121,7 +1118,7 @@ PrepareBoard_Next
                         dec     l                           ; skip borders
                         dec     l
                         dec     c                           ; decrement rows
-                        jr      nz, PrepareBoard_Row        ; repeat for each row
+                        jp      nz, PrepareBoard_Row        ; repeat for each row
                         ret
 
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -1137,20 +1134,18 @@ PrepareBoard_Next
 ; Destroys: A, BC, DE, HL, IX
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_BrightPath:
-                        ld      b, h                        ; store high byte of QUEUE_AREA address
-
-                        ld      hl, TOKEN_COLOR             ; get current token color address
-                        set     6, (hl)                     ; switch on bright attribute
-                        ld      hl, @Token_Delay+1          ; set delay duration for animate hexagons
-                        ld      (hl), 4
-
-                        ld      h, b                        ; restore high byte of QUEUE_AREA address
                         ld      l, a                        ; move HL to the start position of the victory path
                         inc     h
                         ld      c, (hl)                     ; set current victory path length in C
                         ld      b, VICTORY                  ; set victory length in B
-                        jr      BrightPath_Position         ; animate and highlight the hexagon position
 
+                        ld      a, (TOKEN_COLOR)            ; get current token color
+                        add     a, $40                      ; switch on bright attribute
+                        ld      (TOKEN_COLOR), a
+                        ld      a, 4                        ; set delay duration for animate hexagons
+                        ld      (@Token_Delay+1), a
+
+                        jp      BrightPath_Position         ; animate and highlight the hexagon position
 BrightPath_Neighbor
                         inc     l                           ; move HL to left neighbor address
                         cp      (hl)                        ; is it the same as current victory path length?
@@ -1174,19 +1169,16 @@ BrightPath_Neighbor
 BrightPath_Position
                         push    bc                          ; store current victory path length
                         push    hl                          ; store current position pointer
-
                         call    Main_Board2Indexes          ; convert a board position into a board indexes
                         call    Draw_Token                  ; animate hexagon sprite on the screen
                         ld      ix, TOKEN_FX                ; IX points to token tone parameters address
                         call    Sound_FX                    ; play sound effect
-
                         pop     hl                          ; restore current position pointer
                         pop     bc                          ; restore current victory path length
-
                         dec     c                           ; decrement current victory path length
                         ld      a, c                        ; set current victory path length in A
                         cp      b                           ; has reached victory length?
-                        jr      nz, BrightPath_Neighbor     ; repeat for each neighbor until reach victory length
+                        jp      nz, BrightPath_Neighbor     ; repeat for each neighbor until reach victory length
 
                         ld      hl, TOKEN_COLOR             ; get current token color address
                         res     6, (hl)                     ; switch off bright attribute
