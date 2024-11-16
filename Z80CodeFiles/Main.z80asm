@@ -337,17 +337,17 @@ Main_Board2Indexes_Col
 ; Destroys: A
 ; ----------------------------------------------------------------------------------------------------------------------
 Main_Delay:
-                        push    bc                          ; store register
+                        push    bc                          ; store BC register
 Main_Delay_Outer
-                        push    af
-                        ld      bc, 1600
+                        push    af                          ; store delay counter (outer loop)
+                        ld      bc, 1600                    ; set inner loop counter in BC
 Main_Delay_Inner
-                        dec     bc
-                        ld      a, b
+                        dec     bc                          ; decrement inner loop counter
+                        ld      a, b                        ; check inner loop counter
                         or      c
-                        jr      nz, Main_Delay_Inner
-                        pop     af
-                        dec     a
-                        jr      nz, Main_Delay_Outer
-                        pop     bc
+                        jr      nz, Main_Delay_Inner        ; repeat until inner loop counter = 0
+                        pop     af                          ; restore delay counter
+                        dec     a                           ; decrement delay counter
+                        jr      nz, Main_Delay_Outer        ; repeat until delay counter = 0
+                        pop     bc                          ; restore BC register
                         ret

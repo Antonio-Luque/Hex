@@ -1288,19 +1288,19 @@
 6D8C             2 337 ; Destroys: A
 6D8C             2 338 ; ----------------------------------------------------------------------------------------------------------------------
 6D8C             2 339 Main_Delay:
-6D8C C5          2 340 push    bc                          ; store register
+6D8C C5          2 340 push    bc                          ; store BC register
 6D8D             2 341 Main_Delay_Outer
-6D8D F5          2 342 push    af
-6D8E 01 40 06    2 343 ld      bc, 1600
+6D8D F5          2 342 push    af                          ; store delay counter (outer loop)
+6D8E 01 40 06    2 343 ld      bc, 1600                    ; set inner loop counter in BC
 6D91             2 344 Main_Delay_Inner
-6D91 0B          2 345 dec     bc
-6D92 78          2 346 ld      a, b
+6D91 0B          2 345 dec     bc                          ; decrement inner loop counter
+6D92 78          2 346 ld      a, b                        ; check inner loop counter
 6D93 B1          2 347 or      c
-6D94 20 FB       2 348 jr      nz, Main_Delay_Inner
-6D96 F1          2 349 pop     af
-6D97 3D          2 350 dec     a
-6D98 20 F3       2 351 jr      nz, Main_Delay_Outer
-6D9A C1          2 352 pop     bc
+6D94 20 FB       2 348 jr      nz, Main_Delay_Inner        ; repeat until inner loop counter = 0
+6D96 F1          2 349 pop     af                          ; restore delay counter
+6D97 3D          2 350 dec     a                           ; decrement delay counter
+6D98 20 F3       2 351 jr      nz, Main_Delay_Outer        ; repeat until delay counter = 0
+6D9A C1          2 352 pop     bc                          ; restore BC register
 6D9B C9          2 353 ret
 
 ; File #3: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Draw.z80asm
