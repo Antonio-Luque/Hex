@@ -2271,9 +2271,9 @@
 7109             7 75 ; Input:    DE = cyan or red board address (destiny)
 7109             7 76 ;           HL = CYAN_POSITIONS or RED_POSITIONS address (origin)
 7109             7 77 ;
-7109             7 78 ; Output:   -
+7109             7 78 ; Output:   DE = cyan or red board address (last position+1)
 7109             7 79 ;
-7109             7 80 ; Destroys: BC, DE, HL
+7109             7 80 ; Destroys: BC, HL
 7109             7 81 ; ----------------------------------------------------------------------------------------------------------------------
 7109             7 82 PathFinder_CopyPositions:
 7109 01 31 00    7 83 ld      bc, 7*7                     ; number of positions to be copied
@@ -2354,959 +2354,966 @@
 7147             7 160 ;
 7147             7 161 ; Input:    -
 7147             7 162 ;
-7147             7 163 ; Output:   A = -1, if down edge couldn't be reached
-7147             7 164 ;           A =  0, if there is chain of connected cyan tokens between the two edges
-7147             7 165 ;           A = last edge position visited (-1), otherwise
-7147             7 166 ;
-7147             7 167 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
-7147             7 168 ;
-7147             7 169 ; Destroys: BC, DE, HL, IY
-7147             7 170 ; ----------------------------------------------------------------------------------------------------------------------
-7147             7 171 PathFinder_Cyan_UpDown:
-7147 21 07 7D    7 172 ld      hl, CYAN_POSITIONS+7        ; HL points to cyan positions address (up-right corner)
-714A 11 07 61    7 173 ld      de, CYAN_BOARD_UP_DOWN+7    ; DE points to cyan board up-down address (up-right corner)
-714D CD 09 71    7 174 call    PathFinder_CopyPositions    ; copy from cyan positions to cyan board up-down
-7150             7 176 ; entry point for PathFinder_VictoryPath
-7150             7 177 PathFinder_Cyan_CheckPath:
-7150 FD 21 00 09 7 178 ld      iy, $0900                   ; IYH = distance to check edge positions
-7154             7 179 ; IYL = last edge position visited
-7154 21 00 60    7 180 ld      hl, CYAN_QUEUE_AREA         ; HL points to cyan queue area address
-7157 22 2D 71    7 181 ld      (@Queue_Tail+1), hl         ; initialize cyan queue tail
-715A E5          7 182 push    hl                          ; store cyan queue head
-715B             7 184 ; set up cyan board (up-down) start positions distances
-715B 21 09 61    7 186 ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
-715E 0E 43       7 187 ld      c, VICTORY+$40              ; set start positions distance + friendly flag
-7160 3E 02       7 188 ld      a, FRIEND                   ; set distance to compare with
-7162 BE          7 189 cp      (hl)                        ; check 1st start position distance
-7163 D4 22 71    7 190 call    nc, PathFinder_Update       ; if FRIEND >= distance, update distance
-7166 2C          7 191 inc     l                           ; move HL to next start position address
-7167 BE          7 192 cp      (hl)                        ; check 2nd start position distance
-7168 D4 22 71    7 193 call    nc, PathFinder_Update       ; (repeat for each start position)
-716B 2C          7 194 inc     l
-716C BE          7 195 cp      (hl)                        ; check 3rd start position distance
-716D D4 22 71    7 196 call    nc, PathFinder_Update
-7170 2C          7 197 inc     l
-7171 BE          7 198 cp      (hl)                        ; check 4th start position distance
-7172 D4 22 71    7 199 call    nc, PathFinder_Update
-7175 2C          7 200 inc     l
-7176 BE          7 201 cp      (hl)                        ; check 5th start position distance
-7177 D4 22 71    7 202 call    nc, PathFinder_Update
-717A 2C          7 203 inc     l
-717B BE          7 204 cp      (hl)                        ; check 6th start position distance
-717C D4 22 71    7 205 call    nc, PathFinder_Update
-717F 2C          7 206 inc     l
-7180 C3 6D 72    7 207 jp      Path_Finder_First           ; calculate two-distances of cyan board (up-down)
-7183             7 209 ; ----------------------------------------------------------------------------------------------------------------------
-7183             7 210 ; PathFinder_Cyan_DownUp: set up Path_Finder routine to calculate CYAN two-distance from DOWN to UP edge
-7183             7 211 ;
-7183             7 212 ; Input:    -
-7183             7 213 ;
-7183             7 214 ; Output:   A = -1, if up edge couldn't be reached
-7183             7 215 ;           A =  0, if there is chain of connected cyan tokens between the two edges
-7183             7 216 ;           A = last edge position visited (-1), otherwise
-7183             7 217 ;
-7183             7 218 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
+7147             7 163 ; Output:   A  = -1, if down edge couldn't be reached
+7147             7 164 ;           A  =  0, if there is chain of connected cyan tokens between the two edges
+7147             7 165 ;           A  = last edge position visited (-1), otherwise
+7147             7 166 ;           HL = cyan queue head address
+7147             7 167 ;
+7147             7 168 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
+7147             7 169 ;
+7147             7 170 ; Destroys: BC, DE, IY
+7147             7 171 ; ----------------------------------------------------------------------------------------------------------------------
+7147             7 172 PathFinder_Cyan_UpDown:
+7147 21 07 7D    7 173 ld      hl, CYAN_POSITIONS+7        ; HL points to cyan positions address (up-right corner)
+714A 11 07 61    7 174 ld      de, CYAN_BOARD_UP_DOWN+7    ; DE points to cyan board up-down address (up-right corner)
+714D CD 09 71    7 175 call    PathFinder_CopyPositions    ; copy from cyan positions to cyan board up-down
+7150             7 177 ; entry point for PathFinder_VictoryPath
+7150             7 178 PathFinder_Cyan_CheckPath:
+7150 FD 21 00 09 7 179 ld      iy, $0900                   ; IYH = distance to check edge positions
+7154             7 180 ; IYL = last edge position visited
+7154 21 00 60    7 181 ld      hl, CYAN_QUEUE_AREA         ; HL points to cyan queue area address
+7157 22 2D 71    7 182 ld      (@Queue_Tail+1), hl         ; initialize cyan queue tail
+715A E5          7 183 push    hl                          ; store cyan queue head
+715B             7 185 ; set up cyan board (up-down) start positions distances
+715B 21 09 61    7 187 ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
+715E 0E 43       7 188 ld      c, VICTORY+$40              ; set start positions distance + friendly flag
+7160 3E 02       7 189 ld      a, FRIEND                   ; set distance to compare with
+7162 BE          7 190 cp      (hl)                        ; check 1st start position distance
+7163 D4 22 71    7 191 call    nc, PathFinder_Update       ; if FRIEND >= distance, update distance
+7166 2C          7 192 inc     l                           ; move HL to next start position address
+7167 BE          7 193 cp      (hl)                        ; check 2nd start position distance
+7168 D4 22 71    7 194 call    nc, PathFinder_Update       ; (repeat for each start position)
+716B 2C          7 195 inc     l
+716C BE          7 196 cp      (hl)                        ; check 3rd start position distance
+716D D4 22 71    7 197 call    nc, PathFinder_Update
+7170 2C          7 198 inc     l
+7171 BE          7 199 cp      (hl)                        ; check 4th start position distance
+7172 D4 22 71    7 200 call    nc, PathFinder_Update
+7175 2C          7 201 inc     l
+7176 BE          7 202 cp      (hl)                        ; check 5th start position distance
+7177 D4 22 71    7 203 call    nc, PathFinder_Update
+717A 2C          7 204 inc     l
+717B BE          7 205 cp      (hl)                        ; check 6th start position distance
+717C D4 22 71    7 206 call    nc, PathFinder_Update
+717F 2C          7 207 inc     l
+7180 C3 6D 72    7 208 jp      Path_Finder_First           ; calculate two-distances of cyan board (up-down)
+7183             7 210 ; ----------------------------------------------------------------------------------------------------------------------
+7183             7 211 ; PathFinder_Cyan_DownUp: set up Path_Finder routine to calculate CYAN two-distance from DOWN to UP edge
+7183             7 212 ;
+7183             7 213 ; Input:    -
+7183             7 214 ;
+7183             7 215 ; Output:   A  = -1, if up edge couldn't be reached
+7183             7 216 ;           A  =  0, if there is chain of connected cyan tokens between the two edges
+7183             7 217 ;           A  = last edge position visited (-1), otherwise
+7183             7 218 ;           HL = cyan queue head address
 7183             7 219 ;
-7183             7 220 ; Destroys: BC, DE, HL, IY
-7183             7 221 ; ----------------------------------------------------------------------------------------------------------------------
-7183             7 222 PathFinder_Cyan_DownUp:
-7183 21 07 7D    7 223 ld      hl, CYAN_POSITIONS+7        ; HL points to cyan positions address (up-right corner)
-7186 11 4F 61    7 224 ld      de, CYAN_BOARD_DOWN_UP-1    ; DE points to cyan board down-up address (up-right corner)
-7189 CD 09 71    7 225 call    PathFinder_CopyPositions    ; copy from cyan positions to cyan board down-up
-718C FD 21 00 F7 7 227 ld      iy, $F700                   ; IYH = distance to check edge positions
-7190             7 228 ; IYL = last edge position visited
-7190 2A 2D 71    7 229 ld      hl, (@Queue_Tail+1)         ; retreive cyan queue tail
-7193 E5          7 230 push    hl                          ; initialize cyan queue head
-7194             7 232 ; set up cyan board (down-up) start positions distances
-7194 EB          7 234 ex      de, hl                      ; (take advantage of last "CopyPositions" execution)
-7195 2D          7 235 dec     l                           ; move HL to cyan boad down-up address (last position)
-7196 0E 43       7 236 ld      c, VICTORY+$40              ; set start positions distance + friendly flag
-7198 3E 02       7 237 ld      a, FRIEND                   ; set distance to compare with
-719A BE          7 238 cp      (hl)                        ; check 1st start position distance
-719B D4 22 71    7 239 call    nc, PathFinder_Update       ; if FRIEND >= distance, update distance
-719E 2D          7 240 dec     l                           ; move HL to next start position address
-719F BE          7 241 cp      (hl)                        ; check 2nd start position distance
-71A0 D4 22 71    7 242 call    nc, PathFinder_Update       ; (repeat for each start position)
-71A3 2D          7 243 dec     l
-71A4 BE          7 244 cp      (hl)                        ; check 3rd start position distance
-71A5 D4 22 71    7 245 call    nc, PathFinder_Update
-71A8 2D          7 246 dec     l
-71A9 BE          7 247 cp      (hl)                        ; check 4th start position distance
-71AA D4 22 71    7 248 call    nc, PathFinder_Update
-71AD 2D          7 249 dec     l
-71AE BE          7 250 cp      (hl)                        ; check 5th start position distance
-71AF D4 22 71    7 251 call    nc, PathFinder_Update
-71B2 2D          7 252 dec     l
-71B3 BE          7 253 cp      (hl)                        ; check 6th start position distance
-71B4 D4 22 71    7 254 call    nc, PathFinder_Update
-71B7 2D          7 255 dec     l
-71B8 C3 6D 72    7 256 jp      Path_Finder_First           ; calculate two-distances of cyan board (down-up)
-71BB             7 258 ; ----------------------------------------------------------------------------------------------------------------------
-71BB             7 259 ; PathFinder_Red_LeftRight: set up Path_Finder routine to calculate RED two-distance from LEFT to RIGHT edge
-71BB             7 260 ;
-71BB             7 261 ; Input:    -
+7183             7 220 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
+7183             7 221 ;
+7183             7 222 ; Destroys: BC, DE, IY
+7183             7 223 ; ----------------------------------------------------------------------------------------------------------------------
+7183             7 224 PathFinder_Cyan_DownUp:
+7183 21 07 7D    7 225 ld      hl, CYAN_POSITIONS+7        ; HL points to cyan positions address (up-right corner)
+7186 11 4F 61    7 226 ld      de, CYAN_BOARD_DOWN_UP-1    ; DE points to cyan board down-up address (up-right corner)
+7189 CD 09 71    7 227 call    PathFinder_CopyPositions    ; copy from cyan positions to cyan board down-up
+718C FD 21 00 F7 7 229 ld      iy, $F700                   ; IYH = distance to check edge positions
+7190             7 230 ; IYL = last edge position visited
+7190 2A 2D 71    7 231 ld      hl, (@Queue_Tail+1)         ; retreive cyan queue tail
+7193 E5          7 232 push    hl                          ; initialize cyan queue head
+7194             7 234 ; set up cyan board (down-up) start positions distances
+7194 EB          7 236 ex      de, hl                      ; (take advantage of last "CopyPositions" execution)
+7195 2D          7 237 dec     l                           ; move HL to cyan boad down-up address (last position)
+7196 0E 43       7 238 ld      c, VICTORY+$40              ; set start positions distance + friendly flag
+7198 3E 02       7 239 ld      a, FRIEND                   ; set distance to compare with
+719A BE          7 240 cp      (hl)                        ; check 1st start position distance
+719B D4 22 71    7 241 call    nc, PathFinder_Update       ; if FRIEND >= distance, update distance
+719E 2D          7 242 dec     l                           ; move HL to next start position address
+719F BE          7 243 cp      (hl)                        ; check 2nd start position distance
+71A0 D4 22 71    7 244 call    nc, PathFinder_Update       ; (repeat for each start position)
+71A3 2D          7 245 dec     l
+71A4 BE          7 246 cp      (hl)                        ; check 3rd start position distance
+71A5 D4 22 71    7 247 call    nc, PathFinder_Update
+71A8 2D          7 248 dec     l
+71A9 BE          7 249 cp      (hl)                        ; check 4th start position distance
+71AA D4 22 71    7 250 call    nc, PathFinder_Update
+71AD 2D          7 251 dec     l
+71AE BE          7 252 cp      (hl)                        ; check 5th start position distance
+71AF D4 22 71    7 253 call    nc, PathFinder_Update
+71B2 2D          7 254 dec     l
+71B3 BE          7 255 cp      (hl)                        ; check 6th start position distance
+71B4 D4 22 71    7 256 call    nc, PathFinder_Update
+71B7 2D          7 257 dec     l
+71B8 C3 6D 72    7 258 jp      Path_Finder_First           ; calculate two-distances of cyan board (down-up)
+71BB             7 260 ; ----------------------------------------------------------------------------------------------------------------------
+71BB             7 261 ; PathFinder_Red_LeftRight: set up Path_Finder routine to calculate RED two-distance from LEFT to RIGHT edge
 71BB             7 262 ;
-71BB             7 263 ; Output:   A = -1, if right edge couldn't be reached
-71BB             7 264 ;           A =  0, if there is chain of connected cyan tokens between the two edges
-71BB             7 265 ;           A = last edge position visited (-1), otherwise
-71BB             7 266 ;
-71BB             7 267 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
-71BB             7 268 ;
-71BB             7 269 ; Destroys: BC, DE, HL, IY
-71BB             7 270 ; ----------------------------------------------------------------------------------------------------------------------
-71BB             7 271 PathFinder_Red_LeftRight:
-71BB 21 07 7E    7 272 ld      hl, RED_POSITIONS+7         ; HL points to red positions address (up-right corner)
-71BE 11 07 64    7 273 ld      de, RED_BOARD_LEFT_RIGHT+7  ; DE points to red board left-right addr. (up-right corner)
-71C1 CD 09 71    7 274 call    PathFinder_CopyPositions    ; copy from red positions to red board left-right
-71C4             7 276 ; entry point for PathFinder_VictoryPath
-71C4             7 277 PathFinder_Red_CheckPath
-71C4 FD 21 00 01 7 278 ld      iy, $0100                   ; IYH = distance to check edge positions
-71C8             7 279 ; IYL = last edge position visited
-71C8 21 00 63    7 280 ld      hl, RED_QUEUE_AREA          ; HL points to red queue area address
-71CB 22 2D 71    7 281 ld      (@Queue_Tail+1), hl         ; initialize red queue tail
-71CE E5          7 282 push    hl                          ; store red queue head
-71CF             7 284 ; set up red board (left-right) start positions distances
-71CF 21 09 64    7 286 ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st position)
-71D2 0E 43       7 287 ld      c, VICTORY+$40              ; set start positions distance + friendly flag
-71D4 3E 02       7 288 ld      a, FRIEND                   ; set distance to compare with
-71D6 BE          7 289 cp      (hl)                        ; check 1st start position distance
-71D7 D4 22 71    7 290 call    nc, PathFinder_Update       ; if FRIEND >= distance, update distance
-71DA 2E 12       7 291 ld      l, (RED_BOARD_LEFT_RIGHT+18)%256
-71DC BE          7 292 cp      (hl)                        ; check 2nd start position distance
-71DD D4 22 71    7 293 call    nc, PathFinder_Update       ; (repeat for each start position)
-71E0 2E 1B       7 294 ld      l, (RED_BOARD_LEFT_RIGHT+27)%256
-71E2 BE          7 295 cp      (hl)                        ; check 3rd start position distance
-71E3 D4 22 71    7 296 call    nc, PathFinder_Update
-71E6 2E 24       7 297 ld      l, (RED_BOARD_LEFT_RIGHT+36)%256
-71E8 BE          7 298 cp      (hl)                        ; check 4th start position distance
-71E9 D4 22 71    7 299 call    nc, PathFinder_Update
-71EC 2E 2D       7 300 ld      l, (RED_BOARD_LEFT_RIGHT+45)%256
-71EE BE          7 301 cp      (hl)                        ; check 5th start position distance
-71EF D4 22 71    7 302 call    nc, PathFinder_Update
-71F2 2E 36       7 303 ld      l, (RED_BOARD_LEFT_RIGHT+54)%256
-71F4 BE          7 304 cp      (hl)                        ; check 6th start position distance
-71F5 D4 22 71    7 305 call    nc, PathFinder_Update
-71F8 2E 3F       7 306 ld      l, (RED_BOARD_LEFT_RIGHT+63)%256
-71FA C3 6D 72    7 307 jp      Path_Finder_First           ; calculate two-distances of red board (left-right)
-71FD             7 309 ; ----------------------------------------------------------------------------------------------------------------------
-71FD             7 310 ; PathFinder_Red_RightLeft: set up Path_Finder routine to calculate RED two-distance from RIGHT to LEFT edge
-71FD             7 311 ;
-71FD             7 312 ; Input:    -
-71FD             7 313 ;
-71FD             7 314 ; Output:   A = -1, if left edge couldn't be reached
-71FD             7 315 ;           A =  0, if there is chain of connected cyan tokens between the two edges
-71FD             7 316 ;           A = last edge position visited (-1), otherwise
-71FD             7 317 ;
-71FD             7 318 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
-71FD             7 319 ;
-71FD             7 320 ; Destroys: BC, DE, HL, IY
-71FD             7 321 ; ----------------------------------------------------------------------------------------------------------------------
-71FD             7 322 PathFinder_Red_RightLeft:
-71FD 21 07 7E    7 323 ld      hl, RED_POSITIONS+7         ; HL points to red positions address (up-right corner)
-7200 11 4F 64    7 324 ld      de, RED_BOARD_RIGHT_LEFT-1  ; DE points to red board right-left addr. (up-right corner)
-7203 CD 09 71    7 325 call    PathFinder_CopyPositions    ; copy from red positions to red board right-left
-7206 FD 21 00 FF 7 327 ld      iy, $FF00                   ; IYH = distance to check edge positions
-720A             7 328 ; IYL = last edge position visited
-720A 2A 2D 71    7 329 ld      hl, (@Queue_Tail+1)         ; retreive red queue tail
-720D E5          7 330 push    hl                          ; initialize red queue head
-720E             7 332 ; set up red board (right-left) start positions distances
-720E EB          7 334 ex      de, hl                      ; take advantage of last "CopyPositions" execution
-720F 2D          7 335 dec     l                           ; move HL to red board right-left address (last position)
-7210 0E 43       7 336 ld      c, VICTORY+$40              ; set start positions distance + friendly flag
-7212 3E 02       7 337 ld      a, FRIEND                   ; set distance to compare with
-7214 BE          7 338 cp      (hl)                        ; check 1st start position distance
-7215 D4 22 71    7 339 call    nc, PathFinder_Update       ; if FRIEND >= distance, update distance
-7218 2E 84       7 340 ld      l, (RED_BOARD_RIGHT_LEFT+52)%256
-721A BE          7 341 cp      (hl)                        ; check 2nd start position distance
-721B D4 22 71    7 342 call    nc, PathFinder_Update       ; (repeat for each start position)
-721E 2E 7B       7 343 ld      l, (RED_BOARD_RIGHT_LEFT+43)%256
-7220 BE          7 344 cp      (hl)                        ; check 3rd start position distance
-7221 D4 22 71    7 345 call    nc, PathFinder_Update
-7224 2E 72       7 346 ld      l, (RED_BOARD_RIGHT_LEFT+34)%256
-7226 BE          7 347 cp      (hl)                        ; check 4th start position distance
-7227 D4 22 71    7 348 call    nc, PathFinder_Update
-722A 2E 69       7 349 ld      l, (RED_BOARD_RIGHT_LEFT+25)%256
-722C BE          7 350 cp      (hl)                        ; check 5th start position distance
-722D D4 22 71    7 351 call    nc, PathFinder_Update
-7230 2E 60       7 352 ld      l, (RED_BOARD_RIGHT_LEFT+16)%256
-7232 BE          7 353 cp      (hl)                        ; check 6th start position distance
-7233 D4 22 71    7 354 call    nc, PathFinder_Update
-7236 2E 57       7 355 ld      l, (RED_BOARD_RIGHT_LEFT+7)%256
-7238 C3 6D 72    7 356 jp      Path_Finder_First           ; calculate red two-distance (right-left)
-723B             7 358 ; ----------------------------------------------------------------------------------------------------------------------
-723B             7 359 ; Path_Finder: calculate two-distance metric for each board position
-723B             7 360 ;
-723B             7 361 ; The algorithm is implemented running PATHFINDER, starting at the corresponding side of the input board
-723B             7 362 ;
-723B             7 363 ; Input:    HL  = cyan or red queue area address
-723B             7 364 ;           IYH = distance to check edge positions
-723B             7 365 ;           IYL = 0
+71BB             7 263 ; Input:    -
+71BB             7 264 ;
+71BB             7 265 ; Output:   A  = -1, if right edge couldn't be reached
+71BB             7 266 ;           A  =  0, if there is chain of connected cyan tokens between the two edges
+71BB             7 267 ;           A  = last edge position visited (-1), otherwise
+71BB             7 268 ;           HL = red queue head address
+71BB             7 269 ;
+71BB             7 270 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
+71BB             7 271 ;
+71BB             7 272 ; Destroys: BC, DE, IY
+71BB             7 273 ; ----------------------------------------------------------------------------------------------------------------------
+71BB             7 274 PathFinder_Red_LeftRight:
+71BB 21 07 7E    7 275 ld      hl, RED_POSITIONS+7         ; HL points to red positions address (up-right corner)
+71BE 11 07 64    7 276 ld      de, RED_BOARD_LEFT_RIGHT+7  ; DE points to red board left-right addr. (up-right corner)
+71C1 CD 09 71    7 277 call    PathFinder_CopyPositions    ; copy from red positions to red board left-right
+71C4             7 279 ; entry point for PathFinder_VictoryPath
+71C4             7 280 PathFinder_Red_CheckPath
+71C4 FD 21 00 01 7 281 ld      iy, $0100                   ; IYH = distance to check edge positions
+71C8             7 282 ; IYL = last edge position visited
+71C8 21 00 63    7 283 ld      hl, RED_QUEUE_AREA          ; HL points to red queue area address
+71CB 22 2D 71    7 284 ld      (@Queue_Tail+1), hl         ; initialize red queue tail
+71CE E5          7 285 push    hl                          ; store red queue head
+71CF             7 287 ; set up red board (left-right) start positions distances
+71CF 21 09 64    7 289 ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st position)
+71D2 0E 43       7 290 ld      c, VICTORY+$40              ; set start positions distance + friendly flag
+71D4 3E 02       7 291 ld      a, FRIEND                   ; set distance to compare with
+71D6 BE          7 292 cp      (hl)                        ; check 1st start position distance
+71D7 D4 22 71    7 293 call    nc, PathFinder_Update       ; if FRIEND >= distance, update distance
+71DA 2E 12       7 294 ld      l, (RED_BOARD_LEFT_RIGHT+18)%256
+71DC BE          7 295 cp      (hl)                        ; check 2nd start position distance
+71DD D4 22 71    7 296 call    nc, PathFinder_Update       ; (repeat for each start position)
+71E0 2E 1B       7 297 ld      l, (RED_BOARD_LEFT_RIGHT+27)%256
+71E2 BE          7 298 cp      (hl)                        ; check 3rd start position distance
+71E3 D4 22 71    7 299 call    nc, PathFinder_Update
+71E6 2E 24       7 300 ld      l, (RED_BOARD_LEFT_RIGHT+36)%256
+71E8 BE          7 301 cp      (hl)                        ; check 4th start position distance
+71E9 D4 22 71    7 302 call    nc, PathFinder_Update
+71EC 2E 2D       7 303 ld      l, (RED_BOARD_LEFT_RIGHT+45)%256
+71EE BE          7 304 cp      (hl)                        ; check 5th start position distance
+71EF D4 22 71    7 305 call    nc, PathFinder_Update
+71F2 2E 36       7 306 ld      l, (RED_BOARD_LEFT_RIGHT+54)%256
+71F4 BE          7 307 cp      (hl)                        ; check 6th start position distance
+71F5 D4 22 71    7 308 call    nc, PathFinder_Update
+71F8 2E 3F       7 309 ld      l, (RED_BOARD_LEFT_RIGHT+63)%256
+71FA C3 6D 72    7 310 jp      Path_Finder_First           ; calculate two-distances of red board (left-right)
+71FD             7 312 ; ----------------------------------------------------------------------------------------------------------------------
+71FD             7 313 ; PathFinder_Red_RightLeft: set up Path_Finder routine to calculate RED two-distance from RIGHT to LEFT edge
+71FD             7 314 ;
+71FD             7 315 ; Input:    -
+71FD             7 316 ;
+71FD             7 317 ; Output:   A  = -1, if left edge couldn't be reached
+71FD             7 318 ;           A  =  0, if there is chain of connected cyan tokens between the two edges
+71FD             7 319 ;           A  = last edge position visited (-1), otherwise
+71FD             7 320 ;           HL = red queue head address
+71FD             7 321 ;
+71FD             7 322 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
+71FD             7 323 ;
+71FD             7 324 ; Destroys: BC, DE, IY
+71FD             7 325 ; ----------------------------------------------------------------------------------------------------------------------
+71FD             7 326 PathFinder_Red_RightLeft:
+71FD 21 07 7E    7 327 ld      hl, RED_POSITIONS+7         ; HL points to red positions address (up-right corner)
+7200 11 4F 64    7 328 ld      de, RED_BOARD_RIGHT_LEFT-1  ; DE points to red board right-left addr. (up-right corner)
+7203 CD 09 71    7 329 call    PathFinder_CopyPositions    ; copy from red positions to red board right-left
+7206 FD 21 00 FF 7 331 ld      iy, $FF00                   ; IYH = distance to check edge positions
+720A             7 332 ; IYL = last edge position visited
+720A 2A 2D 71    7 333 ld      hl, (@Queue_Tail+1)         ; retreive red queue tail
+720D E5          7 334 push    hl                          ; initialize red queue head
+720E             7 336 ; set up red board (right-left) start positions distances
+720E EB          7 338 ex      de, hl                      ; take advantage of last "CopyPositions" execution
+720F 2D          7 339 dec     l                           ; move HL to red board right-left address (last position)
+7210 0E 43       7 340 ld      c, VICTORY+$40              ; set start positions distance + friendly flag
+7212 3E 02       7 341 ld      a, FRIEND                   ; set distance to compare with
+7214 BE          7 342 cp      (hl)                        ; check 1st start position distance
+7215 D4 22 71    7 343 call    nc, PathFinder_Update       ; if FRIEND >= distance, update distance
+7218 2E 84       7 344 ld      l, (RED_BOARD_RIGHT_LEFT+52)%256
+721A BE          7 345 cp      (hl)                        ; check 2nd start position distance
+721B D4 22 71    7 346 call    nc, PathFinder_Update       ; (repeat for each start position)
+721E 2E 7B       7 347 ld      l, (RED_BOARD_RIGHT_LEFT+43)%256
+7220 BE          7 348 cp      (hl)                        ; check 3rd start position distance
+7221 D4 22 71    7 349 call    nc, PathFinder_Update
+7224 2E 72       7 350 ld      l, (RED_BOARD_RIGHT_LEFT+34)%256
+7226 BE          7 351 cp      (hl)                        ; check 4th start position distance
+7227 D4 22 71    7 352 call    nc, PathFinder_Update
+722A 2E 69       7 353 ld      l, (RED_BOARD_RIGHT_LEFT+25)%256
+722C BE          7 354 cp      (hl)                        ; check 5th start position distance
+722D D4 22 71    7 355 call    nc, PathFinder_Update
+7230 2E 60       7 356 ld      l, (RED_BOARD_RIGHT_LEFT+16)%256
+7232 BE          7 357 cp      (hl)                        ; check 6th start position distance
+7233 D4 22 71    7 358 call    nc, PathFinder_Update
+7236 2E 57       7 359 ld      l, (RED_BOARD_RIGHT_LEFT+7)%256
+7238 C3 6D 72    7 360 jp      Path_Finder_First           ; calculate red two-distance (right-left)
+723B             7 362 ; ----------------------------------------------------------------------------------------------------------------------
+723B             7 363 ; Path_Finder: calculate two-distance metric for each board position
+723B             7 364 ;
+723B             7 365 ; The algorithm is implemented running PATHFINDER, starting at the corresponding side of the input board
 723B             7 366 ;
-723B             7 367 ; Output:   A = -1, if corresponding edge couldn't be reached
-723B             7 368 ;           A =  0, if there is chain of connected (color) tokens between the two edges
-723B             7 369 ;           A = last edge position visited (-1), otherwise
+723B             7 367 ; Input:    HL  = cyan or red queue area address
+723B             7 368 ;           IYH = distance to check edge positions
+723B             7 369 ;           IYL = 0
 723B             7 370 ;
-723B             7 371 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
-723B             7 372 ;
-723B             7 373 ; Destroys: DE, HL, IY
-723B             7 374 ; ----------------------------------------------------------------------------------------------------------------------
-723B             7 375 Path_Finder:
-723B 2C          7 376 inc     l                           ; move queue head down
-723C E5          7 377 push    hl                          ; preserve queue head address
-723D 6E          7 378 ld      l, (hl)                     ; retrieve next position to be checked
-723E 24          7 379 inc     h                           ; move HL to corresponding board address
-723F 4E          7 380 ld      c, (hl)                     ; retrieve distance from this position to start
-7240 5D          7 381 ld      e, l                        ; store current position
-7241             7 383 ; look for adjacent positions
-7241 7D          7 385 ld      a, l                        ; get current position
-7242 FD 84       7 386 add     a, iyh                      ; add distance to check edge positions
-7244 6F          7 387 ld      l, a                        ; move HL to calculated position address
-7245 CB 7E       7 388 bit     7, (hl)                     ; is it an edge?
-7247 20 34       7 389 jr      nz, Path_Finder_Adjacent    ; yes, process adjacent positions
-7249 3E 02       7 391 ld      a, FRIEND                   ; set distance to compare with
-724B             7 392 ; return point from PathFinder_Adjacent
-724B             7 393 Path_Finder_Neighbors
-724B 6B          7 394 ld      l, e                        ; restore current position to be checked
-724C 2C          7 395 inc     l                           ; move HL to right neighbor address
-724D BE          7 396 cp      (hl)                        ; check right neighbor distance
-724E D4 22 71    7 397 call    nc, PathFinder_Update       ; if FRIEND >= distance, update distance
-7251 2D          7 398 dec     l                           ; move HL to left neighbor address
-7252 2D          7 399 dec     l
-7253 BE          7 400 cp      (hl)                        ; check left neighbor distance
-7254 D4 22 71    7 401 call    nc, PathFinder_Update       ; (repeat for each neighbor)
-7257 11 F8 FF    7 402 ld      de, -WIDTH
-725A 19          7 403 add     hl, de
-725B BE          7 404 cp      (hl)                        ; check upper-left neighbor distance
-725C D4 22 71    7 405 call    nc, PathFinder_Update
-725F 2C          7 406 inc     l
-7260 BE          7 407 cp      (hl)                        ; check upper-right neighbor distance
-7261 D4 22 71    7 408 call    nc, PathFinder_Update
-7264 11 10 00    7 409 ld      de, WIDTH*2
-7267 19          7 410 add     hl, de
-7268 BE          7 411 cp      (hl)                        ; check lower-left neighbor distance
-7269 D4 22 71    7 412 call    nc, PathFinder_Update
-726C 2C          7 413 inc     l
-726D             7 414 Path_Finder_First
-726D BE          7 415 cp      (hl)                        ; check lower-right neighbor distance
-726E D4 22 71    7 416 call    nc, PathFinder_Update
-7271 E1          7 417 pop     hl                          ; retreive queue head address
-7272 3A 2D 71    7 418 ld      a, (@Queue_Tail+1)          ; get queue tail address (low-byte)
-7275 BD          7 419 cp      l                           ; is queue empty?
-7276 C2 3B 72    7 420 jp      nz, Path_Finder             ; no, repeat until queue is empty
-7279 FD 7D       7 422 ld      a, iyl                      ; get last edge position visited
-727B 3D          7 423 dec     a                           ; return A = -1, if the edge couldn't be reached
-727C C9          7 424 ret
-727D             7 426 ; ----------------------------------------------------------------------------------------------------------------------
-727D             7 427 ; Check adjacent hexagons.
-727D             7 428 ;
-727D             7 429 ; This is an approach to update the two-distance of adjacent positions. As explained in Jack van Rijswijck's thesis:
-727D             7 430 ; "two cells are adjacent if they share a common edge on the board."
-727D             7 431 ;
-727D             7 432 ; Input:    E  = current position
-727D             7 433 ;           C  = current distance (with a flag at 6th bit that indicates a friendly position)
-727D             7 434 ;           HL = current edge position address (a flag in 7th bit indicates an edge position and the lowest 3 bits the
-727D             7 435 ;                edge number)
+723B             7 371 ; Output:   A   = -1, if corresponding edge couldn't be reached
+723B             7 372 ;           A   =  0, if there is chain of connected (color) tokens between the two edges
+723B             7 373 ;           A   = last edge position visited (-1), otherwise
+723B             7 374 ;           HL  = cyan or red queue head address
+723B             7 375 ;
+723B             7 376 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
+723B             7 377 ;
+723B             7 378 ; Destroys: BC, DE, IY
+723B             7 379 ; ----------------------------------------------------------------------------------------------------------------------
+723B             7 380 Path_Finder:
+723B 2C          7 381 inc     l                           ; move queue head down
+723C E5          7 382 push    hl                          ; preserve queue head address
+723D 6E          7 383 ld      l, (hl)                     ; retrieve next position to be checked
+723E 24          7 384 inc     h                           ; move HL to corresponding board address
+723F 4E          7 385 ld      c, (hl)                     ; retrieve distance from this position to start
+7240 5D          7 386 ld      e, l                        ; store current position
+7241             7 388 ; look for adjacent positions
+7241 7D          7 390 ld      a, l                        ; get current position
+7242 FD 84       7 391 add     a, iyh                      ; add distance to check edge positions
+7244 6F          7 392 ld      l, a                        ; move HL to calculated position address
+7245 CB 7E       7 393 bit     7, (hl)                     ; is it an edge?
+7247 20 34       7 394 jr      nz, Path_Finder_Adjacent    ; yes, process adjacent positions
+7249 3E 02       7 396 ld      a, FRIEND                   ; set distance to compare with
+724B             7 397 ; return point from PathFinder_Adjacent
+724B             7 398 Path_Finder_Neighbors
+724B 6B          7 399 ld      l, e                        ; restore current position to be checked
+724C 2C          7 400 inc     l                           ; move HL to right neighbor address
+724D BE          7 401 cp      (hl)                        ; check right neighbor distance
+724E D4 22 71    7 402 call    nc, PathFinder_Update       ; if FRIEND >= distance, update distance
+7251 2D          7 403 dec     l                           ; move HL to left neighbor address
+7252 2D          7 404 dec     l
+7253 BE          7 405 cp      (hl)                        ; check left neighbor distance
+7254 D4 22 71    7 406 call    nc, PathFinder_Update       ; (repeat for each neighbor)
+7257 11 F8 FF    7 407 ld      de, -WIDTH
+725A 19          7 408 add     hl, de
+725B BE          7 409 cp      (hl)                        ; check upper-left neighbor distance
+725C D4 22 71    7 410 call    nc, PathFinder_Update
+725F 2C          7 411 inc     l
+7260 BE          7 412 cp      (hl)                        ; check upper-right neighbor distance
+7261 D4 22 71    7 413 call    nc, PathFinder_Update
+7264 11 10 00    7 414 ld      de, WIDTH*2
+7267 19          7 415 add     hl, de
+7268 BE          7 416 cp      (hl)                        ; check lower-left neighbor distance
+7269 D4 22 71    7 417 call    nc, PathFinder_Update
+726C 2C          7 418 inc     l
+726D             7 419 Path_Finder_First
+726D BE          7 420 cp      (hl)                        ; check lower-right neighbor distance
+726E D4 22 71    7 421 call    nc, PathFinder_Update
+7271 E1          7 422 pop     hl                          ; retreive queue head address
+7272 3A 2D 71    7 423 ld      a, (@Queue_Tail+1)          ; get queue tail address (low-byte)
+7275 BD          7 424 cp      l                           ; is queue empty?
+7276 C2 3B 72    7 425 jp      nz, Path_Finder             ; no, repeat until queue is empty
+7279 FD 7D       7 427 ld      a, iyl                      ; get last edge position visited
+727B 3D          7 428 dec     a                           ; return A = -1, if the edge couldn't be reached
+727C C9          7 429 ret
+727D             7 431 ; ----------------------------------------------------------------------------------------------------------------------
+727D             7 432 ; Check adjacent hexagons.
+727D             7 433 ;
+727D             7 434 ; This is an approach to update the two-distance of adjacent positions. As explained in Jack van Rijswijck's thesis:
+727D             7 435 ; "two cells are adjacent if they share a common edge on the board."
 727D             7 436 ;
-727D             7 437 ; Output:   A = 0, if there is a chain of connected tokens of the same color between the two edges.
-727D             7 438 ;           A = FRIEND and E = current position, otherwise.
-727D             7 439 ;
-727D             7 440 ; Destroys: DE, HL
-727D             7 441 ; ----------------------------------------------------------------------------------------------------------------------
-727D             7 442 Path_Finder_Adjacent
-727D 3E 43       7 443 ld      a, VICTORY+$40              ; set victory distance + friendly flag
-727F B9          7 444 cp      c                           ; is current distance victory and friendly?
-7280 28 0E       7 445 jr      z, Path_Finder_Abort        ; yes, abort path_finder
-7282 FD 6B       7 447 ld      iyl, e                      ; update last edge position visited
-7284 54          7 448 ld      d, h                        ; store pointer to current position address in DE
-7285 6E          7 449 ld      l, (hl)                     ; get current edge position
-7286 CB 25       7 450 sla     l                           ; calculate vector table routine index
-7288 24          7 451 inc     h                           ; move HL to (cyan or red) vector table routine address
-7289 7E          7 452 ld      a, (hl)                     ; get low byte of vector table routine address
-728A 2C          7 453 inc     l                           ; move HL to high byte of vector table routine address
-728B 66          7 454 ld      h, (hl)                     ; get high byte of vector table routine address
-728C 6F          7 455 ld      l, a                        ; HL points to 'PathFinder_[COLOR]_Edge_[n]' routine address
-728D 3E 02       7 456 ld      a, FRIEND                   ; set distance to compare with
-728F E9          7 457 jp      (hl)                        ; jump to 'PathFinder_[COLOR]_Edge_[n]' routine
-7290             7 458 Path_Finder_Abort
-7290 E1          7 459 pop     hl                          ; restore queue head address
-7291 AF          7 460 xor     a                           ; return A = 0
-7292 C9          7 461 ret
-7293             7 463 ; ----------------------------------------------------------------------------------------------------------------------
-7293             7 464 ;  Check two-distance of RED adjacents
-7293             7 465 ; ----------------------------------------------------------------------------------------------------------------------
-7293             7 466 PathFinder_RED_Edge_0
-7293 EB          7 467 ex      de, hl                      ; restore pointer to current position address
-7294 11 12 00    7 468 ld      de, 9*2                     ; calculate distance to adjacent #2
-7297 19          7 469 add     hl, de                      ; move HL to adjacent #2 address
-7298 BE          7 470 cp      (hl)                        ; check adjacent #2 distance
-7299 D4 22 71    7 471 call    nc, PathFinder_Update       ; if FRIEND >= adjacent #2 distance, update distance
-729C 11 09 00    7 472 ld      de, 9                       ; calculate distance to adjacent #3
-729F 19          7 473 add     hl, de                      ; move HL to adjacent #3 address
-72A0 BE          7 474 cp      (hl)                        ; check adjacent #3 distance
-72A1 D4 22 71    7 475 call    nc, PathFinder_Update       ; (repeat for each adjacent)
-72A4 11 09 00    7 476 ld      de, 9
-72A7 19          7 477 add     hl, de
-72A8 BE          7 478 cp      (hl)                        ; check adjacent #4 distance
-72A9 D4 22 71    7 479 call    nc, PathFinder_Update
-72AC 11 09 00    7 480 ld      de, 9
-72AF 19          7 481 add     hl, de
-72B0 BE          7 482 cp      (hl)                        ; check adjacent #5 distance
-72B1 D4 22 71    7 483 call    nc, PathFinder_Update
-72B4 11 09 00    7 484 ld      de, 9
-72B7 19          7 485 add     hl, de
-72B8 BE          7 486 cp      (hl)                        ; check adjacent #6 distance
-72B9 D4 22 71    7 487 call    nc, PathFinder_Update
-72BC FD 5D       7 488 ld      e, iyl                      ; restore current position
-72BE C3 4B 72    7 489 jp      Path_Finder_Neighbors       ; continue processing neighbors
-72C1             7 491 PathFinder_RED_Edge_1
-72C1 EB          7 492 ex      de, hl                      ; restore pointer to current position address
-72C2 11 12 00    7 493 ld      de, 9*2
-72C5 19          7 494 add     hl, de
-72C6 BE          7 495 cp      (hl)                        ; check adjacent #3 distance
-72C7 D4 22 71    7 496 call    nc, PathFinder_Update
-72CA 11 09 00    7 497 ld      de, 9
-72CD 19          7 498 add     hl, de
-72CE BE          7 499 cp      (hl)                        ; check adjacent #4 distance
-72CF D4 22 71    7 500 call    nc, PathFinder_Update
-72D2 11 09 00    7 501 ld      de, 9
-72D5 19          7 502 add     hl, de
-72D6 BE          7 503 cp      (hl)                        ; check adjacent #5 distance
-72D7 D4 22 71    7 504 call    nc, PathFinder_Update
-72DA 11 09 00    7 505 ld      de, 9
-72DD 19          7 506 add     hl, de
-72DE BE          7 507 cp      (hl)                        ; check adjacent #6 distance
-72DF D4 22 71    7 508 call    nc, PathFinder_Update
-72E2 FD 5D       7 509 ld      e, iyl                      ; restore current position
-72E4 C3 4B 72    7 510 jp      Path_Finder_Neighbors       ; continue processing neighbors
-72E7             7 512 PathFinder_RED_Edge_2
-72E7 EB          7 513 ex      de, hl                      ; restore pointer to current position address
-72E8 11 12 00    7 514 ld      de, 9*2
-72EB 19          7 515 add     hl, de
-72EC BE          7 516 cp      (hl)                        ; check adjacent #4 distance
-72ED D4 22 71    7 517 call    nc, PathFinder_Update
-72F0 11 09 00    7 518 ld      de, 9
-72F3 19          7 519 add     hl, de
-72F4 BE          7 520 cp      (hl)                        ; check adjacent #5 distance
-72F5 D4 22 71    7 521 call    nc, PathFinder_Update
-72F8 11 09 00    7 522 ld      de, 9
-72FB 19          7 523 add     hl, de
-72FC BE          7 524 cp      (hl)                        ; check adjacent #6 distance
-72FD D4 22 71    7 525 call    nc, PathFinder_Update
-7300 11 CA FF    7 526 ld      de, -9*6
-7303 19          7 527 add     hl, de
-7304 BE          7 528 cp      (hl)                        ; check adjacent #0 distance
-7305 D4 22 71    7 529 call    nc, PathFinder_Update
-7308 FD 5D       7 530 ld      e, iyl                      ; restore current position
-730A C3 4B 72    7 531 jp      Path_Finder_Neighbors       ; continue processing neighbors
-730D             7 533 PathFinder_RED_Edge_3
-730D EB          7 534 ex      de, hl                      ; restore pointer to current position address
-730E 11 E5 FF    7 535 ld      de, -9*3
-7311 19          7 536 add     hl, de
-7312 BE          7 537 cp      (hl)                        ; check adjacent #0 distance
-7313 D4 22 71    7 538 call    nc, PathFinder_Update
-7316 11 09 00    7 539 ld      de, 9
-7319 19          7 540 add     hl, de
-731A BE          7 541 cp      (hl)                        ; check adjacent #1 distance
-731B D4 22 71    7 542 call    nc, PathFinder_Update
-731E 11 24 00    7 543 ld      de, 9*4
-7321 19          7 544 add     hl, de
-7322 BE          7 545 cp      (hl)                        ; check adjacent #5 distance
-7323 D4 22 71    7 546 call    nc, PathFinder_Update
-7326 11 09 00    7 547 ld      de, 9
-7329 19          7 548 add     hl, de
-732A BE          7 549 cp      (hl)                        ; check adjacent #6 distance
-732B D4 22 71    7 550 call    nc, PathFinder_Update
-732E FD 5D       7 551 ld      e, iyl                      ; restore current position
-7330 C3 4B 72    7 552 jp      Path_Finder_Neighbors       ; continue processing neighbors
-7333             7 554 PathFinder_RED_Edge_4
-7333 EB          7 555 ex      de, hl                      ; restore pointer to current position address
-7334 11 12 00    7 556 ld      de, 9*2
-7337 19          7 557 add     hl, de
-7338 BE          7 558 cp      (hl)                        ; check adjacent #6 distance
-7339 D4 22 71    7 559 call    nc, PathFinder_Update
-733C 11 CA FF    7 560 ld      de, -9*6
-733F 19          7 561 add     hl, de
-7340 BE          7 562 cp      (hl)                        ; check adjacent #0 distance
-7341 D4 22 71    7 563 call    nc, PathFinder_Update
-7344 11 09 00    7 564 ld      de, 9
-7347 19          7 565 add     hl, de
-7348 BE          7 566 cp      (hl)                        ; check adjacent #1 distance
-7349 D4 22 71    7 567 call    nc, PathFinder_Update
-734C 11 09 00    7 568 ld      de, 9
-734F 19          7 569 add     hl, de
-7350 BE          7 570 cp      (hl)                        ; check adjacent #2 distance
-7351 D4 22 71    7 571 call    nc, PathFinder_Update
-7354 FD 5D       7 572 ld      e, iyl                      ; restore current position
-7356 C3 4B 72    7 573 jp      Path_Finder_Neighbors       ; continue processing neighbors
-7359             7 575 PathFinder_RED_Edge_5
-7359 EB          7 576 ex      de, hl                      ; restore pointer to current position address
-735A 11 D3 FF    7 577 ld      de, -9*5
-735D 19          7 578 add     hl, de
-735E BE          7 579 cp      (hl)                        ; check adjacent #0 distance
-735F D4 22 71    7 580 call    nc, PathFinder_Update
-7362 11 09 00    7 581 ld      de, 9
-7365 19          7 582 add     hl, de
-7366 BE          7 583 cp      (hl)                        ; check adjacent #1 distance
-7367 D4 22 71    7 584 call    nc, PathFinder_Update
-736A 11 09 00    7 585 ld      de, 9
-736D 19          7 586 add     hl, de
-736E BE          7 587 cp      (hl)                        ; check adjacent #2 distance
-736F D4 22 71    7 588 call    nc, PathFinder_Update
-7372 11 09 00    7 589 ld      de, 9
-7375 19          7 590 add     hl, de
-7376 BE          7 591 cp      (hl)                        ; check adjacent #3 distance
-7377 D4 22 71    7 592 call    nc, PathFinder_Update
-737A FD 5D       7 593 ld      e, iyl                      ; restore current position
-737C C3 4B 72    7 594 jp      Path_Finder_Neighbors       ; continue processing neighbors
-737F             7 596 PathFinder_RED_Edge_6
-737F EB          7 597 ex      de, hl                      ; restore pointer to current position address
-7380 11 CA FF    7 598 ld      de, -9*6
-7383 19          7 599 add     hl, de
-7384 BE          7 600 cp      (hl)                        ; check adjacent #0 distance
-7385 D4 22 71    7 601 call    nc, PathFinder_Update
-7388 11 09 00    7 602 ld      de, 9
-738B 19          7 603 add     hl, de
-738C BE          7 604 cp      (hl)                        ; check adjacent #1 distance
-738D D4 22 71    7 605 call    nc, PathFinder_Update
-7390 11 09 00    7 606 ld      de, 9
-7393 19          7 607 add     hl, de
-7394 BE          7 608 cp      (hl)                        ; check adjacent #2 distance
-7395 D4 22 71    7 609 call    nc, PathFinder_Update
-7398 11 09 00    7 610 ld      de, 9
-739B 19          7 611 add     hl, de
-739C BE          7 612 cp      (hl)                        ; check adjacent #3 distance
-739D D4 22 71    7 613 call    nc, PathFinder_Update
-73A0 11 09 00    7 614 ld      de, 9
-73A3 19          7 615 add     hl, de
-73A4 BE          7 616 cp      (hl)                        ; check adjacent #4 distance
-73A5 D4 22 71    7 617 call    nc, PathFinder_Update
-73A8 FD 5D       7 618 ld      e, iyl                      ; restore current position
-73AA C3 4B 72    7 619 jp      Path_Finder_Neighbors       ; continue processing neighbors
-73AD             7 621 ; ----------------------------------------------------------------------------------------------------------------------
-73AD             7 622 ;  Check two-distance of CYAN adjacents
-73AD             7 623 ; ----------------------------------------------------------------------------------------------------------------------
-73AD             7 624 PathFinder_CYAN_Edge_0
-73AD EB          7 625 ex      de, hl                      ; restore pointer to current position address
-73AE 2C          7 626 inc     l
-73AF 2C          7 627 inc     l
-73B0 BE          7 628 cp      (hl)                        ; check adjacent #2 distance
-73B1 D4 22 71    7 629 call    nc, PathFinder_Update
-73B4 2C          7 630 inc     l
-73B5 BE          7 631 cp      (hl)                        ; check adjacent #3 distance
-73B6 D4 22 71    7 632 call    nc, PathFinder_Update
-73B9 2C          7 633 inc     l
-73BA BE          7 634 cp      (hl)                        ; check adjacent #4 distance
-73BB D4 22 71    7 635 call    nc, PathFinder_Update
-73BE 2C          7 636 inc     l
-73BF BE          7 637 cp      (hl)                        ; check adjacent of edge number 5
-73C0 D4 22 71    7 638 call    nc, PathFinder_Update
-73C3 2C          7 639 inc     l
-73C4 BE          7 640 cp      (hl)                        ; check adjacent of edge number 6
-73C5 D4 22 71    7 641 call    nc, PathFinder_Update
-73C8 FD 5D       7 642 ld      e, iyl                      ; restore current position
-73CA C3 4B 72    7 643 jp      Path_Finder_Neighbors       ; continue processing neighbors
-73CD             7 645 PathFinder_CYAN_Edge_1
-73CD EB          7 646 ex      de, hl                      ; restore pointer to current position address
-73CE 2C          7 647 inc     l
-73CF 2C          7 648 inc     l
-73D0 BE          7 649 cp      (hl)                        ; check adjacent #3 distance
-73D1 D4 22 71    7 650 call    nc, PathFinder_Update
-73D4 2C          7 651 inc     l
-73D5 BE          7 652 cp      (hl)                        ; check adjacent #4 distance
-73D6 D4 22 71    7 653 call    nc, PathFinder_Update
-73D9 2C          7 654 inc     l
-73DA BE          7 655 cp      (hl)                        ; check adjacent #5 distance
-73DB D4 22 71    7 656 call    nc, PathFinder_Update
-73DE 2C          7 657 inc     l
-73DF BE          7 658 cp      (hl)                        ; check adjacent #6 distance
-73E0 D4 22 71    7 659 call    nc, PathFinder_Update
-73E3 FD 5D       7 660 ld      e, iyl                      ; restore current position
-73E5 C3 4B 72    7 661 jp      Path_Finder_Neighbors       ; continue processing neighbors
-73E8             7 663 PathFinder_CYAN_Edge_2
-73E8 EB          7 664 ex      de, hl                      ; restore pointer to current position address
-73E9 2D          7 665 dec     l
-73EA 2D          7 666 dec     l
-73EB BE          7 667 cp      (hl)                        ; check adjacent #0 distance
-73EC D4 22 71    7 668 call    nc, PathFinder_Update
-73EF 2C          7 669 inc     l
-73F0 2C          7 670 inc     l
-73F1 2C          7 671 inc     l
-73F2 2C          7 672 inc     l
-73F3 BE          7 673 cp      (hl)                        ; check adjacent #4 distance
-73F4 D4 22 71    7 674 call    nc, PathFinder_Update
-73F7 2C          7 675 inc     l
-73F8 BE          7 676 cp      (hl)                        ; check adjacent #5 distance
-73F9 D4 22 71    7 677 call    nc, PathFinder_Update
-73FC 2C          7 678 inc     l
-73FD BE          7 679 cp      (hl)                        ; check adjacent #6 distance
-73FE D4 22 71    7 680 call    nc, PathFinder_Update
-7401 FD 5D       7 681 ld      e, iyl                      ; restore current position
-7403 C3 4B 72    7 682 jp      Path_Finder_Neighbors       ; continue processing neighbors
-7406             7 684 PathFinder_CYAN_Edge_3
-7406 EB          7 685 ex      de, hl                      ; restore pointer to current position address
-7407 2D          7 686 dec     l
-7408 2D          7 687 dec     l
-7409 2D          7 688 dec     l
-740A BE          7 689 cp      (hl)                        ; check adjacent #0 distance
-740B D4 22 71    7 690 call    nc, PathFinder_Update
-740E 2C          7 691 inc     l
-740F BE          7 692 cp      (hl)                        ; check adjacent #1 distance
-7410 D4 22 71    7 693 call    nc, PathFinder_Update
-7413 2C          7 694 inc     l
-7414 2C          7 695 inc     l
-7415 2C          7 696 inc     l
-7416 2C          7 697 inc     l
-7417 BE          7 698 cp      (hl)                        ; check adjacent #5 distance
-7418 D4 22 71    7 699 call    nc, PathFinder_Update
-741B 2C          7 700 inc     l
-741C BE          7 701 cp      (hl)                        ; check adjacent #6 distance
-741D D4 22 71    7 702 call    nc, PathFinder_Update
-7420 FD 5D       7 703 ld      e, iyl                      ; restore current position
-7422 C3 4B 72    7 704 jp      Path_Finder_Neighbors       ; continue processing neighbors
-7425             7 706 PathFinder_CYAN_Edge_4
-7425 EB          7 707 ex      de, hl                      ; restore pointer to current position address
-7426 2C          7 708 inc     l
-7427 2C          7 709 inc     l
-7428 BE          7 710 cp      (hl)                        ; check adjacent #6 distance
-7429 D4 22 71    7 711 call    nc, PathFinder_Update
-742C 2D          7 712 dec     l
-742D 2D          7 713 dec     l
-742E 2D          7 714 dec     l
-742F 2D          7 715 dec     l
-7430 BE          7 716 cp      (hl)                        ; check adjacent #2 distance
-7431 D4 22 71    7 717 call    nc, PathFinder_Update
-7434 2D          7 718 dec     l
-7435 BE          7 719 cp      (hl)                        ; check adjacent #1 distance
-7436 D4 22 71    7 720 call    nc, PathFinder_Update
-7439 2D          7 721 dec     l
-743A BE          7 722 cp      (hl)                        ; check adjacent #0 distance
-743B D4 22 71    7 723 call    nc, PathFinder_Update
-743E FD 5D       7 724 ld      e, iyl                      ; restore current position
-7440 C3 4B 72    7 725 jp      Path_Finder_Neighbors       ; continue processing neighbors
-7443             7 727 PathFinder_CYAN_Edge_5
-7443 EB          7 728 ex      de, hl                      ; restore pointer to current position address
-7444 2D          7 729 dec     l
-7445 2D          7 730 dec     l
-7446 BE          7 731 cp      (hl)                        ; check adjacent #3 distance
-7447 D4 22 71    7 732 call    nc, PathFinder_Update
-744A 2D          7 733 dec     l
-744B BE          7 734 cp      (hl)                        ; check adjacent #2 distance
-744C D4 22 71    7 735 call    nc, PathFinder_Update
-744F 2D          7 736 dec     l
-7450 BE          7 737 cp      (hl)                        ; check adjacent #1 distance
-7451 D4 22 71    7 738 call    nc, PathFinder_Update
-7454 2D          7 739 dec     l
-7455 BE          7 740 cp      (hl)                        ; check adjacent #0 distance
-7456 D4 22 71    7 741 call    nc, PathFinder_Update
-7459 FD 5D       7 742 ld      e, iyl                      ; restore current position
-745B C3 4B 72    7 743 jp      Path_Finder_Neighbors       ; continue processing neighbors
-745E             7 745 PathFinder_CYAN_Edge_6
-745E EB          7 746 ex      de, hl                      ; restore pointer to current position address
-745F 2D          7 747 dec     l
-7460 2D          7 748 dec     l
-7461 BE          7 749 cp      (hl)                        ; check adjacent #4 distance
-7462 D4 22 71    7 750 call    nc, PathFinder_Update
-7465 2D          7 751 dec     l
-7466 BE          7 752 cp      (hl)                        ; check adjacent #3 distance
-7467 D4 22 71    7 753 call    nc, PathFinder_Update
-746A 2D          7 754 dec     l
-746B BE          7 755 cp      (hl)                        ; check adjacent #2 distance
-746C D4 22 71    7 756 call    nc, PathFinder_Update
-746F 2D          7 757 dec     l
-7470 BE          7 758 cp      (hl)                        ; check adjacent #1 distance
-7471 D4 22 71    7 759 call    nc, PathFinder_Update
-7474 2D          7 760 dec     l
-7475 BE          7 761 cp      (hl)                        ; check adjacent #0 distance
-7476 D4 22 71    7 762 call    nc, PathFinder_Update
-7479 FD 5D       7 763 ld      e, iyl                      ; restore current position
-747B C3 4B 72    7 764 jp      Path_Finder_Neighbors       ; continue processing neighbors
-747E             7 766 ; ----------------------------------------------------------------------------------------------------------------------
-747E             7 767 ; PathFinder_Score: calculate board score depending on speccy color
-747E             7 768 ;
-747E             7 769 ; Input:    P/V = flag unset if speccy side is FRIEND, flag set if speccy side is ENEMY
-747E             7 770 ;
-747E             7 771 ; Output:   A = -1, if speccy can't reach his opposite edge
-747E             7 772 ;           A =  0, if speccy has a chain of connected tokens between the two edges or if player cant reach his edge
-747E             7 773 ;           A = speccy heuristic evaluation, otherwise
+727D             7 437 ; Input:    E  = current position
+727D             7 438 ;           C  = current distance (with a flag at 6th bit that indicates a friendly position)
+727D             7 439 ;           HL = current edge position address (a flag in 7th bit indicates an edge position and the lowest 3 bits the
+727D             7 440 ;                edge number)
+727D             7 441 ;
+727D             7 442 ; Output:   A  = 0 and HL = cyan or red queue head address, if there is a chain of connected tokens of the same color
+727D             7 443 ;                between the two edges.
+727D             7 444 ;           A  = FRIEND and E = current position, otherwise.
+727D             7 445 ;
+727D             7 446 ; Destroys: BC, D
+727D             7 447 ; ----------------------------------------------------------------------------------------------------------------------
+727D             7 448 Path_Finder_Adjacent
+727D 3E 43       7 449 ld      a, VICTORY+$40              ; set victory distance + friendly flag
+727F B9          7 450 cp      c                           ; is current distance victory and friendly?
+7280 28 0E       7 451 jr      z, Path_Finder_Abort        ; yes, abort path_finder
+7282 FD 6B       7 453 ld      iyl, e                      ; update last edge position visited
+7284 54          7 454 ld      d, h                        ; store pointer to current position address in DE
+7285 6E          7 455 ld      l, (hl)                     ; get current edge position
+7286 CB 25       7 456 sla     l                           ; calculate vector table routine index
+7288 24          7 457 inc     h                           ; move HL to (cyan or red) vector table routine address
+7289 7E          7 458 ld      a, (hl)                     ; get low byte of vector table routine address
+728A 2C          7 459 inc     l                           ; move HL to high byte of vector table routine address
+728B 66          7 460 ld      h, (hl)                     ; get high byte of vector table routine address
+728C 6F          7 461 ld      l, a                        ; HL points to 'PathFinder_[COLOR]_Edge_[n]' routine address
+728D 3E 02       7 462 ld      a, FRIEND                   ; set distance to compare with
+728F E9          7 463 jp      (hl)                        ; jump to 'PathFinder_[COLOR]_Edge_[n]' routine
+7290             7 464 Path_Finder_Abort
+7290 E1          7 465 pop     hl                          ; restore queue head address
+7291 AF          7 466 xor     a                           ; return A = 0
+7292 C9          7 467 ret
+7293             7 469 ; ----------------------------------------------------------------------------------------------------------------------
+7293             7 470 ;  Check two-distance of RED adjacents
+7293             7 471 ; ----------------------------------------------------------------------------------------------------------------------
+7293             7 472 PathFinder_RED_Edge_0
+7293 EB          7 473 ex      de, hl                      ; restore pointer to current position address
+7294 11 12 00    7 474 ld      de, 9*2                     ; calculate distance to adjacent #2
+7297 19          7 475 add     hl, de                      ; move HL to adjacent #2 address
+7298 BE          7 476 cp      (hl)                        ; check adjacent #2 distance
+7299 D4 22 71    7 477 call    nc, PathFinder_Update       ; if FRIEND >= adjacent #2 distance, update distance
+729C 11 09 00    7 478 ld      de, 9                       ; calculate distance to adjacent #3
+729F 19          7 479 add     hl, de                      ; move HL to adjacent #3 address
+72A0 BE          7 480 cp      (hl)                        ; check adjacent #3 distance
+72A1 D4 22 71    7 481 call    nc, PathFinder_Update       ; (repeat for each adjacent)
+72A4 11 09 00    7 482 ld      de, 9
+72A7 19          7 483 add     hl, de
+72A8 BE          7 484 cp      (hl)                        ; check adjacent #4 distance
+72A9 D4 22 71    7 485 call    nc, PathFinder_Update
+72AC 11 09 00    7 486 ld      de, 9
+72AF 19          7 487 add     hl, de
+72B0 BE          7 488 cp      (hl)                        ; check adjacent #5 distance
+72B1 D4 22 71    7 489 call    nc, PathFinder_Update
+72B4 11 09 00    7 490 ld      de, 9
+72B7 19          7 491 add     hl, de
+72B8 BE          7 492 cp      (hl)                        ; check adjacent #6 distance
+72B9 D4 22 71    7 493 call    nc, PathFinder_Update
+72BC FD 5D       7 494 ld      e, iyl                      ; restore current position
+72BE C3 4B 72    7 495 jp      Path_Finder_Neighbors       ; continue processing neighbors
+72C1             7 497 PathFinder_RED_Edge_1
+72C1 EB          7 498 ex      de, hl                      ; restore pointer to current position address
+72C2 11 12 00    7 499 ld      de, 9*2
+72C5 19          7 500 add     hl, de
+72C6 BE          7 501 cp      (hl)                        ; check adjacent #3 distance
+72C7 D4 22 71    7 502 call    nc, PathFinder_Update
+72CA 11 09 00    7 503 ld      de, 9
+72CD 19          7 504 add     hl, de
+72CE BE          7 505 cp      (hl)                        ; check adjacent #4 distance
+72CF D4 22 71    7 506 call    nc, PathFinder_Update
+72D2 11 09 00    7 507 ld      de, 9
+72D5 19          7 508 add     hl, de
+72D6 BE          7 509 cp      (hl)                        ; check adjacent #5 distance
+72D7 D4 22 71    7 510 call    nc, PathFinder_Update
+72DA 11 09 00    7 511 ld      de, 9
+72DD 19          7 512 add     hl, de
+72DE BE          7 513 cp      (hl)                        ; check adjacent #6 distance
+72DF D4 22 71    7 514 call    nc, PathFinder_Update
+72E2 FD 5D       7 515 ld      e, iyl                      ; restore current position
+72E4 C3 4B 72    7 516 jp      Path_Finder_Neighbors       ; continue processing neighbors
+72E7             7 518 PathFinder_RED_Edge_2
+72E7 EB          7 519 ex      de, hl                      ; restore pointer to current position address
+72E8 11 12 00    7 520 ld      de, 9*2
+72EB 19          7 521 add     hl, de
+72EC BE          7 522 cp      (hl)                        ; check adjacent #4 distance
+72ED D4 22 71    7 523 call    nc, PathFinder_Update
+72F0 11 09 00    7 524 ld      de, 9
+72F3 19          7 525 add     hl, de
+72F4 BE          7 526 cp      (hl)                        ; check adjacent #5 distance
+72F5 D4 22 71    7 527 call    nc, PathFinder_Update
+72F8 11 09 00    7 528 ld      de, 9
+72FB 19          7 529 add     hl, de
+72FC BE          7 530 cp      (hl)                        ; check adjacent #6 distance
+72FD D4 22 71    7 531 call    nc, PathFinder_Update
+7300 11 CA FF    7 532 ld      de, -9*6
+7303 19          7 533 add     hl, de
+7304 BE          7 534 cp      (hl)                        ; check adjacent #0 distance
+7305 D4 22 71    7 535 call    nc, PathFinder_Update
+7308 FD 5D       7 536 ld      e, iyl                      ; restore current position
+730A C3 4B 72    7 537 jp      Path_Finder_Neighbors       ; continue processing neighbors
+730D             7 539 PathFinder_RED_Edge_3
+730D EB          7 540 ex      de, hl                      ; restore pointer to current position address
+730E 11 E5 FF    7 541 ld      de, -9*3
+7311 19          7 542 add     hl, de
+7312 BE          7 543 cp      (hl)                        ; check adjacent #0 distance
+7313 D4 22 71    7 544 call    nc, PathFinder_Update
+7316 11 09 00    7 545 ld      de, 9
+7319 19          7 546 add     hl, de
+731A BE          7 547 cp      (hl)                        ; check adjacent #1 distance
+731B D4 22 71    7 548 call    nc, PathFinder_Update
+731E 11 24 00    7 549 ld      de, 9*4
+7321 19          7 550 add     hl, de
+7322 BE          7 551 cp      (hl)                        ; check adjacent #5 distance
+7323 D4 22 71    7 552 call    nc, PathFinder_Update
+7326 11 09 00    7 553 ld      de, 9
+7329 19          7 554 add     hl, de
+732A BE          7 555 cp      (hl)                        ; check adjacent #6 distance
+732B D4 22 71    7 556 call    nc, PathFinder_Update
+732E FD 5D       7 557 ld      e, iyl                      ; restore current position
+7330 C3 4B 72    7 558 jp      Path_Finder_Neighbors       ; continue processing neighbors
+7333             7 560 PathFinder_RED_Edge_4
+7333 EB          7 561 ex      de, hl                      ; restore pointer to current position address
+7334 11 12 00    7 562 ld      de, 9*2
+7337 19          7 563 add     hl, de
+7338 BE          7 564 cp      (hl)                        ; check adjacent #6 distance
+7339 D4 22 71    7 565 call    nc, PathFinder_Update
+733C 11 CA FF    7 566 ld      de, -9*6
+733F 19          7 567 add     hl, de
+7340 BE          7 568 cp      (hl)                        ; check adjacent #0 distance
+7341 D4 22 71    7 569 call    nc, PathFinder_Update
+7344 11 09 00    7 570 ld      de, 9
+7347 19          7 571 add     hl, de
+7348 BE          7 572 cp      (hl)                        ; check adjacent #1 distance
+7349 D4 22 71    7 573 call    nc, PathFinder_Update
+734C 11 09 00    7 574 ld      de, 9
+734F 19          7 575 add     hl, de
+7350 BE          7 576 cp      (hl)                        ; check adjacent #2 distance
+7351 D4 22 71    7 577 call    nc, PathFinder_Update
+7354 FD 5D       7 578 ld      e, iyl                      ; restore current position
+7356 C3 4B 72    7 579 jp      Path_Finder_Neighbors       ; continue processing neighbors
+7359             7 581 PathFinder_RED_Edge_5
+7359 EB          7 582 ex      de, hl                      ; restore pointer to current position address
+735A 11 D3 FF    7 583 ld      de, -9*5
+735D 19          7 584 add     hl, de
+735E BE          7 585 cp      (hl)                        ; check adjacent #0 distance
+735F D4 22 71    7 586 call    nc, PathFinder_Update
+7362 11 09 00    7 587 ld      de, 9
+7365 19          7 588 add     hl, de
+7366 BE          7 589 cp      (hl)                        ; check adjacent #1 distance
+7367 D4 22 71    7 590 call    nc, PathFinder_Update
+736A 11 09 00    7 591 ld      de, 9
+736D 19          7 592 add     hl, de
+736E BE          7 593 cp      (hl)                        ; check adjacent #2 distance
+736F D4 22 71    7 594 call    nc, PathFinder_Update
+7372 11 09 00    7 595 ld      de, 9
+7375 19          7 596 add     hl, de
+7376 BE          7 597 cp      (hl)                        ; check adjacent #3 distance
+7377 D4 22 71    7 598 call    nc, PathFinder_Update
+737A FD 5D       7 599 ld      e, iyl                      ; restore current position
+737C C3 4B 72    7 600 jp      Path_Finder_Neighbors       ; continue processing neighbors
+737F             7 602 PathFinder_RED_Edge_6
+737F EB          7 603 ex      de, hl                      ; restore pointer to current position address
+7380 11 CA FF    7 604 ld      de, -9*6
+7383 19          7 605 add     hl, de
+7384 BE          7 606 cp      (hl)                        ; check adjacent #0 distance
+7385 D4 22 71    7 607 call    nc, PathFinder_Update
+7388 11 09 00    7 608 ld      de, 9
+738B 19          7 609 add     hl, de
+738C BE          7 610 cp      (hl)                        ; check adjacent #1 distance
+738D D4 22 71    7 611 call    nc, PathFinder_Update
+7390 11 09 00    7 612 ld      de, 9
+7393 19          7 613 add     hl, de
+7394 BE          7 614 cp      (hl)                        ; check adjacent #2 distance
+7395 D4 22 71    7 615 call    nc, PathFinder_Update
+7398 11 09 00    7 616 ld      de, 9
+739B 19          7 617 add     hl, de
+739C BE          7 618 cp      (hl)                        ; check adjacent #3 distance
+739D D4 22 71    7 619 call    nc, PathFinder_Update
+73A0 11 09 00    7 620 ld      de, 9
+73A3 19          7 621 add     hl, de
+73A4 BE          7 622 cp      (hl)                        ; check adjacent #4 distance
+73A5 D4 22 71    7 623 call    nc, PathFinder_Update
+73A8 FD 5D       7 624 ld      e, iyl                      ; restore current position
+73AA C3 4B 72    7 625 jp      Path_Finder_Neighbors       ; continue processing neighbors
+73AD             7 627 ; ----------------------------------------------------------------------------------------------------------------------
+73AD             7 628 ;  Check two-distance of CYAN adjacents
+73AD             7 629 ; ----------------------------------------------------------------------------------------------------------------------
+73AD             7 630 PathFinder_CYAN_Edge_0
+73AD EB          7 631 ex      de, hl                      ; restore pointer to current position address
+73AE 2C          7 632 inc     l
+73AF 2C          7 633 inc     l
+73B0 BE          7 634 cp      (hl)                        ; check adjacent #2 distance
+73B1 D4 22 71    7 635 call    nc, PathFinder_Update
+73B4 2C          7 636 inc     l
+73B5 BE          7 637 cp      (hl)                        ; check adjacent #3 distance
+73B6 D4 22 71    7 638 call    nc, PathFinder_Update
+73B9 2C          7 639 inc     l
+73BA BE          7 640 cp      (hl)                        ; check adjacent #4 distance
+73BB D4 22 71    7 641 call    nc, PathFinder_Update
+73BE 2C          7 642 inc     l
+73BF BE          7 643 cp      (hl)                        ; check adjacent of edge number 5
+73C0 D4 22 71    7 644 call    nc, PathFinder_Update
+73C3 2C          7 645 inc     l
+73C4 BE          7 646 cp      (hl)                        ; check adjacent of edge number 6
+73C5 D4 22 71    7 647 call    nc, PathFinder_Update
+73C8 FD 5D       7 648 ld      e, iyl                      ; restore current position
+73CA C3 4B 72    7 649 jp      Path_Finder_Neighbors       ; continue processing neighbors
+73CD             7 651 PathFinder_CYAN_Edge_1
+73CD EB          7 652 ex      de, hl                      ; restore pointer to current position address
+73CE 2C          7 653 inc     l
+73CF 2C          7 654 inc     l
+73D0 BE          7 655 cp      (hl)                        ; check adjacent #3 distance
+73D1 D4 22 71    7 656 call    nc, PathFinder_Update
+73D4 2C          7 657 inc     l
+73D5 BE          7 658 cp      (hl)                        ; check adjacent #4 distance
+73D6 D4 22 71    7 659 call    nc, PathFinder_Update
+73D9 2C          7 660 inc     l
+73DA BE          7 661 cp      (hl)                        ; check adjacent #5 distance
+73DB D4 22 71    7 662 call    nc, PathFinder_Update
+73DE 2C          7 663 inc     l
+73DF BE          7 664 cp      (hl)                        ; check adjacent #6 distance
+73E0 D4 22 71    7 665 call    nc, PathFinder_Update
+73E3 FD 5D       7 666 ld      e, iyl                      ; restore current position
+73E5 C3 4B 72    7 667 jp      Path_Finder_Neighbors       ; continue processing neighbors
+73E8             7 669 PathFinder_CYAN_Edge_2
+73E8 EB          7 670 ex      de, hl                      ; restore pointer to current position address
+73E9 2D          7 671 dec     l
+73EA 2D          7 672 dec     l
+73EB BE          7 673 cp      (hl)                        ; check adjacent #0 distance
+73EC D4 22 71    7 674 call    nc, PathFinder_Update
+73EF 2C          7 675 inc     l
+73F0 2C          7 676 inc     l
+73F1 2C          7 677 inc     l
+73F2 2C          7 678 inc     l
+73F3 BE          7 679 cp      (hl)                        ; check adjacent #4 distance
+73F4 D4 22 71    7 680 call    nc, PathFinder_Update
+73F7 2C          7 681 inc     l
+73F8 BE          7 682 cp      (hl)                        ; check adjacent #5 distance
+73F9 D4 22 71    7 683 call    nc, PathFinder_Update
+73FC 2C          7 684 inc     l
+73FD BE          7 685 cp      (hl)                        ; check adjacent #6 distance
+73FE D4 22 71    7 686 call    nc, PathFinder_Update
+7401 FD 5D       7 687 ld      e, iyl                      ; restore current position
+7403 C3 4B 72    7 688 jp      Path_Finder_Neighbors       ; continue processing neighbors
+7406             7 690 PathFinder_CYAN_Edge_3
+7406 EB          7 691 ex      de, hl                      ; restore pointer to current position address
+7407 2D          7 692 dec     l
+7408 2D          7 693 dec     l
+7409 2D          7 694 dec     l
+740A BE          7 695 cp      (hl)                        ; check adjacent #0 distance
+740B D4 22 71    7 696 call    nc, PathFinder_Update
+740E 2C          7 697 inc     l
+740F BE          7 698 cp      (hl)                        ; check adjacent #1 distance
+7410 D4 22 71    7 699 call    nc, PathFinder_Update
+7413 2C          7 700 inc     l
+7414 2C          7 701 inc     l
+7415 2C          7 702 inc     l
+7416 2C          7 703 inc     l
+7417 BE          7 704 cp      (hl)                        ; check adjacent #5 distance
+7418 D4 22 71    7 705 call    nc, PathFinder_Update
+741B 2C          7 706 inc     l
+741C BE          7 707 cp      (hl)                        ; check adjacent #6 distance
+741D D4 22 71    7 708 call    nc, PathFinder_Update
+7420 FD 5D       7 709 ld      e, iyl                      ; restore current position
+7422 C3 4B 72    7 710 jp      Path_Finder_Neighbors       ; continue processing neighbors
+7425             7 712 PathFinder_CYAN_Edge_4
+7425 EB          7 713 ex      de, hl                      ; restore pointer to current position address
+7426 2C          7 714 inc     l
+7427 2C          7 715 inc     l
+7428 BE          7 716 cp      (hl)                        ; check adjacent #6 distance
+7429 D4 22 71    7 717 call    nc, PathFinder_Update
+742C 2D          7 718 dec     l
+742D 2D          7 719 dec     l
+742E 2D          7 720 dec     l
+742F 2D          7 721 dec     l
+7430 BE          7 722 cp      (hl)                        ; check adjacent #2 distance
+7431 D4 22 71    7 723 call    nc, PathFinder_Update
+7434 2D          7 724 dec     l
+7435 BE          7 725 cp      (hl)                        ; check adjacent #1 distance
+7436 D4 22 71    7 726 call    nc, PathFinder_Update
+7439 2D          7 727 dec     l
+743A BE          7 728 cp      (hl)                        ; check adjacent #0 distance
+743B D4 22 71    7 729 call    nc, PathFinder_Update
+743E FD 5D       7 730 ld      e, iyl                      ; restore current position
+7440 C3 4B 72    7 731 jp      Path_Finder_Neighbors       ; continue processing neighbors
+7443             7 733 PathFinder_CYAN_Edge_5
+7443 EB          7 734 ex      de, hl                      ; restore pointer to current position address
+7444 2D          7 735 dec     l
+7445 2D          7 736 dec     l
+7446 BE          7 737 cp      (hl)                        ; check adjacent #3 distance
+7447 D4 22 71    7 738 call    nc, PathFinder_Update
+744A 2D          7 739 dec     l
+744B BE          7 740 cp      (hl)                        ; check adjacent #2 distance
+744C D4 22 71    7 741 call    nc, PathFinder_Update
+744F 2D          7 742 dec     l
+7450 BE          7 743 cp      (hl)                        ; check adjacent #1 distance
+7451 D4 22 71    7 744 call    nc, PathFinder_Update
+7454 2D          7 745 dec     l
+7455 BE          7 746 cp      (hl)                        ; check adjacent #0 distance
+7456 D4 22 71    7 747 call    nc, PathFinder_Update
+7459 FD 5D       7 748 ld      e, iyl                      ; restore current position
+745B C3 4B 72    7 749 jp      Path_Finder_Neighbors       ; continue processing neighbors
+745E             7 751 PathFinder_CYAN_Edge_6
+745E EB          7 752 ex      de, hl                      ; restore pointer to current position address
+745F 2D          7 753 dec     l
+7460 2D          7 754 dec     l
+7461 BE          7 755 cp      (hl)                        ; check adjacent #4 distance
+7462 D4 22 71    7 756 call    nc, PathFinder_Update
+7465 2D          7 757 dec     l
+7466 BE          7 758 cp      (hl)                        ; check adjacent #3 distance
+7467 D4 22 71    7 759 call    nc, PathFinder_Update
+746A 2D          7 760 dec     l
+746B BE          7 761 cp      (hl)                        ; check adjacent #2 distance
+746C D4 22 71    7 762 call    nc, PathFinder_Update
+746F 2D          7 763 dec     l
+7470 BE          7 764 cp      (hl)                        ; check adjacent #1 distance
+7471 D4 22 71    7 765 call    nc, PathFinder_Update
+7474 2D          7 766 dec     l
+7475 BE          7 767 cp      (hl)                        ; check adjacent #0 distance
+7476 D4 22 71    7 768 call    nc, PathFinder_Update
+7479 FD 5D       7 769 ld      e, iyl                      ; restore current position
+747B C3 4B 72    7 770 jp      Path_Finder_Neighbors       ; continue processing neighbors
+747E             7 772 ; ----------------------------------------------------------------------------------------------------------------------
+747E             7 773 ; PathFinder_Score: calculate board score depending on speccy color
 747E             7 774 ;
-747E             7 775 ; Uses:     -
+747E             7 775 ; Input:    P/V = flag unset if speccy side is FRIEND, flag set if speccy side is ENEMY
 747E             7 776 ;
-747E             7 777 ; Destroys: A', BC, DE, HL, IY
-747E             7 778 ; ----------------------------------------------------------------------------------------------------------------------
-747E             7 779 PathFinder_Score:
-747E E2 B2 74    7 780 jp      po, PathFinder_CyanScore    ; if speccy side is FRIEND, calculate CYAN score
-7481             7 782 ; ----------------------------------------------------------------------------------------------------------------------
-7481             7 783 ; PathFinder_RedScore: calculate red score
-7481             7 784 ;
-7481             7 785 ; Input:    -
-7481             7 786 ;
-7481             7 787 ; Output:   A = -1, if red can't reach his opposite edge
-7481             7 788 ;           A =  0, if there a chain of connected red tokens between the two edges or if cyan can't reach his edge
-7481             7 789 ;           A = red heuristic evaluation, otherwise
+747E             7 777 ; Output:   A = -1, if speccy can't reach his opposite edge
+747E             7 778 ;           A =  0, if speccy has a chain of connected tokens between the two edges or if player cant reach his edge
+747E             7 779 ;           A = speccy heuristic evaluation, otherwise
+747E             7 780 ;
+747E             7 781 ; Uses:     -
+747E             7 782 ;
+747E             7 783 ; Destroys: A', BC, DE, HL, IY
+747E             7 784 ; ----------------------------------------------------------------------------------------------------------------------
+747E             7 785 PathFinder_Score:
+747E E2 B2 74    7 786 jp      po, PathFinder_CyanScore    ; if speccy side is FRIEND, calculate CYAN score
+7481             7 788 ; ----------------------------------------------------------------------------------------------------------------------
+7481             7 789 ; PathFinder_RedScore: calculate red score
 7481             7 790 ;
-7481             7 791 ; Uses:     POTENTIALS (board potential and attack mobility)
+7481             7 791 ; Input:    -
 7481             7 792 ;
-7481             7 793 ; Destroys: A', BC, DE, HL, IY
-7481             7 794 ; ----------------------------------------------------------------------------------------------------------------------
-7481             7 795 PathFinder_RedScore
-7481 CD BB 71    7 796 call    PathFinder_Red_LeftRight    ; calculate RED two-distance from LEFT to RIGHT edge
-7484 C8          7 797 ret     z                           ; if red has a chain of connected tokens, return A = 0
-7485 08          7 798 ex      af, af'                     ; save first result
-7486 CD FD 71    7 799 call    PathFinder_Red_RightLeft    ; calculate RED two-distance from RIGHT to LEFT edge
-7489 47          7 800 ld      b, a                        ; save second result
-748A 08          7 801 ex      af, af'                     ; restore first result
-748B 90          7 802 sub     b                           ; subtract both results
-748C 78          7 803 ld      a, b                        ; restore second result
-748D C8          7 804 ret     z                           ; if red can't reach his opposite edge, return A = -1
-748E CD 47 71    7 806 call    PathFinder_Cyan_UpDown      ; calculate CYAN two-distance from UP to DOWN edge
-7491 08          7 807 ex      af, af'                     ; save result
-7492 CD 83 71    7 808 call    PathFinder_Cyan_DownUp      ; calculate CYAN two-distance from DOWN to UP edge
-7495 47          7 809 ld      b, a                        ; save second result
-7496 08          7 810 ex      af, af'                     ; restore first result
-7497 90          7 811 sub     b                           ; subtract both results
-7498 C8          7 812 ret     z                           ; if cyan can't reach his opposite edge, return A = 0
-7499 21 09 64    7 814 ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st position)
-749C 11 51 64    7 815 ld      de, RED_BOARD_RIGHT_LEFT+1  ; DE points to red board right-left address (1st position)
-749F CD F0 74    7 816 call    PathFinder_Potentials       ; calculate RED potentials
-74A2 ED 43 97 61 7 817 ld      (POTENTIALS), bc            ; store RED potentials
-74A6 21 09 61    7 819 ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
-74A9 11 51 61    7 820 ld      de, CYAN_BOARD_DOWN_UP+1    ; DE points to cyan board down-up address (1st position)
-74AC CD F0 74    7 821 call    PathFinder_Potentials       ; calculate cyan potentials
-74AF C3 E0 74    7 822 jp      PathFinder_Evaluation       ; calculate heuristic evaluation
-74B2             7 824 ; ----------------------------------------------------------------------------------------------------------------------
-74B2             7 825 ; PathFinder_CyanScore: calculate cyan score
-74B2             7 826 ;
-74B2             7 827 ; Input:    -
-74B2             7 828 ;
-74B2             7 829 ; Output:   A = -1, if cyan can't reach his opposite edge
-74B2             7 830 ;           A =  0, if there a chain of connected cyan tokens between the two edges or if red can't reach his edge
-74B2             7 831 ;           A = cyan heuristic evaluation, otherwise
+7481             7 793 ; Output:   A = -1, if red can't reach his opposite edge
+7481             7 794 ;           A =  0, if there a chain of connected red tokens between the two edges or if cyan can't reach his edge
+7481             7 795 ;           A = red heuristic evaluation, otherwise
+7481             7 796 ;
+7481             7 797 ; Uses:     POTENTIALS (board potential and attack mobility)
+7481             7 798 ;
+7481             7 799 ; Destroys: A', BC, DE, HL, IY
+7481             7 800 ; ----------------------------------------------------------------------------------------------------------------------
+7481             7 801 PathFinder_RedScore
+7481 CD BB 71    7 802 call    PathFinder_Red_LeftRight    ; calculate RED two-distance from LEFT to RIGHT edge
+7484 C8          7 803 ret     z                           ; if red has a chain of connected tokens, return A = 0
+7485 08          7 804 ex      af, af'                     ; save first result
+7486 CD FD 71    7 805 call    PathFinder_Red_RightLeft    ; calculate RED two-distance from RIGHT to LEFT edge
+7489 47          7 806 ld      b, a                        ; save second result
+748A 08          7 807 ex      af, af'                     ; restore first result
+748B 90          7 808 sub     b                           ; subtract both results
+748C 78          7 809 ld      a, b                        ; restore second result
+748D C8          7 810 ret     z                           ; if red can't reach his opposite edge, return A = -1
+748E CD 47 71    7 812 call    PathFinder_Cyan_UpDown      ; calculate CYAN two-distance from UP to DOWN edge
+7491 08          7 813 ex      af, af'                     ; save result
+7492 CD 83 71    7 814 call    PathFinder_Cyan_DownUp      ; calculate CYAN two-distance from DOWN to UP edge
+7495 47          7 815 ld      b, a                        ; save second result
+7496 08          7 816 ex      af, af'                     ; restore first result
+7497 90          7 817 sub     b                           ; subtract both results
+7498 C8          7 818 ret     z                           ; if cyan can't reach his opposite edge, return A = 0
+7499 21 09 64    7 820 ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st position)
+749C 11 51 64    7 821 ld      de, RED_BOARD_RIGHT_LEFT+1  ; DE points to red board right-left address (1st position)
+749F CD F0 74    7 822 call    PathFinder_Potentials       ; calculate RED potentials
+74A2 ED 43 97 61 7 823 ld      (POTENTIALS), bc            ; store RED potentials
+74A6 21 09 61    7 825 ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
+74A9 11 51 61    7 826 ld      de, CYAN_BOARD_DOWN_UP+1    ; DE points to cyan board down-up address (1st position)
+74AC CD F0 74    7 827 call    PathFinder_Potentials       ; calculate cyan potentials
+74AF C3 E0 74    7 828 jp      PathFinder_Evaluation       ; calculate heuristic evaluation
+74B2             7 830 ; ----------------------------------------------------------------------------------------------------------------------
+74B2             7 831 ; PathFinder_CyanScore: calculate cyan score
 74B2             7 832 ;
-74B2             7 833 ; Uses:     POTENTIALS (board potential and attack mobility)
+74B2             7 833 ; Input:    -
 74B2             7 834 ;
-74B2             7 835 ; Destroys: A', BC, DE, HL
-74B2             7 836 ; ----------------------------------------------------------------------------------------------------------------------
-74B2             7 837 PathFinder_CyanScore
-74B2 CD 47 71    7 838 call    PathFinder_Cyan_UpDown      ; calculate CYAN two-distance from UP to DOWN edge
-74B5 C8          7 839 ret     z                           ; if cyan has a chain of connected tokens, return A = 0
-74B6 08          7 840 ex      af, af'                     ; save result
-74B7 CD 83 71    7 841 call    PathFinder_Cyan_DownUp      ; calculate CYAN two-distance from DOWN to UP edge
-74BA 47          7 842 ld      b, a                        ; save second result
-74BB 08          7 843 ex      af, af'                     ; restore first result
-74BC 90          7 844 sub     b                           ; subtract both results
-74BD 78          7 845 ld      a, b                        ; restore second result
-74BE C8          7 846 ret     z                           ; if cyan can't reach his opposite edge, return A = -1
-74BF CD BB 71    7 848 call    PathFinder_Red_LeftRight    ; calculate RED two-distance from LEFT to RIGHT edge
-74C2 08          7 849 ex      af, af'                     ; save result
-74C3 CD FD 71    7 850 call    PathFinder_Red_RightLeft    ; calculate RED two-distance from RIGHT to LEFT edge
-74C6 47          7 851 ld      b, a                        ; save second result
-74C7 08          7 852 ex      af, af'                     ; restore first result
-74C8 90          7 853 sub     b                           ; subtract both results
-74C9 C8          7 854 ret     z                           ; if red can't reach his opposite edge, return A = 0
-74CA 21 09 61    7 856 ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
-74CD 11 51 61    7 857 ld      de, CYAN_BOARD_DOWN_UP+1    ; DE points to cyan board down-up address (1st position)
-74D0 CD F0 74    7 858 call    PathFinder_Potentials       ; calculate cyan potentials
-74D3 ED 43 97 61 7 859 ld      (POTENTIALS), bc            ; save cyan potentials
-74D7 21 09 64    7 861 ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st position)
-74DA 11 51 64    7 862 ld      de, RED_BOARD_RIGHT_LEFT+1  ; DE points to red board right-left address (1st position)
-74DD CD F0 74    7 863 call    PathFinder_Potentials       ; calculate red potentials
-74E0             7 864 ; ----------------------------------------------------------------------------------------------------------------------
-74E0             7 865 ; PathFinder_Evaluation: calculate heuristic evaluation.
-74E0             7 866 ; The original evaluation function (from cyan perspective) is described in Jack van Rijswijck's thesis as:
-74E0             7 867 ;
-74E0             7 868 ;                                       e = M (pC - pR) - (aC - aR)
-74E0             7 869 ; where:
-74E0             7 870 ;   pC = cyan board potential
-74E0             7 871 ;   pR = red board potential
-74E0             7 872 ;   aC = cyan attack mobility
-74E0             7 873 ;   aR = red attack mobility
-74E0             7 874 ;    M = a large number
-74E0             7 875 ;
-74E0             7 876 ; This adaptation uses an "invert" result to better fit BRAINIAC process.
-74E0             7 877 ;
-74E0             7 878 ; Input:    B = opponent attack mobility
-74E0             7 879 ;           C = opponent board potential
-74E0             7 880 ;
-74E0             7 881 ; Output:   A = heuristic evaluation
-74E0             7 882 ;
-74E0             7 883 ; Destroys: E, HL
-74E0             7 884 ; ----------------------------------------------------------------------------------------------------------------------
-74E0             7 885 PathFinder_Evaluation:
-74E0 21 98 61    7 886 ld      hl, POTENTIALS+1            ; HL points to color attack mobility address
-74E3 78          7 887 ld      a, b                        ; get opponent's attack mobility
-74E4 96          7 888 sub     (hl)                        ; subtract attack mobilities -> (aC - aR)
-74E5 5F          7 889 ld      e, a                        ; save the result in E
-74E6 2D          7 890 dec     l                           ; move HL to player's board potential address
-74E7 79          7 891 ld      a, c                        ; get opponent's board potential
-74E8 96          7 892 sub     (hl)                        ; subtract potentials -> (pC - pR)
-74E9 87          7 893 add     a, a                        ; multiply by 8 -> M (pC - pR)
-74EA 87          7 894 add     a, a
-74EB 87          7 895 add     a, a
-74EC 93          7 896 sub     e                           ; subtract result of attack mobilities subtraction
-74ED             7 897 ; -> M (pC - pR) - (aC - aR)
-74ED EE 80       7 898 xor     $80                         ; invert sign for easier further comparative
-74EF C9          7 899 ret                                 ; return A = -1 * (M (pC - pR) - (aC - aR))
-74F0             7 901 ; ----------------------------------------------------------------------------------------------------------------------
-74F0             7 902 ; PathFinder_Potentials: calculate board potential and attack mobility
-74F0             7 903 ;
-74F0             7 904 ; * A cell's Cyan potential is defined as the sum of its Cyan two-distance to both cyan edges; its Red potential is the
-74F0             7 905 ;   sum of its Red two-distance to both red edges. The board potential is defined as the lowest potential that occurs on
-74F0             7 906 ;   the board.
-74F0             7 907 ; * The attack mobility is defined for each player as the number of cells that realize that player's board potential.
-74F0             7 908 ;
-74F0             7 909 ; Input:    HL = cyan board or red board address
-74F0             7 910 ;           DE = cyan board or red board address
-74F0             7 911 ;
-74F0             7 912 ; Output:   B = attack mobility
-74F0             7 913 ;           C = board potential
+74B2             7 835 ; Output:   A = -1, if cyan can't reach his opposite edge
+74B2             7 836 ;           A =  0, if there a chain of connected cyan tokens between the two edges or if red can't reach his edge
+74B2             7 837 ;           A = cyan heuristic evaluation, otherwise
+74B2             7 838 ;
+74B2             7 839 ; Uses:     POTENTIALS (board potential and attack mobility)
+74B2             7 840 ;
+74B2             7 841 ; Destroys: A', BC, DE, HL
+74B2             7 842 ; ----------------------------------------------------------------------------------------------------------------------
+74B2             7 843 PathFinder_CyanScore
+74B2 CD 47 71    7 844 call    PathFinder_Cyan_UpDown      ; calculate CYAN two-distance from UP to DOWN edge
+74B5 C8          7 845 ret     z                           ; if cyan has a chain of connected tokens, return A = 0
+74B6 08          7 846 ex      af, af'                     ; save result
+74B7 CD 83 71    7 847 call    PathFinder_Cyan_DownUp      ; calculate CYAN two-distance from DOWN to UP edge
+74BA 47          7 848 ld      b, a                        ; save second result
+74BB 08          7 849 ex      af, af'                     ; restore first result
+74BC 90          7 850 sub     b                           ; subtract both results
+74BD 78          7 851 ld      a, b                        ; restore second result
+74BE C8          7 852 ret     z                           ; if cyan can't reach his opposite edge, return A = -1
+74BF CD BB 71    7 854 call    PathFinder_Red_LeftRight    ; calculate RED two-distance from LEFT to RIGHT edge
+74C2 08          7 855 ex      af, af'                     ; save result
+74C3 CD FD 71    7 856 call    PathFinder_Red_RightLeft    ; calculate RED two-distance from RIGHT to LEFT edge
+74C6 47          7 857 ld      b, a                        ; save second result
+74C7 08          7 858 ex      af, af'                     ; restore first result
+74C8 90          7 859 sub     b                           ; subtract both results
+74C9 C8          7 860 ret     z                           ; if red can't reach his opposite edge, return A = 0
+74CA 21 09 61    7 862 ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
+74CD 11 51 61    7 863 ld      de, CYAN_BOARD_DOWN_UP+1    ; DE points to cyan board down-up address (1st position)
+74D0 CD F0 74    7 864 call    PathFinder_Potentials       ; calculate cyan potentials
+74D3 ED 43 97 61 7 865 ld      (POTENTIALS), bc            ; save cyan potentials
+74D7 21 09 64    7 867 ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st position)
+74DA 11 51 64    7 868 ld      de, RED_BOARD_RIGHT_LEFT+1  ; DE points to red board right-left address (1st position)
+74DD CD F0 74    7 869 call    PathFinder_Potentials       ; calculate red potentials
+74E0             7 870 ; ----------------------------------------------------------------------------------------------------------------------
+74E0             7 871 ; PathFinder_Evaluation: calculate heuristic evaluation.
+74E0             7 872 ; The original evaluation function (from cyan perspective) is described in Jack van Rijswijck's thesis as:
+74E0             7 873 ;
+74E0             7 874 ;                                       e = M (pC - pR) - (aC - aR)
+74E0             7 875 ; where:
+74E0             7 876 ;   pC = cyan board potential
+74E0             7 877 ;   pR = red board potential
+74E0             7 878 ;   aC = cyan attack mobility
+74E0             7 879 ;   aR = red attack mobility
+74E0             7 880 ;    M = a large number
+74E0             7 881 ;
+74E0             7 882 ; This adaptation uses an "invert" result to better fit BRAINIAC process.
+74E0             7 883 ;
+74E0             7 884 ; Input:    B = opponent attack mobility
+74E0             7 885 ;           C = opponent board potential
+74E0             7 886 ;
+74E0             7 887 ; Output:   A = heuristic evaluation
+74E0             7 888 ;
+74E0             7 889 ; Destroys: E, HL
+74E0             7 890 ; ----------------------------------------------------------------------------------------------------------------------
+74E0             7 891 PathFinder_Evaluation:
+74E0 21 98 61    7 892 ld      hl, POTENTIALS+1            ; HL points to color attack mobility address
+74E3 78          7 893 ld      a, b                        ; get opponent's attack mobility
+74E4 96          7 894 sub     (hl)                        ; subtract attack mobilities -> (aC - aR)
+74E5 5F          7 895 ld      e, a                        ; save the result in E
+74E6 2D          7 896 dec     l                           ; move HL to player's board potential address
+74E7 79          7 897 ld      a, c                        ; get opponent's board potential
+74E8 96          7 898 sub     (hl)                        ; subtract potentials -> (pC - pR)
+74E9 87          7 899 add     a, a                        ; multiply by 8 -> M (pC - pR)
+74EA 87          7 900 add     a, a
+74EB 87          7 901 add     a, a
+74EC 93          7 902 sub     e                           ; subtract result of attack mobilities subtraction
+74ED             7 903 ; -> M (pC - pR) - (aC - aR)
+74ED EE 80       7 904 xor     $80                         ; invert sign for easier further comparative
+74EF C9          7 905 ret                                 ; return A = -1 * (M (pC - pR) - (aC - aR))
+74F0             7 907 ; ----------------------------------------------------------------------------------------------------------------------
+74F0             7 908 ; PathFinder_Potentials: calculate board potential and attack mobility
+74F0             7 909 ;
+74F0             7 910 ; * A cell's Cyan potential is defined as the sum of its Cyan two-distance to both cyan edges; its Red potential is the
+74F0             7 911 ;   sum of its Red two-distance to both red edges. The board potential is defined as the lowest potential that occurs on
+74F0             7 912 ;   the board.
+74F0             7 913 ; * The attack mobility is defined for each player as the number of cells that realize that player's board potential.
 74F0             7 914 ;
-74F0             7 915 ; Destroys: A, DE, HL, IYL
-74F0             7 916 ; ----------------------------------------------------------------------------------------------------------------------
-74F0             7 917 PathFinder_Potentials:
-74F0 01 FF 00    7 918 ld      bc, $00FF                   ; initialize attack mobility and board potential
-74F3 FD 2E 3D    7 919 ld      iyl, 61                     ; number of cells to be checked (loop counter)
-74F6             7 920 Potentials_Loop
-74F6 7E          7 921 ld      a, (hl)                     ; get cell's two-distance pointed by HL
-74F7 FE 40       7 922 cp      $40                         ; is cell occupied or border?
-74F9 30 14       7 923 jr      nc, Potentials_Next         ; yes, skip to next cell
-74FB FE 04       7 924 cp      $04                         ; cell distance was not updated?
-74FD 38 18       7 925 jr      c, Potentials_Infinite      ; yes, set cell potential as "infinite" and skip
-74FF 1A          7 926 ld      a, (de)                     ; get cell's two-distance pointed by DE
-7500 FE 04       7 927 cp      $04                         ; cell distance was not updated?
-7502 38 13       7 928 jr      c, Potentials_Infinite      ; yes, set cell potential as "infinite" and skip
-7504 86          7 929 add     a, (hl)                     ; sum both two-distances (calculate cell potential)
-7505 77          7 930 ld      (hl), a                     ; save potential in the cell pointed by HL
-7506 B9          7 931 cp      c                           ; is the new potential = board potential?
-7507 28 05       7 932 jr      z, Potentials_Increment     ; yes, increment attack mobility
-7509 30 04       7 933 jr      nc, Potentials_Next         ; if (new potential > board potential) skip to next cell
-750B 4F          7 934 ld      c, a                        ; board potential = new potential
-750C 06 00       7 935 ld      b, 0                        ; restart attack mobility
-750E             7 936 Potentials_Increment
-750E 04          7 937 inc     b                           ; increment attack mobility
-750F             7 938 Potentials_Next
-750F 1C          7 939 inc     e                           ; move to next cell of each board
-7510 2C          7 940 inc     l
-7511 FD 2D       7 941 dec     iyl                         ; decrement loop counter
-7513 C2 F6 74    7 942 jp      nz, Potentials_Loop         ; repeat until end of boards
-7516 C9          7 943 ret
-7517             7 944 Potentials_Infinite
-7517 CB FE       7 945 set     7, (hl)                     ; set cell potential as "infinite"
-7519 1C          7 946 inc     e                           ; move to next cell of each board
-751A 2C          7 947 inc     l
-751B FD 2D       7 948 dec     iyl                         ; decrement loop counter
-751D C2 F6 74    7 949 jp      nz, Potentials_Loop         ; repeat until end of boards
-7520 C9          7 950 ret
-7521             7 952 ; ----------------------------------------------------------------------------------------------------------------------
-7521             7 953 ; PathFinder_Candidates: search candidates based on score result and boards potentials
-7521             7 954 ;
-7521             7 955 ; Input:    A  = -1, 0 or heuristic result
-7521             7 956 ;           IX = candidates area address
-7521             7 957 ;
-7521             7 958 ; Output:   IX = first candidate address
-7521             7 959 ;
-7521             7 960 ; Uses:     AI_PLAYER (speccy side)
-7521             7 961 ;
-7521             7 962 ; Destroys: A, A', BC, DE, HL
-7521             7 963 ; ----------------------------------------------------------------------------------------------------------------------
-7521             7 964 PathFinder_Candidates:
-7521 DD 36 00 00 7 965 ld      (ix+0), 0                   ; set candidates endmarker
-7525 B7          7 967 or      a                           ; is speccy the winner?
-7526 28 3D       7 968 jr      z, Candidates_Winner        ; yes, fill candidates for winner color
-7528 3C          7 969 inc     a                           ; is speccy defeated?
-7529 28 4E       7 970 jr      z, Candidates_Defeat        ; yes, fill candidates for defeated color
-752B             7 972 ; if score is not -1 nor 0, fill candidates from total potentials
-752B 21 09 61    7 974 ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
-752E 11 09 64    7 975 ld      de, RED_BOARD_LEFT_RIGHT+9  ; DE points to red board left-right address (1st position)
-7531 CD F0 74    7 976 call    PathFinder_Potentials       ; process candidates from total potentials
-7534 79          7 978 ld      a, c                        ; set board potential in A
-7535 08          7 979 ex      af, af'                     ; save board potential
-7536 50          7 980 ld      d, b                        ; store attack mobility
-7537 DD 5D       7 981 ld      e, ixl                      ; store candidates position
-7539             7 983 ; insert the second best board potentials in candidates area
-7539             7 984 Candidates_2ndBest
-7539 2E 09       7 985 ld      l, 9                        ; HL points to board potentials address (1st position)
-753B 0C          7 986 inc     c                           ; increment board potential
-753C 79          7 987 ld      a, c                        ; A = second best potential
-753D FE 20       7 988 cp      $20                         ; is potential >= $20? (2nd best max potential)
-753F 30 13       7 989 jr      nc, Candidates_2ndBest_Exit ; yes, stop searching 2nd best potential
-7541 06 3D       7 991 ld      b, 61                       ; number of cells to be checked (loop counter)
-7543             7 992 Candidates_2ndBest_Loop
-7543 BE          7 993 cp      (hl)                        ; is current board potential = 2nd best board potential?
-7544 C2 4C 75    7 994 jp      nz, Candidates_2ndBest_Next ; no, skip to next potential
-7547 DD 2C       7 995 inc     ixl                         ; yes, insert candidate
-7549 DD 75 00    7 996 ld      (ix+0), l
-754C             7 997 Candidates_2ndBest_Next
-754C 2C          7 998 inc     l                           ; move HL to next board potential address
-754D 10 F4       7 999 djnz    Candidates_2ndBest_Loop     ; repeat for each cell
-754F DD 7D       7 1000 ld      a, ixl                      ; A = current candidates position
-7551 BB          7 1001 cp      e                           ; new candidates inserted?
-7552 28 E5       7 1002 jr      z, Candidates_2ndBest       ; no, repeat until new candidates inserted
-7554             7 1004 Candidates_2ndBest_Exit
-7554 42          7 1005 ld      b, d                        ; restore attack mobility
-7555 08          7 1006 ex      af, af'                     ; restore board potential
-7556             7 1008 ; insert the best board potentials in candidates area
-7556             7 1009 Candidates_Best
-7556 2E 08       7 1010 ld      l, 8                        ; HL points to board potential address (1st position -1)
-7558             7 1011 Candidates_Best_Loop
-7558 2C          7 1012 inc     l                           ; move HL to next board potential address
-7559 BE          7 1013 cp      (hl)                        ; is current board potential equal to best board potential?
-755A C2 58 75    7 1014 jp      nz, Candidates_Best_Loop    ; no, next potential
-755D DD 2C       7 1015 inc     ixl                         ; yes, insert candidate
-755F DD 75 00    7 1016 ld      (ix+0), l
-7562 10 F4       7 1017 djnz    Candidates_Best_Loop        ; repeat for each cell
-7564 C9          7 1018 ret
-7565             7 1020 ; ----------------------------------------------------------------------------------------------------------------------
-7565             7 1021 ; Fill candidates for winner color
-7565             7 1022 ; ----------------------------------------------------------------------------------------------------------------------
-7565             7 1023 Candidates_Winner
-7565 3A 99 61    7 1024 ld      a, (AI_PLAYER)              ; check speccy side
-7568 B7          7 1025 or      a                           ; is it FRIEND?
-7569 E2 86 75    7 1026 jp      po, Candidates_Winner_Cyan  ; yes, fill candidates from cyan potentials
-756C 21 09 64    7 1028 ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st pos.)
-756F 11 51 64    7 1029 ld      de, RED_BOARD_RIGHT_LEFT+1  ; DE points to red board right-left address (1st position)
-7572 CD F0 74    7 1030 call    PathFinder_Potentials       ; calculate red potentials
-7575 79          7 1031 ld      a, c                        ; set board potential in A
-7576 C3 56 75    7 1032 jp      Candidates_Best             ; fill only the best candidates
-7579             7 1034 ; ----------------------------------------------------------------------------------------------------------------------
-7579             7 1035 ; Fill candidates for defeated color
-7579             7 1036 ; ----------------------------------------------------------------------------------------------------------------------
-7579             7 1037 Candidates_Defeat
-7579 3A 99 61    7 1038 ld      a, (AI_PLAYER)              ; check speccy side
-757C B7          7 1039 or      a                           ; is it FRIEND?
-757D E2 93 75    7 1040 jp      po, Candidates_Defeat_Red   ; yes, fill candidates from red potentials
-7580             7 1042 ; if RED is defeated, candidates are chosen from cyan board potentials
-7580 CD 47 71    7 1044 call    PathFinder_Cyan_UpDown      ; calculate cyan two-distance from UP to DOWN edge
-7583 CD 83 71    7 1045 call    PathFinder_Cyan_DownUp      ; calculate cyan two-distance from DOWN to UP edge
-7586             7 1046 Candidates_Winner_Cyan
-7586 21 09 61    7 1047 ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
-7589 11 51 61    7 1048 ld      de, CYAN_BOARD_DOWN_UP+1    ; DE points to cyan board down-up address (1st position)
-758C CD F0 74    7 1049 call    PathFinder_Potentials       ; calculate cyan potentials
-758F 79          7 1050 ld      a, c                        ; set board potential in A
-7590 C3 56 75    7 1051 jp      Candidates_Best             ; fill only the best candidates
-7593             7 1053 ; if CYAN is defeated, candidates are chosen from red board potentials
-7593             7 1054 Candidates_Defeat_Red
-7593 CD BB 71    7 1055 call    PathFinder_Red_LeftRight    ; calculate red two-distance from LEFT to RIGHT edge
-7596 CD FD 71    7 1056 call    PathFinder_Red_RightLeft    ; calculate red two-distance from RIGHT to LEFT edge
-7599 21 09 64    7 1057 ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st pos.)
-759C 11 51 64    7 1058 ld      de, RED_BOARD_RIGHT_LEFT+1  ; DE points to red board right-left address (1st position)
-759F CD F0 74    7 1059 call    PathFinder_Potentials       ; calculate red potentials
-75A2 79          7 1060 ld      a, c                        ; set board potential in A
-75A3 C3 56 75    7 1061 jp      Candidates_Best             ; fill only the best candidates
-75A6             7 1063 ; ----------------------------------------------------------------------------------------------------------------------
-75A6             7 1064 ; PathFinder_VictoryPath: calculate current player victory path
-75A6             7 1065 ;
-75A6             7 1066 ; Input:    -
-75A6             7 1067 ;
-75A6             7 1068 ; Output:   A = -1, if there isn't a victory path
-75A6             7 1069 ;           A = start position (-1) of the victory path, otherwise
-75A6             7 1070 ;
-75A6             7 1071 ; Uses:     TOKEN_COLOR (current token color)
-75A6             7 1072 ;
-75A6             7 1073 ; Destroys: BC, DE, HL, IY
-75A6             7 1074 ; ----------------------------------------------------------------------------------------------------------------------
-75A6             7 1075 PathFinder_VictoryPath:
-75A6 3A 9E 61    7 1076 ld      a, (TOKEN_COLOR)            ; get current token color
-75A9 FE 05       7 1077 cp      CYAN_COLOR                  ; if it is cyan, check victory path for cyan player
-75AB 28 0C       7 1078 jr      z, PathFinder_VictoryPath_Cyan
-75AD CD BB 71    7 1080 call    PathFinder_Red_LeftRight    ; execute Path_Finder RED two-distance from LEFT to RIGHT
-75B0 21 45 64    7 1081 ld      hl, RED_BOARD_LEFT_RIGHT+69 ; HL points to red board left-right address (last position)
-75B3 CD C5 75    7 1082 call    PathFinder_PrepareBoard     ; prepare board to calculate victory path
-75B6 C3 C4 71    7 1083 jp      PathFinder_Red_CheckPath    ; calculate RED victory path
-75B9             7 1085 PathFinder_VictoryPath_Cyan
-75B9 CD 47 71    7 1086 call    PathFinder_Cyan_UpDown      ; execute Path_Finder CYAN two-distance from UP to DOWN
-75BC 21 45 61    7 1087 ld      hl, CYAN_BOARD_UP_DOWN+69   ; HL points to cyan board up-down address (last position)
-75BF CD C5 75    7 1088 call    PathFinder_PrepareBoard     ; prepare board to calculate victory path
-75C2 C3 50 71    7 1089 jp      PathFinder_Cyan_CheckPath   ; calculate CYAN victory path
-75C5             7 1091 ; ----------------------------------------------------------------------------------------------------------------------
-75C5             7 1092 ; PathFinder_PrepareBoard: update '[color]_BOARD_XX_YY', changing VICTORY+$40 to 1, everything else to ENEMY.
-75C5             7 1093 ; Immediately after 'Path_Finder_[color]' returned VICTORY, you can execute this routine, then execute 'Path_Finder_
-75C5             7 1094 ; [color]' again to find a victory path.
-75C5             7 1095 ;
-75C5             7 1096 ; Coded by Einar Saukas
-75C5             7 1097 ;
-75C5             7 1098 ; Input:    HL = pointer to last position of [color]_BOARD
-75C5             7 1099 ;
-75C5             7 1100 ; Output:   -
-75C5             7 1101 ;
-75C5             7 1102 ; Destroys: A, BC, HL
-75C5             7 1103 ; ----------------------------------------------------------------------------------------------------------------------
-75C5             7 1104 PathFinder_PrepareBoard:
-75C5 3E 43       7 1105 ld      a, VICTORY+$40              ; set victory distance + friendly flag
-75C7 0E 07       7 1106 ld      c, 7                        ; 7 rows
-75C9             7 1107 PrepareBoard_Row
-75C9 06 07       7 1108 ld      b, 7                        ; 7 columns
-75CB             7 1109 PrepareBoard_Column
-75CB BE          7 1110 cp      (hl)                        ; check win condition
-75CC 36 01       7 1111 ld      (hl), 1                     ; save 1 by default
-75CE 28 02       7 1112 jr      z, PrepareBoard_Next        ; if win condition, skip to position
-75D0 36 7E       7 1113 ld      (hl), ENEMY                 ; else, save ENEMY
-75D2             7 1114 PrepareBoard_Next
-75D2 2D          7 1115 dec     l                           ; HL points to next board position
-75D3 10 F6       7 1116 djnz    PrepareBoard_Column         ; repeat for each column
-75D5 2D          7 1118 dec     l                           ; skip borders
-75D6 2D          7 1119 dec     l
-75D7 0D          7 1120 dec     c                           ; decrement rows
-75D8 C2 C9 75    7 1121 jp      nz, PrepareBoard_Row        ; repeat for each row
-75DB C9          7 1122 ret
-75DC             7 1124 ; ----------------------------------------------------------------------------------------------------------------------
-75DC             7 1125 ; PathFinder_BrightPath: animate and highlight the hexagons included in shortest path when match ends
-75DC             7 1126 ;
-75DC             7 1127 ; Input:    A  = start position of the victory path
-75DC             7 1128 ;           HL = [color]_QUEUE_AREA address
-75DC             7 1129 ;
-75DC             7 1130 ; Output:   -
-75DC             7 1131 ;
-75DC             7 1132 ; Uses:     TOKEN_COLOR (current token color)
+74F0             7 915 ; Input:    HL = cyan board or red board address
+74F0             7 916 ;           DE = cyan board or red board address
+74F0             7 917 ;
+74F0             7 918 ; Output:   B = attack mobility
+74F0             7 919 ;           C = board potential
+74F0             7 920 ;
+74F0             7 921 ; Destroys: A, DE, HL, IYL
+74F0             7 922 ; ----------------------------------------------------------------------------------------------------------------------
+74F0             7 923 PathFinder_Potentials:
+74F0 01 FF 00    7 924 ld      bc, $00FF                   ; initialize attack mobility and board potential
+74F3 FD 2E 3D    7 925 ld      iyl, 61                     ; number of cells to be checked (loop counter)
+74F6             7 926 Potentials_Loop
+74F6 7E          7 927 ld      a, (hl)                     ; get cell's two-distance pointed by HL
+74F7 FE 40       7 928 cp      $40                         ; is cell occupied or border?
+74F9 30 14       7 929 jr      nc, Potentials_Next         ; yes, skip to next cell
+74FB FE 04       7 930 cp      $04                         ; cell distance was not updated?
+74FD 38 18       7 931 jr      c, Potentials_Infinite      ; yes, set cell potential as "infinite" and skip
+74FF 1A          7 932 ld      a, (de)                     ; get cell's two-distance pointed by DE
+7500 FE 04       7 933 cp      $04                         ; cell distance was not updated?
+7502 38 13       7 934 jr      c, Potentials_Infinite      ; yes, set cell potential as "infinite" and skip
+7504 86          7 935 add     a, (hl)                     ; sum both two-distances (calculate cell potential)
+7505 77          7 936 ld      (hl), a                     ; save potential in the cell pointed by HL
+7506 B9          7 937 cp      c                           ; is the new potential = board potential?
+7507 28 05       7 938 jr      z, Potentials_Increment     ; yes, increment attack mobility
+7509 30 04       7 939 jr      nc, Potentials_Next         ; if (new potential > board potential) skip to next cell
+750B 4F          7 940 ld      c, a                        ; board potential = new potential
+750C 06 00       7 941 ld      b, 0                        ; restart attack mobility
+750E             7 942 Potentials_Increment
+750E 04          7 943 inc     b                           ; increment attack mobility
+750F             7 944 Potentials_Next
+750F 1C          7 945 inc     e                           ; move to next cell of each board
+7510 2C          7 946 inc     l
+7511 FD 2D       7 947 dec     iyl                         ; decrement loop counter
+7513 C2 F6 74    7 948 jp      nz, Potentials_Loop         ; repeat until end of boards
+7516 C9          7 949 ret
+7517             7 950 Potentials_Infinite
+7517 CB FE       7 951 set     7, (hl)                     ; set cell potential as "infinite"
+7519 1C          7 952 inc     e                           ; move to next cell of each board
+751A 2C          7 953 inc     l
+751B FD 2D       7 954 dec     iyl                         ; decrement loop counter
+751D C2 F6 74    7 955 jp      nz, Potentials_Loop         ; repeat until end of boards
+7520 C9          7 956 ret
+7521             7 958 ; ----------------------------------------------------------------------------------------------------------------------
+7521             7 959 ; PathFinder_Candidates: search candidates based on score result and boards potentials
+7521             7 960 ;
+7521             7 961 ; Input:    A  = -1, 0 or heuristic result
+7521             7 962 ;           IX = candidates area address
+7521             7 963 ;
+7521             7 964 ; Output:   IX = first candidate address
+7521             7 965 ;
+7521             7 966 ; Uses:     AI_PLAYER (speccy side)
+7521             7 967 ;
+7521             7 968 ; Destroys: A, A', BC, DE, HL
+7521             7 969 ; ----------------------------------------------------------------------------------------------------------------------
+7521             7 970 PathFinder_Candidates:
+7521 DD 36 00 00 7 971 ld      (ix+0), 0                   ; set candidates endmarker
+7525 B7          7 973 or      a                           ; is speccy the winner?
+7526 28 3D       7 974 jr      z, Candidates_Winner        ; yes, fill candidates for winner color
+7528 3C          7 975 inc     a                           ; is speccy defeated?
+7529 28 4E       7 976 jr      z, Candidates_Defeat        ; yes, fill candidates for defeated color
+752B             7 978 ; if score is not -1 nor 0, fill candidates from total potentials
+752B 21 09 61    7 980 ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
+752E 11 09 64    7 981 ld      de, RED_BOARD_LEFT_RIGHT+9  ; DE points to red board left-right address (1st position)
+7531 CD F0 74    7 982 call    PathFinder_Potentials       ; process candidates from total potentials
+7534 79          7 984 ld      a, c                        ; set board potential in A
+7535 08          7 985 ex      af, af'                     ; save board potential
+7536 50          7 986 ld      d, b                        ; store attack mobility
+7537 DD 5D       7 987 ld      e, ixl                      ; store candidates position
+7539             7 989 ; insert the second best board potentials in candidates area
+7539             7 990 Candidates_2ndBest
+7539 2E 09       7 991 ld      l, 9                        ; HL points to board potentials address (1st position)
+753B 0C          7 992 inc     c                           ; increment board potential
+753C 79          7 993 ld      a, c                        ; A = second best potential
+753D FE 20       7 994 cp      $20                         ; is potential >= $20? (2nd best max potential)
+753F 30 13       7 995 jr      nc, Candidates_2ndBest_Exit ; yes, stop searching 2nd best potential
+7541 06 3D       7 997 ld      b, 61                       ; number of cells to be checked (loop counter)
+7543             7 998 Candidates_2ndBest_Loop
+7543 BE          7 999 cp      (hl)                        ; is current board potential = 2nd best board potential?
+7544 C2 4C 75    7 1000 jp      nz, Candidates_2ndBest_Next ; no, skip to next potential
+7547 DD 2C       7 1001 inc     ixl                         ; yes, insert candidate
+7549 DD 75 00    7 1002 ld      (ix+0), l
+754C             7 1003 Candidates_2ndBest_Next
+754C 2C          7 1004 inc     l                           ; move HL to next board potential address
+754D 10 F4       7 1005 djnz    Candidates_2ndBest_Loop     ; repeat for each cell
+754F DD 7D       7 1006 ld      a, ixl                      ; A = current candidates position
+7551 BB          7 1007 cp      e                           ; new candidates inserted?
+7552 28 E5       7 1008 jr      z, Candidates_2ndBest       ; no, repeat until new candidates inserted
+7554             7 1010 Candidates_2ndBest_Exit
+7554 42          7 1011 ld      b, d                        ; restore attack mobility
+7555 08          7 1012 ex      af, af'                     ; restore board potential
+7556             7 1014 ; insert the best board potentials in candidates area
+7556             7 1015 Candidates_Best
+7556 2E 08       7 1016 ld      l, 8                        ; HL points to board potential address (1st position -1)
+7558             7 1017 Candidates_Best_Loop
+7558 2C          7 1018 inc     l                           ; move HL to next board potential address
+7559 BE          7 1019 cp      (hl)                        ; is current board potential equal to best board potential?
+755A C2 58 75    7 1020 jp      nz, Candidates_Best_Loop    ; no, next potential
+755D DD 2C       7 1021 inc     ixl                         ; yes, insert candidate
+755F DD 75 00    7 1022 ld      (ix+0), l
+7562 10 F4       7 1023 djnz    Candidates_Best_Loop        ; repeat for each cell
+7564 C9          7 1024 ret
+7565             7 1026 ; ----------------------------------------------------------------------------------------------------------------------
+7565             7 1027 ; Fill candidates for winner color
+7565             7 1028 ; ----------------------------------------------------------------------------------------------------------------------
+7565             7 1029 Candidates_Winner
+7565 3A 99 61    7 1030 ld      a, (AI_PLAYER)              ; check speccy side
+7568 B7          7 1031 or      a                           ; is it FRIEND?
+7569 E2 86 75    7 1032 jp      po, Candidates_Winner_Cyan  ; yes, fill candidates from cyan potentials
+756C 21 09 64    7 1034 ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st pos.)
+756F 11 51 64    7 1035 ld      de, RED_BOARD_RIGHT_LEFT+1  ; DE points to red board right-left address (1st position)
+7572 CD F0 74    7 1036 call    PathFinder_Potentials       ; calculate red potentials
+7575 79          7 1037 ld      a, c                        ; set board potential in A
+7576 C3 56 75    7 1038 jp      Candidates_Best             ; fill only the best candidates
+7579             7 1040 ; ----------------------------------------------------------------------------------------------------------------------
+7579             7 1041 ; Fill candidates for defeated color
+7579             7 1042 ; ----------------------------------------------------------------------------------------------------------------------
+7579             7 1043 Candidates_Defeat
+7579 3A 99 61    7 1044 ld      a, (AI_PLAYER)              ; check speccy side
+757C B7          7 1045 or      a                           ; is it FRIEND?
+757D E2 93 75    7 1046 jp      po, Candidates_Defeat_Red   ; yes, fill candidates from red potentials
+7580             7 1048 ; if RED is defeated, candidates are chosen from cyan board potentials
+7580 CD 47 71    7 1050 call    PathFinder_Cyan_UpDown      ; calculate cyan two-distance from UP to DOWN edge
+7583 CD 83 71    7 1051 call    PathFinder_Cyan_DownUp      ; calculate cyan two-distance from DOWN to UP edge
+7586             7 1052 Candidates_Winner_Cyan
+7586 21 09 61    7 1053 ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
+7589 11 51 61    7 1054 ld      de, CYAN_BOARD_DOWN_UP+1    ; DE points to cyan board down-up address (1st position)
+758C CD F0 74    7 1055 call    PathFinder_Potentials       ; calculate cyan potentials
+758F 79          7 1056 ld      a, c                        ; set board potential in A
+7590 C3 56 75    7 1057 jp      Candidates_Best             ; fill only the best candidates
+7593             7 1059 ; if CYAN is defeated, candidates are chosen from red board potentials
+7593             7 1060 Candidates_Defeat_Red
+7593 CD BB 71    7 1061 call    PathFinder_Red_LeftRight    ; calculate red two-distance from LEFT to RIGHT edge
+7596 CD FD 71    7 1062 call    PathFinder_Red_RightLeft    ; calculate red two-distance from RIGHT to LEFT edge
+7599 21 09 64    7 1063 ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st pos.)
+759C 11 51 64    7 1064 ld      de, RED_BOARD_RIGHT_LEFT+1  ; DE points to red board right-left address (1st position)
+759F CD F0 74    7 1065 call    PathFinder_Potentials       ; calculate red potentials
+75A2 79          7 1066 ld      a, c                        ; set board potential in A
+75A3 C3 56 75    7 1067 jp      Candidates_Best             ; fill only the best candidates
+75A6             7 1069 ; ----------------------------------------------------------------------------------------------------------------------
+75A6             7 1070 ; PathFinder_VictoryPath: calculate current player victory path
+75A6             7 1071 ;
+75A6             7 1072 ; Input:    -
+75A6             7 1073 ;
+75A6             7 1074 ; Output:   A   = -1, if there isn't a victory path
+75A6             7 1075 ;           A   = start position (-1) of the victory path, otherwise
+75A6             7 1076 ;           HL  = cyan or red queue head address
+75A6             7 1077 ;
+75A6             7 1078 ; Uses:     TOKEN_COLOR (current token color)
+75A6             7 1079 ;
+75A6             7 1080 ; Destroys: BC, DE, HL, IY
+75A6             7 1081 ; ----------------------------------------------------------------------------------------------------------------------
+75A6             7 1082 PathFinder_VictoryPath:
+75A6 3A 9E 61    7 1083 ld      a, (TOKEN_COLOR)            ; get current token color
+75A9 FE 05       7 1084 cp      CYAN_COLOR                  ; if it is cyan, check victory path for cyan player
+75AB 28 0C       7 1085 jr      z, PathFinder_VictoryPath_Cyan
+75AD CD BB 71    7 1087 call    PathFinder_Red_LeftRight    ; execute Path_Finder RED two-distance from LEFT to RIGHT
+75B0 21 45 64    7 1088 ld      hl, RED_BOARD_LEFT_RIGHT+69 ; HL points to red board left-right address (last position)
+75B3 CD C5 75    7 1089 call    PathFinder_PrepareBoard     ; prepare board to calculate victory path
+75B6 C3 C4 71    7 1090 jp      PathFinder_Red_CheckPath    ; calculate RED victory path
+75B9             7 1092 PathFinder_VictoryPath_Cyan
+75B9 CD 47 71    7 1093 call    PathFinder_Cyan_UpDown      ; execute Path_Finder CYAN two-distance from UP to DOWN
+75BC 21 45 61    7 1094 ld      hl, CYAN_BOARD_UP_DOWN+69   ; HL points to cyan board up-down address (last position)
+75BF CD C5 75    7 1095 call    PathFinder_PrepareBoard     ; prepare board to calculate victory path
+75C2 C3 50 71    7 1096 jp      PathFinder_Cyan_CheckPath   ; calculate CYAN victory path
+75C5             7 1098 ; ----------------------------------------------------------------------------------------------------------------------
+75C5             7 1099 ; PathFinder_PrepareBoard: update '[color]_BOARD_XX_YY', changing VICTORY+$40 to 1, everything else to ENEMY.
+75C5             7 1100 ; Immediately after 'Path_Finder_[color]' returned VICTORY, you can execute this routine, then execute 'Path_Finder_
+75C5             7 1101 ; [color]' again to find a victory path.
+75C5             7 1102 ;
+75C5             7 1103 ; Coded by Einar Saukas
+75C5             7 1104 ;
+75C5             7 1105 ; Input:    HL = pointer to last position of [color]_BOARD
+75C5             7 1106 ;
+75C5             7 1107 ; Output:   -
+75C5             7 1108 ;
+75C5             7 1109 ; Destroys: A, BC, HL
+75C5             7 1110 ; ----------------------------------------------------------------------------------------------------------------------
+75C5             7 1111 PathFinder_PrepareBoard:
+75C5 3E 43       7 1112 ld      a, VICTORY+$40              ; set victory distance + friendly flag
+75C7 0E 07       7 1113 ld      c, 7                        ; 7 rows
+75C9             7 1114 PrepareBoard_Row
+75C9 06 07       7 1115 ld      b, 7                        ; 7 columns
+75CB             7 1116 PrepareBoard_Column
+75CB BE          7 1117 cp      (hl)                        ; check win condition
+75CC 36 01       7 1118 ld      (hl), 1                     ; save 1 by default
+75CE 28 02       7 1119 jr      z, PrepareBoard_Next        ; if win condition, skip to position
+75D0 36 7E       7 1120 ld      (hl), ENEMY                 ; else, save ENEMY
+75D2             7 1121 PrepareBoard_Next
+75D2 2D          7 1122 dec     l                           ; HL points to next board position
+75D3 10 F6       7 1123 djnz    PrepareBoard_Column         ; repeat for each column
+75D5 2D          7 1125 dec     l                           ; skip borders
+75D6 2D          7 1126 dec     l
+75D7 0D          7 1127 dec     c                           ; decrement rows
+75D8 C2 C9 75    7 1128 jp      nz, PrepareBoard_Row        ; repeat for each row
+75DB C9          7 1129 ret
+75DC             7 1131 ; ----------------------------------------------------------------------------------------------------------------------
+75DC             7 1132 ; PathFinder_BrightPath: animate and highlight the hexagons included in shortest path when match ends
 75DC             7 1133 ;
-75DC             7 1134 ; Destroys: A, BC, DE, HL, IX
-75DC             7 1135 ; ----------------------------------------------------------------------------------------------------------------------
-75DC             7 1136 PathFinder_BrightPath:
-75DC 6F          7 1137 ld      l, a                        ; move HL to the start position of the victory path
-75DD 24          7 1138 inc     h
-75DE 4E          7 1139 ld      c, (hl)                     ; set current victory path length in C
-75DF 06 03       7 1140 ld      b, VICTORY                  ; set victory length in B
-75E1 3A 9E 61    7 1142 ld      a, (TOKEN_COLOR)            ; get current token color
-75E4 C6 40       7 1143 add     a, $40                      ; switch on bright attribute
-75E6 32 9E 61    7 1144 ld      (TOKEN_COLOR), a
-75E9 3E 04       7 1145 ld      a, 4                        ; set delay duration for animate hexagons
-75EB 32 CB 6D    7 1146 ld      (@Token_Delay+1), a
-75EE C3 0D 76    7 1148 jp      BrightPath_Position         ; animate and highlight the hexagon position
-75F1             7 1149 BrightPath_Neighbor
-75F1 2C          7 1150 inc     l                           ; move HL to left neighbor address
-75F2 BE          7 1151 cp      (hl)                        ; is it the same as current victory path length?
-75F3 28 18       7 1152 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
-75F5 2D          7 1153 dec     l                           ; move HL to right neighbor address
-75F6 2D          7 1154 dec     l
-75F7 BE          7 1155 cp      (hl)                        ; is it the same as current victory path length?
-75F8 28 13       7 1156 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
-75FA 11 F8 FF    7 1157 ld      de, -WIDTH                  ; move HL to upper-right neighbor address
-75FD 19          7 1158 add     hl, de
-75FE BE          7 1159 cp      (hl)                        ; is it the same as current victory path length?
-75FF 28 0C       7 1160 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
-7601 2C          7 1161 inc     l                           ; move HL to upper-left neighbor address
-7602 BE          7 1162 cp      (hl)                        ; is it the same as current victory path length?
-7603 28 08       7 1163 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
-7605 11 10 00    7 1164 ld      de, WIDTH*2                 ; move HL to lower-right neighbor address
-7608 19          7 1165 add     hl, de
-7609 BE          7 1166 cp      (hl)                        ; is it the same as current victory path length?
-760A 28 01       7 1167 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
-760C 2C          7 1168 inc     l                           ; move HL to lower-left neighbor address
-760D             7 1169 BrightPath_Position
-760D C5          7 1170 push    bc                          ; store current victory path length
-760E E5          7 1171 push    hl                          ; store current position pointer
-760F CD 7A 6D    7 1172 call    Main_Board2Indexes          ; convert a board position into a board indexes
-7612 CD B7 6D    7 1173 call    Draw_Token                  ; animate hexagon sprite on the screen
-7615 DD 21 E7 64 7 1174 ld      ix, TOKEN_FX                ; IX points to token tone parameters address
-7619 CD D4 76    7 1175 call    Sound_FX                    ; play sound effect
-761C E1          7 1176 pop     hl                          ; restore current position pointer
-761D C1          7 1177 pop     bc                          ; restore current victory path length
-761E 0D          7 1178 dec     c                           ; decrement current victory path length
-761F 79          7 1179 ld      a, c                        ; set current victory path length in A
-7620 B8          7 1180 cp      b                           ; has reached victory length?
-7621 C2 F1 75    7 1181 jp      nz, BrightPath_Neighbor     ; repeat for each neighbor until reach victory length
-7624 21 9E 61    7 1183 ld      hl, TOKEN_COLOR             ; get current token color address
-7627 CB B6       7 1184 res     6, (hl)                     ; switch off bright attribute
-7629 C9          7 1185 ret
+75DC             7 1134 ; Input:    A  = start position of the victory path
+75DC             7 1135 ;           HL = cyan or red queue head address
+75DC             7 1136 ;
+75DC             7 1137 ; Output:   -
+75DC             7 1138 ;
+75DC             7 1139 ; Uses:     TOKEN_COLOR (current token color)
+75DC             7 1140 ;
+75DC             7 1141 ; Destroys: A, BC, DE, HL, IX
+75DC             7 1142 ; ----------------------------------------------------------------------------------------------------------------------
+75DC             7 1143 PathFinder_BrightPath:
+75DC 6F          7 1144 ld      l, a                        ; move HL to the start position of the victory path
+75DD 24          7 1145 inc     h
+75DE 4E          7 1146 ld      c, (hl)                     ; set current victory path length in C
+75DF 06 03       7 1147 ld      b, VICTORY                  ; set victory length in B
+75E1 3A 9E 61    7 1149 ld      a, (TOKEN_COLOR)            ; get current token color
+75E4 C6 40       7 1150 add     a, $40                      ; switch on bright attribute
+75E6 32 9E 61    7 1151 ld      (TOKEN_COLOR), a
+75E9 3E 03       7 1152 ld      a, 3                        ; set delay duration for animate hexagons
+75EB 32 CB 6D    7 1153 ld      (@Token_Delay+1), a
+75EE C3 0D 76    7 1155 jp      BrightPath_Position         ; animate and highlight the hexagon position
+75F1             7 1156 BrightPath_Neighbor
+75F1 2C          7 1157 inc     l                           ; move HL to left neighbor address
+75F2 BE          7 1158 cp      (hl)                        ; is it the same as current victory path length?
+75F3 28 18       7 1159 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
+75F5 2D          7 1160 dec     l                           ; move HL to right neighbor address
+75F6 2D          7 1161 dec     l
+75F7 BE          7 1162 cp      (hl)                        ; is it the same as current victory path length?
+75F8 28 13       7 1163 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
+75FA 11 F8 FF    7 1164 ld      de, -WIDTH                  ; move HL to upper-right neighbor address
+75FD 19          7 1165 add     hl, de
+75FE BE          7 1166 cp      (hl)                        ; is it the same as current victory path length?
+75FF 28 0C       7 1167 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
+7601 2C          7 1168 inc     l                           ; move HL to upper-left neighbor address
+7602 BE          7 1169 cp      (hl)                        ; is it the same as current victory path length?
+7603 28 08       7 1170 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
+7605 11 10 00    7 1171 ld      de, WIDTH*2                 ; move HL to lower-right neighbor address
+7608 19          7 1172 add     hl, de
+7609 BE          7 1173 cp      (hl)                        ; is it the same as current victory path length?
+760A 28 01       7 1174 jr      z, BrightPath_Position      ; yes, animate and highlight the hexagon position
+760C 2C          7 1175 inc     l                           ; move HL to lower-left neighbor address
+760D             7 1176 BrightPath_Position
+760D C5          7 1177 push    bc                          ; store current victory path length
+760E E5          7 1178 push    hl                          ; store current position pointer
+760F CD 7A 6D    7 1179 call    Main_Board2Indexes          ; convert a board position into a board indexes
+7612 CD B7 6D    7 1180 call    Draw_Token                  ; animate hexagon sprite on the screen
+7615 DD 21 E7 64 7 1181 ld      ix, TOKEN_FX                ; IX points to token tone parameters address
+7619 CD D4 76    7 1182 call    Sound_FX                    ; play sound effect
+761C E1          7 1183 pop     hl                          ; restore current position pointer
+761D C1          7 1184 pop     bc                          ; restore current victory path length
+761E 0D          7 1185 dec     c                           ; decrement current victory path length
+761F 79          7 1186 ld      a, c                        ; set current victory path length in A
+7620 B8          7 1187 cp      b                           ; has reached victory length?
+7621 C2 F1 75    7 1188 jp      nz, BrightPath_Neighbor     ; repeat for each neighbor until reach victory length
+7624 21 9E 61    7 1190 ld      hl, TOKEN_COLOR             ; get current token color address
+7627 CB B6       7 1191 res     6, (hl)                     ; switch off bright attribute
+7629 C9          7 1192 ret
 
 ; File #8: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Timer.z80asm
 

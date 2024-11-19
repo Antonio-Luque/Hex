@@ -75,9 +75,9 @@ PathFinder_EraseToken:
 ; Input:    DE = cyan or red board address (destiny)
 ;           HL = CYAN_POSITIONS or RED_POSITIONS address (origin)
 ;
-; Output:   -
+; Output:   DE = cyan or red board address (last position+1)
 ;
-; Destroys: BC, DE, HL
+; Destroys: BC, HL
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_CopyPositions:
                         ld      bc, 7*7                     ; number of positions to be copied
@@ -160,13 +160,14 @@ PathFinder_EMPTY
 ;
 ; Input:    -
 ;
-; Output:   A = -1, if down edge couldn't be reached
-;           A =  0, if there is chain of connected cyan tokens between the two edges
-;           A = last edge position visited (-1), otherwise
+; Output:   A  = -1, if down edge couldn't be reached
+;           A  =  0, if there is chain of connected cyan tokens between the two edges
+;           A  = last edge position visited (-1), otherwise
+;           HL = cyan queue head address
 ;
 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
 ;
-; Destroys: BC, DE, HL, IY
+; Destroys: BC, DE, IY
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_Cyan_UpDown:
                         ld      hl, CYAN_POSITIONS+7        ; HL points to cyan positions address (up-right corner)
@@ -211,13 +212,14 @@ PathFinder_Cyan_CheckPath:
 ;
 ; Input:    -
 ;
-; Output:   A = -1, if up edge couldn't be reached
-;           A =  0, if there is chain of connected cyan tokens between the two edges
-;           A = last edge position visited (-1), otherwise
+; Output:   A  = -1, if up edge couldn't be reached
+;           A  =  0, if there is chain of connected cyan tokens between the two edges
+;           A  = last edge position visited (-1), otherwise
+;           HL = cyan queue head address
 ;
 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
 ;
-; Destroys: BC, DE, HL, IY
+; Destroys: BC, DE, IY
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_Cyan_DownUp:
                         ld      hl, CYAN_POSITIONS+7        ; HL points to cyan positions address (up-right corner)
@@ -260,13 +262,14 @@ PathFinder_Cyan_DownUp:
 ;
 ; Input:    -
 ;
-; Output:   A = -1, if right edge couldn't be reached
-;           A =  0, if there is chain of connected cyan tokens between the two edges
-;           A = last edge position visited (-1), otherwise
+; Output:   A  = -1, if right edge couldn't be reached
+;           A  =  0, if there is chain of connected cyan tokens between the two edges
+;           A  = last edge position visited (-1), otherwise
+;           HL = red queue head address
 ;
 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
 ;
-; Destroys: BC, DE, HL, IY
+; Destroys: BC, DE, IY
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_Red_LeftRight:
                         ld      hl, RED_POSITIONS+7         ; HL points to red positions address (up-right corner)
@@ -311,13 +314,14 @@ PathFinder_Red_CheckPath
 ;
 ; Input:    -
 ;
-; Output:   A = -1, if left edge couldn't be reached
-;           A =  0, if there is chain of connected cyan tokens between the two edges
-;           A = last edge position visited (-1), otherwise
+; Output:   A  = -1, if left edge couldn't be reached
+;           A  =  0, if there is chain of connected cyan tokens between the two edges
+;           A  = last edge position visited (-1), otherwise
+;           HL = red queue head address
 ;
 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
 ;
-; Destroys: BC, DE, HL, IY
+; Destroys: BC, DE, IY
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_Red_RightLeft:
                         ld      hl, RED_POSITIONS+7         ; HL points to red positions address (up-right corner)
@@ -364,13 +368,14 @@ PathFinder_Red_RightLeft:
 ;           IYH = distance to check edge positions
 ;           IYL = 0
 ;
-; Output:   A = -1, if corresponding edge couldn't be reached
-;           A =  0, if there is chain of connected (color) tokens between the two edges
-;           A = last edge position visited (-1), otherwise
+; Output:   A   = -1, if corresponding edge couldn't be reached
+;           A   =  0, if there is chain of connected (color) tokens between the two edges
+;           A   = last edge position visited (-1), otherwise
+;           HL  = cyan or red queue head address
 ;
 ; Uses:     @Queue_Tail (queue pointer in 'PathFinder_Update' routine)
 ;
-; Destroys: DE, HL, IY
+; Destroys: BC, DE, IY
 ; ----------------------------------------------------------------------------------------------------------------------
 Path_Finder:
                         inc     l                           ; move queue head down
@@ -434,10 +439,11 @@ Path_Finder_First
 ;           HL = current edge position address (a flag in 7th bit indicates an edge position and the lowest 3 bits the
 ;                edge number)
 ;
-; Output:   A = 0, if there is a chain of connected tokens of the same color between the two edges.
-;           A = FRIEND and E = current position, otherwise.
+; Output:   A  = 0 and HL = cyan or red queue head address, if there is a chain of connected tokens of the same color
+;                between the two edges.
+;           A  = FRIEND and E = current position, otherwise.
 ;
-; Destroys: DE, HL
+; Destroys: BC, D
 ; ----------------------------------------------------------------------------------------------------------------------
 Path_Finder_Adjacent
                         ld      a, VICTORY+$40              ; set victory distance + friendly flag
@@ -1065,8 +1071,9 @@ Candidates_Defeat_Red
 ;
 ; Input:    -
 ;
-; Output:   A = -1, if there isn't a victory path
-;           A = start position (-1) of the victory path, otherwise
+; Output:   A   = -1, if there isn't a victory path
+;           A   = start position (-1) of the victory path, otherwise
+;           HL  = cyan or red queue head address
 ;
 ; Uses:     TOKEN_COLOR (current token color)
 ;
@@ -1125,7 +1132,7 @@ PrepareBoard_Next
 ; PathFinder_BrightPath: animate and highlight the hexagons included in shortest path when match ends
 ;
 ; Input:    A  = start position of the victory path
-;           HL = [color]_QUEUE_AREA address
+;           HL = cyan or red queue head address
 ;
 ; Output:   -
 ;
@@ -1142,7 +1149,7 @@ PathFinder_BrightPath:
                         ld      a, (TOKEN_COLOR)            ; get current token color
                         add     a, $40                      ; switch on bright attribute
                         ld      (TOKEN_COLOR), a
-                        ld      a, 4                        ; set delay duration for animate hexagons
+                        ld      a, 3                        ; set delay duration for animate hexagons
                         ld      (@Token_Delay+1), a
 
                         jp      BrightPath_Position         ; animate and highlight the hexagon position
