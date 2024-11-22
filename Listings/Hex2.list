@@ -1291,7 +1291,7 @@
 6D8C C5          2 340 push    bc                          ; store BC register
 6D8D             2 341 Main_Delay_Outer
 6D8D F5          2 342 push    af                          ; store delay counter (outer loop)
-6D8E 01 40 06    2 343 ld      bc, 1600                    ; set inner loop counter in BC
+6D8E 01 B0 04    2 343 ld      bc, 1200                    ; set inner loop counter in BC
 6D91             2 344 Main_Delay_Inner
 6D91 0B          2 345 dec     bc                          ; decrement inner loop counter
 6D92 78          2 346 ld      a, b                        ; check inner loop counter
@@ -3275,7 +3275,7 @@
 75E1 3A 9E 61    7 1149 ld      a, (TOKEN_COLOR)            ; get current token color
 75E4 C6 40       7 1150 add     a, $40                      ; switch on bright attribute
 75E6 32 9E 61    7 1151 ld      (TOKEN_COLOR), a
-75E9 3E 03       7 1152 ld      a, 3                        ; set delay duration for animate hexagons
+75E9 3E 04       7 1152 ld      a, 4                        ; set delay duration for animate hexagons
 75EB 32 CB 6D    7 1153 ld      (@Token_Delay+1), a
 75EE C3 0D 76    7 1155 jp      BrightPath_Position         ; animate and highlight the hexagon position
 75F1             7 1156 BrightPath_Neighbor

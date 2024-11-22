@@ -340,7 +340,7 @@ Main_Delay:
                         push    bc                          ; store BC register
 Main_Delay_Outer
                         push    af                          ; store delay counter (outer loop)
-                        ld      bc, 1600                    ; set inner loop counter in BC
+                        ld      bc, 1200                    ; set inner loop counter in BC
 Main_Delay_Inner
                         dec     bc                          ; decrement inner loop counter
                         ld      a, b                        ; check inner loop counter

@@ -1149,7 +1149,7 @@ PathFinder_BrightPath:
                         ld      a, (TOKEN_COLOR)            ; get current token color
                         add     a, $40                      ; switch on bright attribute
                         ld      (TOKEN_COLOR), a
-                        ld      a, 3                        ; set delay duration for animate hexagons
+                        ld      a, 4                        ; set delay duration for animate hexagons
                         ld      (@Token_Delay+1), a
 
                         jp      BrightPath_Position         ; animate and highlight the hexagon position
