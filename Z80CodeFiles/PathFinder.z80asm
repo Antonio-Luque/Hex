@@ -928,19 +928,20 @@ Potentials_Loop
                         cp      $40                         ; is cell occupied or border?
                         jr      nc, Potentials_Next         ; yes, skip to next cell
                         cp      $04                         ; cell distance was not updated?
-                        jr      c, Potentials_Infinite      ; yes, set cell potential as "infinite" and skip
+                        jr      c, Potentials_Infinite      ; yes, set cell potential as infinite and skip
                         ld      a, (de)                     ; get cell's two-distance pointed by DE
                         cp      $04                         ; cell distance was not updated?
-                        jr      c, Potentials_Infinite      ; yes, set cell potential as "infinite" and skip
+                        jr      c, Potentials_Infinite      ; yes, set cell potential as infinite and skip
                         add     a, (hl)                     ; sum both two-distances (calculate cell potential)
-                        ld      (hl), a                     ; save potential in the cell pointed by HL
                         cp      c                           ; is the new potential = board potential?
                         jr      z, Potentials_Increment     ; yes, increment attack mobility
-                        jr      nc, Potentials_Next         ; if (new potential > board potential) skip to next cell
+                        jr      nc, Potentials_Update       ; if (new potential > board potential) update and skip
                         ld      c, a                        ; board potential = new potential
                         ld      b, 0                        ; restart attack mobility
 Potentials_Increment
                         inc     b                           ; increment attack mobility
+Potentials_Update
+                        ld      (hl), a                     ; save potential in the cell pointed by HL
 Potentials_Next
                         inc     e                           ; move to next cell of each board
                         inc     l
@@ -948,7 +949,8 @@ Potentials_Next
                         jp      nz, Potentials_Loop         ; repeat until end of boards
                         ret
 Potentials_Infinite
-                        set     7, (hl)                     ; set cell potential as "infinite"
+                        rra                                 ; as carry flag is set, the 7th bit of A is set
+                        ld      (hl), a                     ; save potential as infinite in the cell pointed by HL
                         inc     e                           ; move to next cell of each board
                         inc     l
                         dec     iyl                         ; decrement loop counter

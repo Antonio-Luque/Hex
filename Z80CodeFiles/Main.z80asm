@@ -287,18 +287,19 @@ Main_GetPlayer_Input
 ; Output:   DE = address of first element in the C row of the table
 ;           HL = address of the element in the BC indexes of the table
 ;
-; Destroys: -
+; Destroys: A
 ; ----------------------------------------------------------------------------------------------------------------------
 Main_Search_Table:
-                        ld      h, 0                        ; first, get the C row in table
-                        ld      l, c                        ; set index in HL
-                        add     hl, hl                      ; a row is 8 bytes long
-                        add     hl, hl
-                        add     hl, hl
+                        ld      a, c                        ; first, get the C row in table
+                        add     a, a                        ; a row is 8 bytes long
+                        add     a, a
+                        add     a, a
+                        ld      l, a                        ; set index in HL
+                        ld      h, 0
                         add     hl, de                      ; HL points to the address of C row 
-                        ex      de, hl                      ; DE points to the address of C row
-                        ld      h, 0                        ; go for to the B column
-                        ld      l, b                        ; set index in HL
+                        ex      de, hl                      ; put it on DE
+                        ld      l, b                        ; set B index in HL
+                        ld      h, 0
                         add     hl, de                      ; HL points to the address of BC indexes
                         ret
 
