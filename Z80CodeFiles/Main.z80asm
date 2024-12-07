@@ -102,7 +102,7 @@ Main_Start_Match
 
                         ; initialize draw token delay, move number and token color
 
-                        ld      a, 10                       ; set delay duration for animate hexagons
+                        ld      a, 10                       ; set delay duration in 'Draw_Token' routine
                         ld      (@Token_Delay+1), a
                         ld      a, 1                        ; initialize move number
                         ld      (MOVE_NUMBER), a

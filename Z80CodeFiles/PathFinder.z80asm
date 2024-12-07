@@ -111,9 +111,10 @@ PathFinder_CopyLoop
 ; * FRIEND:  distance of neighbor closest to goal
 ; * EMPTY:   1 + distance of neighbor closest to goal, if current distance is friendly, SKIPPED otherwise
 ;
-; Input:    Z  = flag set when (HL) is FRIEND
-;           C  = current distance (also with a flag at 6th bit that indicates a friendly position)
-;           HL = current position address (on either cyan boards or red boards)
+; Input:    Z    = flag set when (HL) is FRIEND
+;           C    = current distance (also with a flag at 6th bit that indicates a friendly position)
+;           HL   = current position address (on either cyan boards or red boards)
+;           SP+2 = queue head address (on either cyan queue or red queue areas)
 ;
 ; Output:   -
 ;
@@ -178,7 +179,7 @@ PathFinder_Cyan_UpDown:
 PathFinder_Cyan_CheckPath:
                         ld      iy, $0900                   ; IYH = distance to check edge positions
                                                             ; IYL = last edge position visited
-                        ld      hl, CYAN_QUEUE_AREA         ; HL points to cyan queue area address
+                        ld      h, CYAN_QUEUE_AREA/256      ; HL points to cyan queue area address
                         ld      (@Queue_Tail+1), hl         ; initialize cyan queue tail
                         push    hl                          ; store cyan queue head
 
@@ -280,7 +281,7 @@ PathFinder_Red_LeftRight:
 PathFinder_Red_CheckPath
                         ld      iy, $0100                   ; IYH = distance to check edge positions
                                                             ; IYL = last edge position visited
-                        ld      hl, RED_QUEUE_AREA          ; HL points to red queue area address
+                        ld      h, RED_QUEUE_AREA/256       ; HL points to red queue area address
                         ld      (@Queue_Tail+1), hl         ; initialize red queue tail
                         push    hl                          ; store red queue head
 
