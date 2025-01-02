@@ -156,6 +156,8 @@ Main_Match_End
 
                         ld      de, STR_WINNER              ; DE points to "WINS" string address
                         call    Print_Alert                 ; print string
+                        ld      ix, WINNER_FX               ; IX points to winner tone parameters address
+                        call    Sound_FX                    ; play sound fx
 
                         ld      a, (TOKEN_COLOR)            ; get current token color
                         ld      hl, PLAYER_COLOR            ; get player color
