@@ -161,9 +161,9 @@ Main_Match_End
 
                         ld      a, (TOKEN_COLOR)            ; get current token color
                         ld      hl, PLAYER_COLOR            ; get player color
-                        cp      (hl)                        ; is player color = current token color?
+                        cp      (hl)                        ; check player color
                         ld      hl, THREE_ROW               ; HL points to three-in-a-row counter
-                        jr      z, Main_ThreeRow_Increment  ; yes, go to increment three-in-a-row counter
+                        jr      z, Main_ThreeRow_Increment  ; if player color = current token color, increment counter
                         dec     (hl)                        ; decrement three-in-a-row counter
                         jp      p, Main_ThreeRow_Show       ; if not negative (-1), show marks
 Main_ThreeRow_Increment
@@ -172,8 +172,8 @@ Main_ThreeRow_Show
                         call    Screen_ThreeRow             ; show three-in-a-row marks
                         ld      a, 255                      ; set delay duration
                         call    Main_Delay                  ; execute delay
-                        ld      a, (THREE_ROW)              ; check three row counter
-                        cp      3                           ; is it 3?
+                        ld      a, 3                        ; check three row counter
+                        cp      (hl)                        ; is it 3?
                         jp      z, Main_New_Level           ; yes, start a new level
                         jp      Main_Start_Match            ; start a new match
 
