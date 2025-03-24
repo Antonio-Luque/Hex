@@ -29,7 +29,7 @@ Main                    ENT     $                           ; SpectNet IDE pragm
                         ;
                         ;                           ( I * $100 ) + $FF = $2E00 + $FF = $2EFF
                         ; Source: 
-                        ; https://wiki.speccy.org/cursos/ensamblador/interrupciones#curiosidades-y-consideraciones
+                        ; https://wiki.speccy.org/cursos/ensamblador/interrupciones#modo-im-2-en-spectrum-16k
                         ;
                         ; The value pointed at ROM address $2EFF is $5CA1. This address belongs to the calculator's
                         ; memory area and it is used by some ROM routines, but none of them are called by HEX2 program.
