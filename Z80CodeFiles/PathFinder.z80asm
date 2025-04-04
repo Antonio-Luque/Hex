@@ -206,7 +206,7 @@ PathFinder_Cyan_CheckPath:
                         cp      (hl)                        ; check 6th start position distance
                         call    nc, PathFinder_Update
                         inc     l
-                        jp      Path_Finder_First           ; calculate two-distances of cyan board (up-down)
+                        jp      PathFinder_First            ; calculate two-distances of cyan board (up-down)
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; PathFinder_Cyan_DownUp: set up Path_Finder routine to calculate CYAN two-distance from DOWN to UP edge
@@ -256,7 +256,7 @@ PathFinder_Cyan_DownUp:
                         cp      (hl)                        ; check 6th start position distance
                         call    nc, PathFinder_Update       
                         dec     l                           
-                        jp      Path_Finder_First           ; calculate two-distances of cyan board (down-up)
+                        jp      PathFinder_First            ; calculate two-distances of cyan board (down-up)
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; PathFinder_Red_LeftRight: set up Path_Finder routine to calculate RED two-distance from LEFT to RIGHT edge
@@ -308,7 +308,7 @@ PathFinder_Red_CheckPath
                         cp      (hl)                        ; check 6th start position distance
                         call    nc, PathFinder_Update
                         ld      l, (RED_BOARD_LEFT_RIGHT+63)%256
-                        jp      Path_Finder_First           ; calculate two-distances of red board (left-right)
+                        jp      PathFinder_First            ; calculate two-distances of red board (left-right)
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; PathFinder_Red_RightLeft: set up Path_Finder routine to calculate RED two-distance from RIGHT to LEFT edge
@@ -358,10 +358,10 @@ PathFinder_Red_RightLeft:
                         cp      (hl)                        ; check 6th start position distance
                         call    nc, PathFinder_Update
                         ld      l, (RED_BOARD_RIGHT_LEFT+7)%256
-                        jp      Path_Finder_First           ; calculate red two-distance (right-left)
+                        jp      PathFinder_First            ; calculate red two-distance (right-left)
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Path_Finder: calculate two-distance metric for each board position
+; PathFinder: calculate two-distance metric for each board position
 ;
 ; The algorithm is implemented running PATHFINDER, starting at the corresponding side of the input board
 ;
@@ -378,7 +378,7 @@ PathFinder_Red_RightLeft:
 ;
 ; Destroys: BC, DE, IY
 ; ----------------------------------------------------------------------------------------------------------------------
-Path_Finder:
+PathFinder:
                         inc     l                           ; move queue head down
                         push    hl                          ; preserve queue head address
                         ld      l, (hl)                     ; retrieve next position to be checked
@@ -392,11 +392,11 @@ Path_Finder:
                         add     a, iyh                      ; add distance to check edge positions
                         ld      l, a                        ; move HL to calculated position address
                         bit     7, (hl)                     ; is it an edge?
-                        jr      nz, Path_Finder_Adjacent    ; yes, process adjacent positions
+                        jr      nz, PathFinder_Adjacent     ; yes, process adjacent positions
 
                         ld      a, FRIEND                   ; set distance to compare with
 ; return point from PathFinder_Adjacent
-Path_Finder_Neighbors
+PathFinder_Neighbors
                         ld      l, e                        ; restore current position to be checked
                         inc     l                           ; move HL to right neighbor address
                         cp      (hl)                        ; check right neighbor distance
@@ -417,13 +417,13 @@ Path_Finder_Neighbors
                         cp      (hl)                        ; check lower-left neighbor distance
                         call    nc, PathFinder_Update
                         inc     l
-Path_Finder_First
+PathFinder_First
                         cp      (hl)                        ; check lower-right neighbor distance
                         call    nc, PathFinder_Update
                         pop     hl                          ; retreive queue head address
                         ld      a, (@Queue_Tail+1)          ; get queue tail address (low-byte)
                         cp      l                           ; is queue empty?
-                        jp      nz, Path_Finder             ; no, repeat until queue is empty
+                        jp      nz, PathFinder              ; no, repeat until queue is empty
 
                         ld      a, iyl                      ; get last edge position visited
                         dec     a                           ; return A = -1, if the edge couldn't be reached
@@ -446,10 +446,10 @@ Path_Finder_First
 ;
 ; Destroys: BC, D
 ; ----------------------------------------------------------------------------------------------------------------------
-Path_Finder_Adjacent
+PathFinder_Adjacent
                         ld      a, VICTORY+$40              ; set victory distance + friendly flag
                         cp      c                           ; is current distance victory and friendly?
-                        jr      z, Path_Finder_Abort        ; yes, abort path_finder
+                        jr      z, PathFinder_Abort         ; yes, abort path_finder
 
                         ld      iyl, e                      ; update last edge position visited
                         ld      d, h                        ; store pointer to current position address in DE
@@ -462,7 +462,7 @@ Path_Finder_Adjacent
                         ld      l, a                        ; HL points to 'PathFinder_[COLOR]_Edge_[n]' routine address
                         ld      a, FRIEND                   ; set distance to compare with
                         jp      (hl)                        ; jump to 'PathFinder_[COLOR]_Edge_[n]' routine
-Path_Finder_Abort
+PathFinder_Abort
                         pop     hl                          ; restore queue head address
                         xor     a                           ; return A = 0
                         ret
@@ -493,7 +493,7 @@ PathFinder_RED_Edge_0
                         cp      (hl)                        ; check adjacent #6 distance
                         call    nc, PathFinder_Update
                         ld      e, iyl                      ; restore current position
-                        jp      Path_Finder_Neighbors       ; continue processing neighbors
+                        jp      PathFinder_Neighbors        ; continue processing neighbors
 
 PathFinder_RED_Edge_1
                         ex      de, hl                      ; restore pointer to current position address
@@ -514,7 +514,7 @@ PathFinder_RED_Edge_1
                         cp      (hl)                        ; check adjacent #6 distance
                         call    nc, PathFinder_Update
                         ld      e, iyl                      ; restore current position
-                        jp      Path_Finder_Neighbors       ; continue processing neighbors
+                        jp      PathFinder_Neighbors        ; continue processing neighbors
 
 PathFinder_RED_Edge_2
                         ex      de, hl                      ; restore pointer to current position address
@@ -535,7 +535,7 @@ PathFinder_RED_Edge_2
                         cp      (hl)                        ; check adjacent #0 distance
                         call    nc, PathFinder_Update
                         ld      e, iyl                      ; restore current position
-                        jp      Path_Finder_Neighbors       ; continue processing neighbors
+                        jp      PathFinder_Neighbors        ; continue processing neighbors
 
 PathFinder_RED_Edge_3
                         ex      de, hl                      ; restore pointer to current position address
@@ -556,7 +556,7 @@ PathFinder_RED_Edge_3
                         cp      (hl)                        ; check adjacent #6 distance
                         call    nc, PathFinder_Update
                         ld      e, iyl                      ; restore current position
-                        jp      Path_Finder_Neighbors       ; continue processing neighbors
+                        jp      PathFinder_Neighbors        ; continue processing neighbors
 
 PathFinder_RED_Edge_4
                         ex      de, hl                      ; restore pointer to current position address
@@ -577,7 +577,7 @@ PathFinder_RED_Edge_4
                         cp      (hl)                        ; check adjacent #2 distance
                         call    nc, PathFinder_Update
                         ld      e, iyl                      ; restore current position
-                        jp      Path_Finder_Neighbors       ; continue processing neighbors
+                        jp      PathFinder_Neighbors        ; continue processing neighbors
 
 PathFinder_RED_Edge_5
                         ex      de, hl                      ; restore pointer to current position address
@@ -598,7 +598,7 @@ PathFinder_RED_Edge_5
                         cp      (hl)                        ; check adjacent #3 distance
                         call    nc, PathFinder_Update
                         ld      e, iyl                      ; restore current position
-                        jp      Path_Finder_Neighbors       ; continue processing neighbors
+                        jp      PathFinder_Neighbors        ; continue processing neighbors
 
 PathFinder_RED_Edge_6
                         ex      de, hl                      ; restore pointer to current position address
@@ -623,7 +623,7 @@ PathFinder_RED_Edge_6
                         cp      (hl)                        ; check adjacent #4 distance
                         call    nc, PathFinder_Update
                         ld      e, iyl                      ; restore current position
-                        jp      Path_Finder_Neighbors       ; continue processing neighbors
+                        jp      PathFinder_Neighbors        ; continue processing neighbors
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ;  Check two-distance of CYAN adjacents
@@ -647,7 +647,7 @@ PathFinder_CYAN_Edge_0
                         cp      (hl)                        ; check adjacent of edge number 6
                         call    nc, PathFinder_Update
                         ld      e, iyl                      ; restore current position
-                        jp      Path_Finder_Neighbors       ; continue processing neighbors
+                        jp      PathFinder_Neighbors        ; continue processing neighbors
 
 PathFinder_CYAN_Edge_1
                         ex      de, hl                      ; restore pointer to current position address
@@ -665,7 +665,7 @@ PathFinder_CYAN_Edge_1
                         cp      (hl)                        ; check adjacent #6 distance
                         call    nc, PathFinder_Update
                         ld      e, iyl                      ; restore current position
-                        jp      Path_Finder_Neighbors       ; continue processing neighbors
+                        jp      PathFinder_Neighbors        ; continue processing neighbors
 
 PathFinder_CYAN_Edge_2
                         ex      de, hl                      ; restore pointer to current position address
@@ -686,7 +686,7 @@ PathFinder_CYAN_Edge_2
                         cp      (hl)                        ; check adjacent #6 distance
                         call    nc, PathFinder_Update
                         ld      e, iyl                      ; restore current position
-                        jp      Path_Finder_Neighbors       ; continue processing neighbors
+                        jp      PathFinder_Neighbors        ; continue processing neighbors
 
 PathFinder_CYAN_Edge_3
                         ex      de, hl                      ; restore pointer to current position address
@@ -708,7 +708,7 @@ PathFinder_CYAN_Edge_3
                         cp      (hl)                        ; check adjacent #6 distance
                         call    nc, PathFinder_Update
                         ld      e, iyl                      ; restore current position
-                        jp      Path_Finder_Neighbors       ; continue processing neighbors
+                        jp      PathFinder_Neighbors        ; continue processing neighbors
 
 PathFinder_CYAN_Edge_4
                         ex      de, hl                      ; restore pointer to current position address
@@ -729,7 +729,7 @@ PathFinder_CYAN_Edge_4
                         cp      (hl)                        ; check adjacent #0 distance
                         call    nc, PathFinder_Update
                         ld      e, iyl                      ; restore current position
-                        jp      Path_Finder_Neighbors       ; continue processing neighbors
+                        jp      PathFinder_Neighbors        ; continue processing neighbors
 
 PathFinder_CYAN_Edge_5
                         ex      de, hl                      ; restore pointer to current position address
@@ -747,7 +747,7 @@ PathFinder_CYAN_Edge_5
                         cp      (hl)                        ; check adjacent #0 distance
                         call    nc, PathFinder_Update
                         ld      e, iyl                      ; restore current position
-                        jp      Path_Finder_Neighbors       ; continue processing neighbors
+                        jp      PathFinder_Neighbors        ; continue processing neighbors
 
 PathFinder_CYAN_Edge_6
                         ex      de, hl                      ; restore pointer to current position address
@@ -768,7 +768,7 @@ PathFinder_CYAN_Edge_6
                         cp      (hl)                        ; check adjacent #0 distance
                         call    nc, PathFinder_Update
                         ld      e, iyl                      ; restore current position
-                        jp      Path_Finder_Neighbors       ; continue processing neighbors
+                        jp      PathFinder_Neighbors        ; continue processing neighbors
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; PathFinder_Score: calculate board score depending on speccy color

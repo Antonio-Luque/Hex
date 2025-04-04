@@ -1,5 +1,5 @@
 
-; File #0: C:\Users\Antonio\Source\Repos\Hex\Z80CodeFiles\Hex2.z80asm
+; File #0: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Hex2.z80asm
 
 8000             0 1 ; ----------------------------------------------------------------------------------------------------------------------
 8000             0 2 ; Hex2.z80asm
@@ -8,7 +8,7 @@
 8000             0 5 ; Build file
 8000             0 6 ; ----------------------------------------------------------------------------------------------------------------------
 
-; File #1: C:\Users\Antonio\Source\Repos\Hex\Z80CodeFiles\Data.z80asm
+; File #1: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Data.z80asm
 
 8000             1 1 ; ----------------------------------------------------------------------------------------------------------------------
 8000             1 2 ; Data.z80asm
@@ -991,7 +991,7 @@
 6BF8 FF 81 81 81 1 385 
 6BFC 81 81 81 FF 1 385 
 
-; File #2: C:\Users\Antonio\Source\Repos\Hex\Z80CodeFiles\Main.z80asm
+; File #2: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Main.z80asm
 
 6C00             2 1 ; ----------------------------------------------------------------------------------------------------------------------
 6C00             2 2 ; Main.z80asm
@@ -1306,7 +1306,7 @@
 6DA0 C1          2 355 pop     bc                          ; restore BC register
 6DA1 C9          2 356 ret
 
-; File #3: C:\Users\Antonio\Source\Repos\Hex\Z80CodeFiles\Draw.z80asm
+; File #3: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Draw.z80asm
 
 6DA2             3 1 ; ----------------------------------------------------------------------------------------------------------------------
 6DA2             3 2 ; Draw.z80asm
@@ -1505,7 +1505,7 @@
 6E28 DD 77 21    3 202 ld      (ix+33), a
 6E2B C9          3 203 ret
 
-; File #4: C:\Users\Antonio\Source\Repos\Hex\Z80CodeFiles\Input.z80asm
+; File #4: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Input.z80asm
 
 6E2C             4 1 ; ----------------------------------------------------------------------------------------------------------------------
 6E2C             4 2 ; Input.z80asm
@@ -1668,7 +1668,7 @@
 6EF0 C1          4 176 pop     bc
 6EF1 C9          4 177 ret
 
-; File #5: C:\Users\Antonio\Source\Repos\Hex\Z80CodeFiles\Print.z80asm
+; File #5: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Print.z80asm
 
 6EF2             5 1 ; ----------------------------------------------------------------------------------------------------------------------
 6EF2             5 2 ; Print.z80asm
@@ -1837,7 +1837,7 @@
 6F84 C1          5 173 pop     bc                          ; restore BC register
 6F85 C9          5 174 ret
 
-; File #6: C:\Users\Antonio\Source\Repos\Hex\Z80CodeFiles\Brainiac.z80asm
+; File #6: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Brainiac.z80asm
 
 6F86             6 1 ; ----------------------------------------------------------------------------------------------------------------------
 6F86             6 2 ; Brainiac.z80asm
@@ -2201,7 +2201,7 @@
 70F8 34          6 437 inc     (hl)                        ; (depth++)
 70F9 C9          6 438 ret
 
-; File #7: C:\Users\Antonio\Source\Repos\Hex\Z80CodeFiles\PathFinder.z80asm
+; File #7: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\PathFinder.z80asm
 
 70FA             7 1 ; ----------------------------------------------------------------------------------------------------------------------
 70FA             7 2 ; PathFinder.z80asm
@@ -2400,7 +2400,7 @@
 7180 BE          7 206 cp      (hl)                        ; check 6th start position distance
 7181 D4 28 71    7 207 call    nc, PathFinder_Update
 7184 2C          7 208 inc     l
-7185 C3 71 72    7 209 jp      Path_Finder_First           ; calculate two-distances of cyan board (up-down)
+7185 C3 71 72    7 209 jp      PathFinder_First            ; calculate two-distances of cyan board (up-down)
 7188             7 211 ; ----------------------------------------------------------------------------------------------------------------------
 7188             7 212 ; PathFinder_Cyan_DownUp: set up Path_Finder routine to calculate CYAN two-distance from DOWN to UP edge
 7188             7 213 ;
@@ -2446,7 +2446,7 @@
 71B8 BE          7 256 cp      (hl)                        ; check 6th start position distance
 71B9 D4 28 71    7 257 call    nc, PathFinder_Update
 71BC 2D          7 258 dec     l
-71BD C3 71 72    7 259 jp      Path_Finder_First           ; calculate two-distances of cyan board (down-up)
+71BD C3 71 72    7 259 jp      PathFinder_First            ; calculate two-distances of cyan board (down-up)
 71C0             7 261 ; ----------------------------------------------------------------------------------------------------------------------
 71C0             7 262 ; PathFinder_Red_LeftRight: set up Path_Finder routine to calculate RED two-distance from LEFT to RIGHT edge
 71C0             7 263 ;
@@ -2494,7 +2494,7 @@
 71F8 BE          7 308 cp      (hl)                        ; check 6th start position distance
 71F9 D4 28 71    7 309 call    nc, PathFinder_Update
 71FC 2E 3F       7 310 ld      l, (RED_BOARD_LEFT_RIGHT+63)%256
-71FE C3 71 72    7 311 jp      Path_Finder_First           ; calculate two-distances of red board (left-right)
+71FE C3 71 72    7 311 jp      PathFinder_First            ; calculate two-distances of red board (left-right)
 7201             7 313 ; ----------------------------------------------------------------------------------------------------------------------
 7201             7 314 ; PathFinder_Red_RightLeft: set up Path_Finder routine to calculate RED two-distance from RIGHT to LEFT edge
 7201             7 315 ;
@@ -2540,9 +2540,9 @@
 7236 BE          7 358 cp      (hl)                        ; check 6th start position distance
 7237 D4 28 71    7 359 call    nc, PathFinder_Update
 723A 2E 57       7 360 ld      l, (RED_BOARD_RIGHT_LEFT+7)%256
-723C C3 71 72    7 361 jp      Path_Finder_First           ; calculate red two-distance (right-left)
+723C C3 71 72    7 361 jp      PathFinder_First            ; calculate red two-distance (right-left)
 723F             7 363 ; ----------------------------------------------------------------------------------------------------------------------
-723F             7 364 ; Path_Finder: calculate two-distance metric for each board position
+723F             7 364 ; PathFinder: calculate two-distance metric for each board position
 723F             7 365 ;
 723F             7 366 ; The algorithm is implemented running PATHFINDER, starting at the corresponding side of the input board
 723F             7 367 ;
@@ -2559,7 +2559,7 @@
 723F             7 378 ;
 723F             7 379 ; Destroys: BC, DE, IY
 723F             7 380 ; ----------------------------------------------------------------------------------------------------------------------
-723F             7 381 Path_Finder:
+723F             7 381 PathFinder:
 723F 2C          7 382 inc     l                           ; move queue head down
 7240 E5          7 383 push    hl                          ; preserve queue head address
 7241 6E          7 384 ld      l, (hl)                     ; retrieve next position to be checked
@@ -2571,10 +2571,10 @@
 7246 FD 84       7 392 add     a, iyh                      ; add distance to check edge positions
 7248 6F          7 393 ld      l, a                        ; move HL to calculated position address
 7249 CB 7E       7 394 bit     7, (hl)                     ; is it an edge?
-724B 20 34       7 395 jr      nz, Path_Finder_Adjacent    ; yes, process adjacent positions
+724B 20 34       7 395 jr      nz, PathFinder_Adjacent     ; yes, process adjacent positions
 724D 3E 02       7 397 ld      a, FRIEND                   ; set distance to compare with
 724F             7 398 ; return point from PathFinder_Adjacent
-724F             7 399 Path_Finder_Neighbors
+724F             7 399 PathFinder_Neighbors
 724F 6B          7 400 ld      l, e                        ; restore current position to be checked
 7250 2C          7 401 inc     l                           ; move HL to right neighbor address
 7251 BE          7 402 cp      (hl)                        ; check right neighbor distance
@@ -2595,13 +2595,13 @@
 726C BE          7 417 cp      (hl)                        ; check lower-left neighbor distance
 726D D4 28 71    7 418 call    nc, PathFinder_Update
 7270 2C          7 419 inc     l
-7271             7 420 Path_Finder_First
+7271             7 420 PathFinder_First
 7271 BE          7 421 cp      (hl)                        ; check lower-right neighbor distance
 7272 D4 28 71    7 422 call    nc, PathFinder_Update
 7275 E1          7 423 pop     hl                          ; retreive queue head address
 7276 3A 33 71    7 424 ld      a, (@Queue_Tail+1)          ; get queue tail address (low-byte)
 7279 BD          7 425 cp      l                           ; is queue empty?
-727A C2 3F 72    7 426 jp      nz, Path_Finder             ; no, repeat until queue is empty
+727A C2 3F 72    7 426 jp      nz, PathFinder              ; no, repeat until queue is empty
 727D FD 7D       7 428 ld      a, iyl                      ; get last edge position visited
 727F 3D          7 429 dec     a                           ; return A = -1, if the edge couldn't be reached
 7280 C9          7 430 ret
@@ -2622,10 +2622,10 @@
 7281             7 446 ;
 7281             7 447 ; Destroys: BC, D
 7281             7 448 ; ----------------------------------------------------------------------------------------------------------------------
-7281             7 449 Path_Finder_Adjacent
+7281             7 449 PathFinder_Adjacent
 7281 3E 43       7 450 ld      a, VICTORY+$40              ; set victory distance + friendly flag
 7283 B9          7 451 cp      c                           ; is current distance victory and friendly?
-7284 28 0E       7 452 jr      z, Path_Finder_Abort        ; yes, abort path_finder
+7284 28 0E       7 452 jr      z, PathFinder_Abort         ; yes, abort path_finder
 7286 FD 6B       7 454 ld      iyl, e                      ; update last edge position visited
 7288 54          7 455 ld      d, h                        ; store pointer to current position address in DE
 7289 6E          7 456 ld      l, (hl)                     ; get current edge position
@@ -2637,7 +2637,7 @@
 7290 6F          7 462 ld      l, a                        ; HL points to 'PathFinder_[COLOR]_Edge_[n]' routine address
 7291 3E 02       7 463 ld      a, FRIEND                   ; set distance to compare with
 7293 E9          7 464 jp      (hl)                        ; jump to 'PathFinder_[COLOR]_Edge_[n]' routine
-7294             7 465 Path_Finder_Abort
+7294             7 465 PathFinder_Abort
 7294 E1          7 466 pop     hl                          ; restore queue head address
 7295 AF          7 467 xor     a                           ; return A = 0
 7296 C9          7 468 ret
@@ -2667,7 +2667,7 @@
 72BC BE          7 493 cp      (hl)                        ; check adjacent #6 distance
 72BD D4 28 71    7 494 call    nc, PathFinder_Update
 72C0 FD 5D       7 495 ld      e, iyl                      ; restore current position
-72C2 C3 4F 72    7 496 jp      Path_Finder_Neighbors       ; continue processing neighbors
+72C2 C3 4F 72    7 496 jp      PathFinder_Neighbors        ; continue processing neighbors
 72C5             7 498 PathFinder_RED_Edge_1
 72C5 EB          7 499 ex      de, hl                      ; restore pointer to current position address
 72C6 11 12 00    7 500 ld      de, 9*2
@@ -2687,7 +2687,7 @@
 72E2 BE          7 514 cp      (hl)                        ; check adjacent #6 distance
 72E3 D4 28 71    7 515 call    nc, PathFinder_Update
 72E6 FD 5D       7 516 ld      e, iyl                      ; restore current position
-72E8 C3 4F 72    7 517 jp      Path_Finder_Neighbors       ; continue processing neighbors
+72E8 C3 4F 72    7 517 jp      PathFinder_Neighbors        ; continue processing neighbors
 72EB             7 519 PathFinder_RED_Edge_2
 72EB EB          7 520 ex      de, hl                      ; restore pointer to current position address
 72EC 11 12 00    7 521 ld      de, 9*2
@@ -2707,7 +2707,7 @@
 7308 BE          7 535 cp      (hl)                        ; check adjacent #0 distance
 7309 D4 28 71    7 536 call    nc, PathFinder_Update
 730C FD 5D       7 537 ld      e, iyl                      ; restore current position
-730E C3 4F 72    7 538 jp      Path_Finder_Neighbors       ; continue processing neighbors
+730E C3 4F 72    7 538 jp      PathFinder_Neighbors        ; continue processing neighbors
 7311             7 540 PathFinder_RED_Edge_3
 7311 EB          7 541 ex      de, hl                      ; restore pointer to current position address
 7312 11 E5 FF    7 542 ld      de, -9*3
@@ -2727,7 +2727,7 @@
 732E BE          7 556 cp      (hl)                        ; check adjacent #6 distance
 732F D4 28 71    7 557 call    nc, PathFinder_Update
 7332 FD 5D       7 558 ld      e, iyl                      ; restore current position
-7334 C3 4F 72    7 559 jp      Path_Finder_Neighbors       ; continue processing neighbors
+7334 C3 4F 72    7 559 jp      PathFinder_Neighbors        ; continue processing neighbors
 7337             7 561 PathFinder_RED_Edge_4
 7337 EB          7 562 ex      de, hl                      ; restore pointer to current position address
 7338 11 12 00    7 563 ld      de, 9*2
@@ -2747,7 +2747,7 @@
 7354 BE          7 577 cp      (hl)                        ; check adjacent #2 distance
 7355 D4 28 71    7 578 call    nc, PathFinder_Update
 7358 FD 5D       7 579 ld      e, iyl                      ; restore current position
-735A C3 4F 72    7 580 jp      Path_Finder_Neighbors       ; continue processing neighbors
+735A C3 4F 72    7 580 jp      PathFinder_Neighbors        ; continue processing neighbors
 735D             7 582 PathFinder_RED_Edge_5
 735D EB          7 583 ex      de, hl                      ; restore pointer to current position address
 735E 11 D3 FF    7 584 ld      de, -9*5
@@ -2767,7 +2767,7 @@
 737A BE          7 598 cp      (hl)                        ; check adjacent #3 distance
 737B D4 28 71    7 599 call    nc, PathFinder_Update
 737E FD 5D       7 600 ld      e, iyl                      ; restore current position
-7380 C3 4F 72    7 601 jp      Path_Finder_Neighbors       ; continue processing neighbors
+7380 C3 4F 72    7 601 jp      PathFinder_Neighbors        ; continue processing neighbors
 7383             7 603 PathFinder_RED_Edge_6
 7383 EB          7 604 ex      de, hl                      ; restore pointer to current position address
 7384 11 CA FF    7 605 ld      de, -9*6
@@ -2791,7 +2791,7 @@
 73A8 BE          7 623 cp      (hl)                        ; check adjacent #4 distance
 73A9 D4 28 71    7 624 call    nc, PathFinder_Update
 73AC FD 5D       7 625 ld      e, iyl                      ; restore current position
-73AE C3 4F 72    7 626 jp      Path_Finder_Neighbors       ; continue processing neighbors
+73AE C3 4F 72    7 626 jp      PathFinder_Neighbors        ; continue processing neighbors
 73B1             7 628 ; ----------------------------------------------------------------------------------------------------------------------
 73B1             7 629 ;  Check two-distance of CYAN adjacents
 73B1             7 630 ; ----------------------------------------------------------------------------------------------------------------------
@@ -2814,7 +2814,7 @@
 73C8 BE          7 647 cp      (hl)                        ; check adjacent of edge number 6
 73C9 D4 28 71    7 648 call    nc, PathFinder_Update
 73CC FD 5D       7 649 ld      e, iyl                      ; restore current position
-73CE C3 4F 72    7 650 jp      Path_Finder_Neighbors       ; continue processing neighbors
+73CE C3 4F 72    7 650 jp      PathFinder_Neighbors        ; continue processing neighbors
 73D1             7 652 PathFinder_CYAN_Edge_1
 73D1 EB          7 653 ex      de, hl                      ; restore pointer to current position address
 73D2 2C          7 654 inc     l
@@ -2831,7 +2831,7 @@
 73E3 BE          7 665 cp      (hl)                        ; check adjacent #6 distance
 73E4 D4 28 71    7 666 call    nc, PathFinder_Update
 73E7 FD 5D       7 667 ld      e, iyl                      ; restore current position
-73E9 C3 4F 72    7 668 jp      Path_Finder_Neighbors       ; continue processing neighbors
+73E9 C3 4F 72    7 668 jp      PathFinder_Neighbors        ; continue processing neighbors
 73EC             7 670 PathFinder_CYAN_Edge_2
 73EC EB          7 671 ex      de, hl                      ; restore pointer to current position address
 73ED 2D          7 672 dec     l
@@ -2851,7 +2851,7 @@
 7401 BE          7 686 cp      (hl)                        ; check adjacent #6 distance
 7402 D4 28 71    7 687 call    nc, PathFinder_Update
 7405 FD 5D       7 688 ld      e, iyl                      ; restore current position
-7407 C3 4F 72    7 689 jp      Path_Finder_Neighbors       ; continue processing neighbors
+7407 C3 4F 72    7 689 jp      PathFinder_Neighbors        ; continue processing neighbors
 740A             7 691 PathFinder_CYAN_Edge_3
 740A EB          7 692 ex      de, hl                      ; restore pointer to current position address
 740B 2D          7 693 dec     l
@@ -2872,7 +2872,7 @@
 7420 BE          7 708 cp      (hl)                        ; check adjacent #6 distance
 7421 D4 28 71    7 709 call    nc, PathFinder_Update
 7424 FD 5D       7 710 ld      e, iyl                      ; restore current position
-7426 C3 4F 72    7 711 jp      Path_Finder_Neighbors       ; continue processing neighbors
+7426 C3 4F 72    7 711 jp      PathFinder_Neighbors        ; continue processing neighbors
 7429             7 713 PathFinder_CYAN_Edge_4
 7429 EB          7 714 ex      de, hl                      ; restore pointer to current position address
 742A 2C          7 715 inc     l
@@ -2892,7 +2892,7 @@
 743E BE          7 729 cp      (hl)                        ; check adjacent #0 distance
 743F D4 28 71    7 730 call    nc, PathFinder_Update
 7442 FD 5D       7 731 ld      e, iyl                      ; restore current position
-7444 C3 4F 72    7 732 jp      Path_Finder_Neighbors       ; continue processing neighbors
+7444 C3 4F 72    7 732 jp      PathFinder_Neighbors        ; continue processing neighbors
 7447             7 734 PathFinder_CYAN_Edge_5
 7447 EB          7 735 ex      de, hl                      ; restore pointer to current position address
 7448 2D          7 736 dec     l
@@ -2909,7 +2909,7 @@
 7459 BE          7 747 cp      (hl)                        ; check adjacent #0 distance
 745A D4 28 71    7 748 call    nc, PathFinder_Update
 745D FD 5D       7 749 ld      e, iyl                      ; restore current position
-745F C3 4F 72    7 750 jp      Path_Finder_Neighbors       ; continue processing neighbors
+745F C3 4F 72    7 750 jp      PathFinder_Neighbors        ; continue processing neighbors
 7462             7 752 PathFinder_CYAN_Edge_6
 7462 EB          7 753 ex      de, hl                      ; restore pointer to current position address
 7463 2D          7 754 dec     l
@@ -2929,7 +2929,7 @@
 7479 BE          7 768 cp      (hl)                        ; check adjacent #0 distance
 747A D4 28 71    7 769 call    nc, PathFinder_Update
 747D FD 5D       7 770 ld      e, iyl                      ; restore current position
-747F C3 4F 72    7 771 jp      Path_Finder_Neighbors       ; continue processing neighbors
+747F C3 4F 72    7 771 jp      PathFinder_Neighbors        ; continue processing neighbors
 7482             7 773 ; ----------------------------------------------------------------------------------------------------------------------
 7482             7 774 ; PathFinder_Score: calculate board score depending on speccy color
 7482             7 775 ;
@@ -3321,7 +3321,7 @@
 762B CB B6       7 1194 res     6, (hl)                     ; switch off bright attribute
 762D C9          7 1195 ret
 
-; File #8: C:\Users\Antonio\Source\Repos\Hex\Z80CodeFiles\Timer.z80asm
+; File #8: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Timer.z80asm
 
 762E             8 1 ; ----------------------------------------------------------------------------------------------------------------------
 762E             8 2 ; Timer.z80asm
@@ -3492,7 +3492,7 @@
 76D5 36 00       8 182 ld      (hl), 0                     ; reset minutes counter
 76D7 C9          8 183 ret
 
-; File #9: C:\Users\Antonio\Source\Repos\Hex\Z80CodeFiles\Sound.z80asm
+; File #9: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Sound.z80asm
 
 76D8             9 1 ; ----------------------------------------------------------------------------------------------------------------------
 76D8             9 2 ; Sound.z80asm
@@ -3550,7 +3550,7 @@
 7718 FB          9 60 ei                                  ; enable interrupts
 7719 C9          9 61 ret
 
-; File #10: C:\Users\Antonio\Source\Repos\Hex\Z80CodeFiles\Screen.z80asm
+; File #10: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Screen.z80asm
 
 771A             10 1 ; ----------------------------------------------------------------------------------------------------------------------
 771A             10 2 ; Screen.z80asm
@@ -4353,7 +4353,7 @@
 7CB5 EA 9C 7C    10 860 jp      pe, Screen_ClearText_Loop   ; repeat for each row
 7CB8 C9          10 861 ret
 
-; File #0: C:\Users\Antonio\Source\Repos\Hex\Z80CodeFiles\Hex2.z80asm
+; File #0: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Hex2.z80asm
 
 7CB9             0 19 ; ----------------------------------------------------------------------------------------------------------------------
 7CB9             0 20 ; Credits and acknowledgements:
