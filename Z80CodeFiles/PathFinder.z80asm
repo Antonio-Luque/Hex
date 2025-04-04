@@ -430,7 +430,7 @@ PathFinder_First
                         ret
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; PathFinder_Adjacent: update adjacent positions.
+; PathFinder_Adjacent: update adjacent positions
 ;
 ; This is an approach to update the two-distance of adjacent positions. As explained in Jack van Rijswijck's thesis:
 ; "two cells are adjacent if they share a common edge on the board."
