@@ -2571,7 +2571,7 @@
 7246 FD 84       7 392 add     a, iyh                      ; add distance to check edge positions
 7248 6F          7 393 ld      l, a                        ; move HL to calculated position address
 7249 CB 7E       7 394 bit     7, (hl)                     ; is it an edge?
-724B 20 34       7 395 jr      nz, PathFinder_Adjacent     ; yes, process adjacent positions
+724B 20 34       7 395 jr      nz, PathFinder_Adjacent     ; yes, update adjacent positions
 724D 3E 02       7 397 ld      a, FRIEND                   ; set distance to compare with
 724F             7 398 ; return point from PathFinder_Adjacent
 724F             7 399 PathFinder_Neighbors
@@ -2606,7 +2606,7 @@
 727F 3D          7 429 dec     a                           ; return A = -1, if the edge couldn't be reached
 7280 C9          7 430 ret
 7281             7 432 ; ----------------------------------------------------------------------------------------------------------------------
-7281             7 433 ; Check adjacent hexagons.
+7281             7 433 ; PathFinder_Adjacent: update adjacent positions.
 7281             7 434 ;
 7281             7 435 ; This is an approach to update the two-distance of adjacent positions. As explained in Jack van Rijswijck's thesis:
 7281             7 436 ; "two cells are adjacent if they share a common edge on the board."
@@ -2642,7 +2642,7 @@
 7295 AF          7 467 xor     a                           ; return A = 0
 7296 C9          7 468 ret
 7297             7 470 ; ----------------------------------------------------------------------------------------------------------------------
-7297             7 471 ;  Check two-distance of RED adjacents
+7297             7 471 ;  Update two-distance of RED adjacent positions
 7297             7 472 ; ----------------------------------------------------------------------------------------------------------------------
 7297             7 473 PathFinder_RED_Edge_0
 7297 EB          7 474 ex      de, hl                      ; restore pointer to current position address
@@ -2793,7 +2793,7 @@
 73AC FD 5D       7 625 ld      e, iyl                      ; restore current position
 73AE C3 4F 72    7 626 jp      PathFinder_Neighbors        ; continue processing neighbors
 73B1             7 628 ; ----------------------------------------------------------------------------------------------------------------------
-73B1             7 629 ;  Check two-distance of CYAN adjacents
+73B1             7 629 ;  Update two-distance of CYAN adjacent positions
 73B1             7 630 ; ----------------------------------------------------------------------------------------------------------------------
 73B1             7 631 PathFinder_CYAN_Edge_0
 73B1 EB          7 632 ex      de, hl                      ; restore pointer to current position address

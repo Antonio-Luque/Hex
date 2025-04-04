@@ -392,7 +392,7 @@ PathFinder:
                         add     a, iyh                      ; add distance to check edge positions
                         ld      l, a                        ; move HL to calculated position address
                         bit     7, (hl)                     ; is it an edge?
-                        jr      nz, PathFinder_Adjacent     ; yes, process adjacent positions
+                        jr      nz, PathFinder_Adjacent     ; yes, update adjacent positions
 
                         ld      a, FRIEND                   ; set distance to compare with
 ; return point from PathFinder_Adjacent
@@ -430,7 +430,7 @@ PathFinder_First
                         ret
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Check adjacent hexagons.
+; PathFinder_Adjacent: update adjacent positions.
 ;
 ; This is an approach to update the two-distance of adjacent positions. As explained in Jack van Rijswijck's thesis:
 ; "two cells are adjacent if they share a common edge on the board."
@@ -468,7 +468,7 @@ PathFinder_Abort
                         ret
 
 ; ----------------------------------------------------------------------------------------------------------------------
-;  Check two-distance of RED adjacents
+;  Update two-distance of RED adjacent positions
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_RED_Edge_0
                         ex      de, hl                      ; restore pointer to current position address
@@ -626,7 +626,7 @@ PathFinder_RED_Edge_6
                         jp      PathFinder_Neighbors        ; continue processing neighbors
 
 ; ----------------------------------------------------------------------------------------------------------------------
-;  Check two-distance of CYAN adjacents
+;  Update two-distance of CYAN adjacent positions
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_CYAN_Edge_0
                         ex      de, hl                      ; restore pointer to current position address
