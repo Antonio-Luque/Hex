@@ -1765,7 +1765,7 @@
 6F18 DD 21 18 59 5 115 ld      ix, $5918                   ; IX points to cyan move attribute address
 6F1C 21 19 48    5 116 ld      hl, $4819                   ; HL points to cyan move screen address
 6F1F             5 117 Print_String_Color
-6F1F CD 3F 78    5 118 call    Screen_Apply_Color          ; apply color to string area
+6F1F CD 3F 78    5 118 call    Screen_Apply_Color_6        ; apply color to string area
 6F22             5 119 ; ----------------------------------------------------------------------------------------------------------------------
 6F22             5 120 ; Print_String: print a string on the screen
 6F22             5 121 ; Based on assembler course by sromero: https://wiki.speccy.org/cursos/ensamblador/gfx4_fuentes
@@ -3756,596 +3756,607 @@
 780F             10 230 Screen_Color_Statics:
 780F DD 21 78 58 10 231 ld      ix, $5878                   ; IX points to the attr. address of the cyan player timer
 7813 0E 07       10 232 ld      c, WHITE                    ; set color in C
-7815 CD 3F 78    10 233 call    Screen_Apply_Color          ; apply color
+7815 CD 3F 78    10 233 call    Screen_Apply_Color_6        ; apply color
 7818 DD 2E 98    10 234 ld      ixl, $98                    ; IX points to the attr. address of the cyan player name
 781B 0E 05       10 235 ld      c, CYAN_COLOR               ; set color in C
-781D CD 3F 78    10 236 call    Screen_Apply_Color          ; apply color
+781D CD 3F 78    10 236 call    Screen_Apply_Color_6        ; apply color
 7820 DD 21 18 59 10 237 ld      ix, $5918                   ; IX points to the attr. address of the cyan player messages
 7824 0E 47       10 238 ld      c, WHITE+BRIGHT             ; set color in C
-7826 CD 3F 78    10 239 call    Screen_Apply_Color          ; apply color
+7826 CD 3F 78    10 239 call    Screen_Apply_Color_6        ; apply color
 7829 DD 2E E2    10 240 ld      ixl, $E2                    ; IX points to the attr. address of the red player timer
 782C 0E 07       10 241 ld      c, WHITE                    ; set color in C
-782E CD 3F 78    10 242 call    Screen_Apply_Color          ; apply color
+782E CD 3F 78    10 242 call    Screen_Apply_Color_6        ; apply color
 7831 DD 21 02 5A 10 243 ld      ix, $5A02                   ; IX points to the attr. address of the red player name
 7835 0E 02       10 244 ld      c, RED_COLOR                ; set color in C
-7837 CD 3F 78    10 245 call    Screen_Apply_Color          ; apply color
+7837 CD 3F 78    10 245 call    Screen_Apply_Color_6        ; apply color
 783A DD 2E 82    10 246 ld      ixl, $82                    ; IX points to the attr. address of the red player messages
 783D 0E 47       10 247 ld      c, WHITE+BRIGHT             ; set color in C
-783F             10 248 Screen_Apply_Color:
+783F             10 248 Screen_Apply_Color_6:
 783F 06 06       10 249 ld      b, 6                        ; number of bytes to be colored (loop counter)
-7841             10 250 Screen_Apply_Color_Loop:
-7841 DD 71 00    10 251 ld      (ix+0), c                   ; apply color
-7844 DD 2C       10 252 inc     ixl                         ; move IX to the next attribute address
-7846 10 F9       10 253 djnz    Screen_Apply_Color_Loop     ; repeat for each byte
-7848 C9          10 254 ret
-7849             10 256 ; ----------------------------------------------------------------------------------------------------------------------
-7849             10 257 ; Screen_Last_Level: show last level screen and input game level
-7849             10 258 ;
-7849             10 259 ; Input:    -
-7849             10 260 ;
-7849             10 261 ; Output:   -
-7849             10 262 ;
-7849             10 263 ; Uses:     GAME_LEVEL (current game level)
-7849             10 264 ;
-7849             10 265 ; Destroys: A, BC, DE, HL, IX, IY
-7849             10 266 ; ----------------------------------------------------------------------------------------------------------------------
-7849             10 267 Screen_Last_Level:
-7849 11 FF 67    10 268 ld      de, STR_PRESSKEY            ; DE points to "Press any key" string address
-784C 21 AD 50    10 269 ld      hl, $50AD                   ; HL points to string screen address
-784F CD 22 6F    10 270 call    Print_String                ; print "Press any key"
-7852 DD 21 AD 5A 10 271 ld      ix, $5AAD                   ; IX points to string attributes address
-7856 01 38 0D    10 272 ld      bc, 13*256+WHITE_PAPER      ; B = string length (loop counter), C = color attributes
-7859 CD 41 78    10 273 call    Screen_Apply_Color_Loop     ; apply color to string area
-785C CD 89 6E    10 274 call    Input_Key_Scan              ; wait for a key pressed
-785F CD DD 76    10 276 call    Screen_Clear                ; fill in black the whole screen area and attributes area
-7862 CD 21 7C    10 277 call    Screen_Hexagons             ; draw menu hexagons ("HEX 2")
-7865 DD 21 C7 59 10 278 ld      ix, $59C7                   ; IX points to "CONGRATULATIONS" string attributes address
-7869 01 C7 11    10 279 ld      bc, 17*256+WHITE_FLASH1     ; B = string length (loop counter), C = color attributes
-786C CD 41 78    10 280 call    Screen_Apply_Color_Loop     ; apply color to string area
-786F 11 77 68    10 281 ld      de, STR_CONGRATS            ; DE points to string address
-7872 21 C7 48    10 282 ld      hl, $48C7                   ; HL points to string screen address
-7875 CD 22 6F    10 283 call    Print_String                ; print "CONGRATULATIONS"
-7878 DD 21 EF 64 10 284 ld      ix, WINNER_FX               ; IX points to winner tone parameters address
-787C CD 9B 76    10 285 call    Sound_FX                    ; play sound fx
-787F F3          10 287 di                                  ; disable interrupts
-7880 DD 21 42 5A 10 288 ld      ix, $5A42                   ; IX points to "Well done!..." string attributes address
-7884 01 07 1C    10 289 ld      bc, 28*256+WHITE            ; B = string length (loop counter), C = color attributes
-7887 CD 41 78    10 290 call    Screen_Apply_Color_Loop     ; apply color to string area
-788A 11 89 68    10 291 ld      de, STR_LAST_LEVEL          ; DE points to string address
-788D 21 42 50    10 292 ld      hl, $5042                   ; HL points to string screen address
-7890 CD 22 6F    10 293 call    Print_String                ; print "Well done!..."
-7893 DD 2E 82    10 294 ld      ixl, $82                    ; IX points to "Choose..." string attributes address
-7896 06 18       10 295 ld      b, 24                       ; string length-4 (loop counter)
-7898 CD 41 78    10 296 call    Screen_Apply_Color_Loop     ; apply color to string area
-789B DD 36 01 78 10 297 ld      (ix+1), WHITE_PAPER+BRIGHT  ; set color for last characters ("1-4")
-789F DD 36 02 78 10 298 ld      (ix+2), WHITE_PAPER+BRIGHT
-78A3 DD 36 03 78 10 299 ld      (ix+3), WHITE_PAPER+BRIGHT
-78A7 13          10 300 inc     de                          ; move DE to next string address
-78A8 2E 82       10 301 ld      l, $82                      ; HL points to string screen address
-78AA CD 22 6F    10 302 call    Print_String                ; print "Choose..."
-78AD             10 303 Screen_Choose_Level
-78AD CD 89 6E    10 304 call    Input_Key_Scan              ; wait for a key pressed
-78B0 FE 31       10 305 cp      '1'                         ; is it < '1' ?
-78B2 38 F9       10 306 jr      c, Screen_Choose_Level      ; yes, wait for a key pressed
-78B4 FE 35       10 307 cp      '5'                         ; is it >= '5' ?
-78B6 30 F5       10 308 jr      nc, Screen_Choose_Level     ; yes, wait for a key pressed
-78B8 D6 31       10 309 sub     $31                         ; convert ASCII into level number (-1)
-78BA 21 9D 61    10 310 ld      hl, GAME_LEVEL              ; HL points to game level address
-78BD 77          10 311 ld      (hl), a                     ; save chosen game level (-1)
-78BE C9          10 312 ret
-78BF             10 314 ; ----------------------------------------------------------------------------------------------------------------------
-78BF             10 315 ; Screen_ThreeRow: color the three-in-a-row marks according to the current three row counter
-78BF             10 316 ;
-78BF             10 317 ; Input:    HL = three-in-a-row counter address
-78BF             10 318 ;
-78BF             10 319 ; Output:   -
-78BF             10 320 ;
-78BF             10 321 ; Uses:     LEVEL_COLOR (current level color for frame border)
-78BF             10 322 ;
-78BF             10 323 ; Destroys: A, C, IX
-78BF             10 324 ; ----------------------------------------------------------------------------------------------------------------------
-78BF             10 325 Screen_ThreeRow:
-78BF CD DB 78    10 326 call    Screen_Clear_ThreeRow       ; clear all three-in-a-row marks
-78C2 7E          10 327 ld      a, (hl)                     ; A = three-in-a-row counter
-78C3 B7          10 328 or      a                           ; is it 0?
-78C4 C8          10 329 ret     z                           ; yes, return
-78C5 E5          10 331 push    hl                          ; store three-in-a-row counter address
-78C6 21 9C 61    10 333 ld      hl, LEVEL_COLOR             ; HL points to level color address
-78C9 4E          10 334 ld      c, (hl)                     ; save level color in C
-78CA 3D          10 335 dec     a                           ; is it 1?
-78CB 28 09       10 336 jr      z, Screen_ThreeRow_1        ; yes, color first mark
-78CD 3D          10 337 dec     a                           ; is it 2?
-78CE 28 03       10 338 jr      z, Screen_ThreeRow_2        ; yes color 2nd and 1st marks
-78D0 DD 71 00    10 339 ld      (ix+0), c                   ; color 3rd mark
-78D3             10 340 Screen_ThreeRow_2
-78D3 DD 71 01    10 341 ld      (ix+1), c                   ; color 2nd mark
-78D6             10 342 Screen_ThreeRow_1
-78D6 DD 71 02    10 343 ld      (ix+2), c                   ; color 1st mark
-78D9 E1          10 345 pop     hl
-78DA C9          10 346 ret
-78DB             10 348 ; ----------------------------------------------------------------------------------------------------------------------
-78DB             10 349 ; Screen_Clear_ThreeRow: clear all three-in-a-row marks
-78DB             10 350 ;
-78DB             10 351 ; Input:    -
-78DB             10 352 ;
-78DB             10 353 ; Output:   IX = three-in-a-row marks attribute address
-78DB             10 354 ;
-78DB             10 355 ; Destroys: -
-78DB             10 356 ; ----------------------------------------------------------------------------------------------------------------------
-78DB             10 357 Screen_Clear_ThreeRow:
-78DB DD 21 F2 5A 10 358 ld      ix, $5AF2                   ; IX points to attribute address of three-in-a-row marks
-78DF DD 36 00 01 10 359 ld      (ix+0), BLUE_INK            ; clear all three-in-a-row marks
-78E3 DD 36 01 01 10 360 ld      (ix+1), BLUE_INK
-78E7 DD 36 02 01 10 361 ld      (ix+2), BLUE_INK
-78EB C9          10 362 ret
-78EC             10 364 ; ----------------------------------------------------------------------------------------------------------------------
-78EC             10 365 ; Screen_Frame_Color: set up frame color and print level number depending on current level
-78EC             10 366 ;
-78EC             10 367 ; Input:    HL = game level address
-78EC             10 368 ;
-78EC             10 369 ; Output:   -
-78EC             10 370 ;
-78EC             10 371 ; Uses:     LEVEL_COLOR (current level color for frame border)
-78EC             10 372 ;
-78EC             10 373 ; Destroys: A, BC, DE, HL
-78EC             10 374 ; ----------------------------------------------------------------------------------------------------------------------
-78EC             10 375 Screen_Frame_Color:
-78EC 06 00       10 376 ld      b, 0                        ; set game level in BC
-78EE 4E          10 377 ld      c, (hl)
-78EF 3E 30       10 378 ld      a, $30                      ; convert game level number to game level character
-78F1 81          10 379 add     a, c
-78F2 21 0F 40    10 380 ld      hl, $400F                   ; HL points to screen address of game level
-78F5 CD 2F 6F    10 381 call    Print_Char                  ; print game level
-78F8 21 0E 62    10 382 ld      hl, ROW_COLOR_MAP-1         ; HL points to color map address (adjusted for index 0)
-78FB 09          10 383 add     hl, bc                      ; use BC as index for color map address
-78FC 7E          10 384 ld      a, (hl)                     ; A = level color
-78FD CD 12 79    10 385 call    Screen_Tiles_Color          ; color the frame according to the current level
-7900 E6 07       10 386 and     %00000111                   ; mask color
-7902 32 9C 61    10 387 ld      (LEVEL_COLOR), a            ; save masked color
-7905 17          10 388 rla                                 ; rotate to text level color
-7906 17          10 389 rla
-7907 17          10 390 rla
-7908 21 08 58    10 391 ld      hl, $5808                   ; HL points to attribute address of level text
-790B 06 09       10 392 ld      b, 9                        ; length of level text (loop counter)
-790D             10 393 Screen_Level_Loop
-790D 77          10 394 ld      (hl), a                     ; apply color to level text
-790E 2C          10 395 inc     l                           ; HL points to attr address of next character of level text
-790F 10 FC       10 396 djnz    Screen_Level_Loop           ; repeat for each character of level text
-7911 C9          10 397 ret
-7912             10 399 ; ----------------------------------------------------------------------------------------------------------------------
-7912             10 400 ; Screen_Tiles_Color: apply color to the frame tiles
-7912             10 401 ;
-7912             10 402 ; Input:    A = color to apply
-7912             10 403 ;
-7912             10 404 ; Output:   -
-7912             10 405 ;
-7912             10 406 ; Destroys: BC, DE, HL
-7912             10 407 ; ----------------------------------------------------------------------------------------------------------------------
-7912             10 408 Screen_Tiles_Color:
-7912             10 409 ; color up row
-7912 21 01 58    10 411 ld      hl, $5801                   ; HL points to attribute address of the the frame tile 
-7915 06 06       10 412 ld      b, 6                        ; number of tiles (loop counter)
-7917             10 413 Screen_Tiles_URow1
-7917 77          10 414 ld      (hl), a                     ; apply color
-7918 2C          10 415 inc     l                           ; move HL to the next attribute address
-7919 10 FC       10 416 djnz    Screen_Tiles_URow1          ; repeat for each tile
-791B 2E 12       10 417 ld      l, $12                      ; move HL to the next attribute address
-791D 06 0D       10 418 ld      b, 13                       ; number of tiles (loop counter)
-791F             10 419 Screen_Tiles_URow2
-791F 77          10 420 ld      (hl), a                     ; apply color
-7920 2C          10 421 inc     l                           ; move HL to the next attribute address
-7921 10 FC       10 422 djnz    Screen_Tiles_URow2          ; repeat for each tile
-7923             10 424 ; color vertical bars
-7923 2E 00       10 426 ld      l, 0                        ; move HL to the next attribute address
-7925 11 1F 00    10 427 ld      de, 31                      ; attribute address displacement (for each bar)
-7928 0E 03       10 428 ld      c, 3                        ; number of screen thirds (outer loop counter)
-792A             10 429 Screen_Tiles_VBar1
-792A 06 08       10 430 ld      b, 8                        ; number of tiles (inner loop counter)
-792C             10 431 Screen_Tiles_VBar2
-792C 77          10 432 ld      (hl), a                     ; apply color
-792D 19          10 433 add     hl, de                      ; move HL to the right column
-792E 77          10 434 ld      (hl), a                     ; apply color
-792F 2C          10 435 inc     l                           ; move HL to the next attribute address
-7930 10 FA       10 436 djnz    Screen_Tiles_VBar2          ; repeat for each tile
-7932 24          10 437 inc     h                           ; move HL to the next screen third
-7933 0D          10 438 dec     c                           ; decrement number of thirds
-7934 20 F4       10 439 jr      nz, Screen_Tiles_VBar1      ; repeat for each third
-7936             10 441 ; color bottom row
-7936 21 E1 5A    10 443 ld      hl, $5AE1                   ; HL points to attribute address of the the frame tile
-7939 06 10       10 444 ld      b, 16                       ; number of tiles (loop counter)
-793B             10 445 Screen_Tiles_BRow1
-793B 77          10 446 ld      (hl), a                     ; apply color
-793C 2C          10 447 inc     l                           ; move HL to the next attribute address
-793D 10 FC       10 448 djnz    Screen_Tiles_BRow1          ; repeat for each tile
-793F 2E F6       10 449 ld      l, $F6                      ; move HL to the next attribute address
-7941 06 09       10 450 ld      b, 9                        ; number of tiles (loop counter)
-7943             10 451 Screen_Tiles_BRow2
-7943 77          10 452 ld      (hl), a                     ; apply color
-7944 2C          10 453 inc     l                           ; move HL to the next attribute address
-7945 10 FC       10 454 djnz    Screen_Tiles_BRow2          ; repeat for each tile
-7947 C9          10 455 ret
-7948             10 457 ; ----------------------------------------------------------------------------------------------------------------------
-7948             10 458 ; Screen_Menu: show main menu and wait for an option
-7948             10 459 ;
-7948             10 460 ; Input:    -
-7948             10 461 ;
-7948             10 462 ; Output:   -
-7948             10 463 ;
-7948             10 464 ; Uses:     GAME_LEVEL (current game level)
-7948             10 465 ;
-7948             10 466 ; Destroys: A, BC, DE, HL, IX, IY
-7948             10 467 ; ----------------------------------------------------------------------------------------------------------------------
-7948             10 468 Screen_Menu:
-7948 CD DD 76    10 469 call    Screen_Clear                ; fill in black the whole screen area and attributes area
-794B CD 21 7C    10 470 call    Screen_Hexagons             ; draw menu hexagons ("HEX 2")
-794E             10 471 Screen_Menu_Strings
-794E DD 21 CA 59 10 472 ld      ix, $59CA                   ; IX points to "Start new game" string attr. address (+1)
-7952 DD 36 FF 78 10 473 ld      (ix-1), WHITE_PAPER+BRIGHT  ; set color of first letter
-7956 01 47 0D    10 474 ld      bc, 13*256+WHITE_FLASH0     ; B = string length-1 (loop counter), C = color attributes
-7959 CD 41 78    10 475 call    Screen_Apply_Color_Loop     ; apply color to string area
-795C 11 80 67    10 476 ld      de, STR_OPTIONS             ; DE points to string address
-795F 21 C9 48    10 477 ld      hl, $48C9                   ; HL points to string screen address
-7962 CD 22 6F    10 478 call    Print_String                ; print "Start new game"
-7965 DD 21 2A 5A 10 479 ld      ix, $5A2A                   ; IX points to "How to play" string attributes address (+1)
-7969 DD 36 FF 78 10 480 ld      (ix-1), WHITE_PAPER+BRIGHT  ; set color of first letter
-796D 06 0A       10 481 ld      b, 10                       ; string length-1 (loop counter)
-796F CD 41 78    10 482 call    Screen_Apply_Color_Loop     ; apply color to string area
-7972 13          10 483 inc     de                          ; move DE to "How to play" string address
-7973 21 29 50    10 484 ld      hl, $5029                   ; HL points to string screen address
-7976 CD 22 6F    10 485 call    Print_String                ; print "How to play"
-7979 DD 2E 8A    10 486 ld      ixl, $8A                    ; IX points to "Credits" string attributes address (+1)
-797C DD 36 FF 78 10 487 ld      (ix-1), WHITE_PAPER+BRIGHT  ; set color of first letter
-7980 CD 3F 78    10 488 call    Screen_Apply_Color          ; apply color to string area
-7983 13          10 489 inc     de                          ; move DE to "Credits" string address
-7984 2E 89       10 490 ld      l, $89                      ; HL points to string screen address
-7986 CD 22 6F    10 491 call    Print_String                ; print "Credits"
-7989             10 492 Screen_Menu_Options
-7989 CD 89 6E    10 493 call    Input_Key_Scan              ; wait for a key pressed
-798C FE 73       10 494 cp      's'                         ; is it 's'?
-798E C8          10 495 ret     z                           ; yes, return
-798F FE 63       10 496 cp      'c'                         ; is it 'c'?
-7991 CA A5 7B    10 497 jp      z, Screen_Menu_Credits      ; yes, show credits
-7994 FE 68       10 498 cp      'h'                         ; is it 'h'?
-7996 20 F1       10 499 jr      nz, Screen_Menu_Options     ; no, repeat until key pressed = 's' or 'c' or 'h'
-7998             10 501 ; ----------------------------------------------------------------------------------------------------------------------
-7998             10 502 ; Show "How to play" pages
-7998             10 503 ; ----------------------------------------------------------------------------------------------------------------------
-7998             10 504 Screen_Menu_How2Play
-7998 CD DD 76    10 505 call    Screen_Clear                ; fill in black the whole screen area and attributes area
-799B CD EA 76    10 506 call    Screen_Letters              ; draw the two rows of letters on the screen (a..g)
-799E CD 16 77    10 507 call    Screen_Numbers              ; draw the two columns of numbers on the screen (1..7)
-79A1 CD 55 77    10 508 call    Screen_Frame                ; draw the screen frame
-79A4 21 9D 61    10 510 ld      hl, GAME_LEVEL              ; HL points to game level address (needed for color frame)
-79A7 34          10 511 inc     (hl)                        ; increment game level (GAME_LEVEL = 1)
-79A8 CD EC 78    10 512 call    Screen_Frame_Color          ; set up frame color depending on current level
-79AB CD DB 78    10 513 call    Screen_Clear_ThreeRow       ; clear all three-in-a-row marks
-79AE 11 0D 68    10 515 ld      de, STR_BUTTONS             ; DE points to "Next" string address
-79B1 21 DB 50    10 516 ld      hl, $50DB                   ; HL points to string screen address
-79B4 CD 22 6F    10 517 call    Print_String                ; print "Next"
-79B7 13          10 518 inc     de                          ; move DE to "Back" string address
-79B8 21 C1 50    10 519 ld      hl, $50C1                   ; HL points to string screen address
-79BB CD 22 6F    10 520 call    Print_String                ; print "Back"
-79BE             10 522 Screen_How2Play_RED
-79BE 21 5E 58    10 523 ld      hl, $5876-24                ; HL points to cyan text area attributes address (-24)
-79C1 CD 5B 7C    10 524 call    Screen_Clear_Text           ; clear text area attributes
-79C4 CD 65 6D    10 525 call    Draw_Board                  ; draw an empty hexagons board
-79C7             10 527 ; text for RED
-79C7 DD 21 01 5A 10 529 ld      ix, $5A01                   ; IX points to "Connect" string attributes address
-79CB 01 07 07    10 530 ld      bc, 7*256+WHITE             ; B = string length (loop counter), C = color attributes
-79CE CD 41 78    10 531 call    Screen_Apply_Color_Loop     ; apply color to string area
-79D1 11 20 68    10 532 ld      de, STR_HELP1               ; DE points to string address
-79D4 21 01 50    10 533 ld      hl, $5001                   ; HL points to string screen address
-79D7 CD 22 6F    10 534 call    Print_String                ; print "Connect"
-79DA DD 2E 21    10 535 ld      ixl, $21                    ; IX points to "left and" string attributes address
-79DD 06 08       10 536 ld      b, 8                        ; string length (loop counter)
-79DF CD 41 78    10 537 call    Screen_Apply_Color_Loop     ; apply color to string area
-79E2 13          10 538 inc     de                          ; move DE to "left and" string address
-79E3 2E 21       10 539 ld      l, $21                      ; HL points to string screen address
-79E5 CD 22 6F    10 540 call    Print_String                ; print "left and"
-79E8 DD 2E 41    10 541 ld      ixl, $41                    ; IX points to "right" string attributes address
-79EB 06 05       10 542 ld      b, 5                        ; set string length (loop counter)
-79ED CD 41 78    10 543 call    Screen_Apply_Color_Loop     ; apply color to string area
-79F0 11 38 68    10 544 ld      de, STR_HELP3_RED           ; DE points to "right" string address
-79F3 2E 41       10 545 ld      l, $41                      ; HL points to string screen address
-79F5 CD 22 6F    10 546 call    Print_String                ; print "right"
-79F8 DD 2E 61    10 547 ld      ixl, $61                    ; IX points to "borders" string attributes address
-79FB 06 07       10 548 ld      b, 7                        ; set string length (loop counter)
-79FD CD 41 78    10 549 call    Screen_Apply_Color_Loop     ; apply color to string area
-7A00 11 43 68    10 550 ld      de, STR_HELP4               ; DE points to "borders" string address
-7A03 2E 61       10 551 ld      l, $61                      ; HL points to string screen address
-7A05 CD 22 6F    10 552 call    Print_String                ; print "borders"
-7A08 DD 2E 81    10 553 ld      ixl, $81                    ; IX points to "to win" string attributes address
-7A0B CD 3F 78    10 554 call    Screen_Apply_Color          ; apply color to string area
-7A0E 13          10 555 inc     de                          ; move DE to "to win" string address
-7A0F 2E 81       10 556 ld      l, $81                      ; HL points to string screen address
-7A11 CD 22 6F    10 557 call    Print_String                ; print "to win"
-7A14 DD 21 E3 59 10 558 ld      ix, $59E3                   ; IX points to "RED" string attributes address
-7A18 01 42 03    10 559 ld      bc, 3*256+RED_COLOR+BRIGHT  ; B = string length (loop counter), C = color attributes
-7A1B CD 41 78    10 560 call    Screen_Apply_Color_Loop     ; apply color to string area
-7A1E 11 17 68    10 561 ld      de, STR_RED                 ; DE points to "RED" string address
-7A21 21 E3 48    10 562 ld      hl, $48E3                   ; HL points to string screen address
-7A24 CD 22 6F    10 563 call    Print_String                ; print "RED"
-7A27             10 565 ; draw RED sample board
-7A27 FD 21 3A 67 10 567 ld      iy, SAMPLE_BOARD_RED        ; IY points to sample board (red) screen addresses
-7A2B 11 3E 66    10 568 ld      de, HEXAGON_TOKEN           ; DE points to token sprite address
-7A2E 06 07       10 569 ld      b, 7                        ; number of red+bright tokens (loop counter)
-7A30 3E 42       10 570 ld      a, RED_COLOR+BRIGHT         ; set token color
-7A32 32 9E 61    10 571 ld      (TOKEN_COLOR), a            ; save token color
-7A35 CD 46 7C    10 572 call    Screen_Hexagons_Loop        ; draw tokens
-7A38 06 02       10 573 ld      b, 2                        ; number of red tokens (loop counter)
-7A3A 3E 02       10 574 ld      a, RED_COLOR                ; set token color
-7A3C 32 9E 61    10 575 ld      (TOKEN_COLOR), a            ; save token color
-7A3F CD 46 7C    10 576 call    Screen_Hexagons_Loop        ; draw tokens
-7A42 06 09       10 577 ld      b, 9                        ; number of cyan tokens (loop counter)
-7A44 3E 05       10 578 ld      a, CYAN_COLOR               ; set token color
-7A46 32 9E 61    10 579 ld      (TOKEN_COLOR), a            ; save token color
-7A49 CD 46 7C    10 580 call    Screen_Hexagons_Loop        ; draw tokens
-7A4C             10 582 ; wait for "Next" option pressed
-7A4C DD 21 C1 5A 10 584 ld      ix, $5AC1                   ; IX points to "Back" string attribute address
-7A50 01 00 04    10 585 ld      bc, $0400                   ; B = string length (loop counter), C = attributes (black)
-7A53 CD 41 78    10 586 call    Screen_Apply_Color_Loop     ; hide "Back" string
-7A56 DD 2E DC    10 587 ld      ixl, $DC                    ; IX points to "Next" string attribute address (+1)
-7A59 DD 36 FF 78 10 588 ld      (ix-1), WHITE_PAPER+BRIGHT  ; set color of first letter
-7A5D 01 47 03    10 589 ld      bc, 3*256+WHITE_FLASH0      ; B = string length-1 (loop counter), C = color attributes
-7A60 CD 41 78    10 590 call    Screen_Apply_Color_Loop     ; apply color to string area
-7A63             10 591 Screen_How2PlayRED_End
-7A63 CD 89 6E    10 592 call    Input_Key_Scan              ; wait for a key pressed
-7A66 FE 6E       10 593 cp      'n'                         ; is it 'n'?
-7A68 20 F9       10 594 jr      nz, Screen_How2PlayRED_End  ; no, repeat until key pressed = 'n'
-7A6A             10 596 Screen_How2Play_CYAN
-7A6A 21 0F 58    10 597 ld      hl, $580F                   ; HL points to level number attribute address
-7A6D CB BE       10 598 res     7, (hl)                     ; reset flash attribute
-7A6F 26 40       10 599 ld      h, $40                      ; HL points to level number screen address
-7A71 3E 31       10 600 ld      a, '1'                      ; set level number (char)
-7A73 CD 2F 6F    10 601 call    Print_Char                  ; print '1'
-7A76 CD DB 78    10 602 call    Screen_Clear_ThreeRow       ; clear all three-in-a-row marks
-7A79 21 C9 59    10 604 ld      hl, $59E1-24                ; HL points to red text area attributes address (-24)
-7A7C CD 5B 7C    10 605 call    Screen_Clear_Text           ; clear text area attributes
-7A7F CD 65 6D    10 606 call    Draw_Board                  ; draw an empty hexagons board
-7A82             10 608 ; text for CYAN
-7A82 DD 21 98 58 10 610 ld      ix, $5898                   ; IX points to "Connect" string attributes address
-7A86 01 07 07    10 611 ld      bc, 7*256+WHITE             ; B = string length (loop counter), C = color attributes
-7A89 CD 41 78    10 612 call    Screen_Apply_Color_Loop     ; apply color to string area
-7A8C 11 20 68    10 613 ld      de, STR_HELP1               ; DE points to "Connect" string address
-7A8F 21 98 40    10 614 ld      hl, $4098                   ; HL points to string screen address
-7A92 CD 22 6F    10 615 call    Print_String                ; print "Connect"
-7A95 DD 2E B9    10 616 ld      ixl, $B9                    ; IX points to "up and" string attributes address
-7A98 CD 3F 78    10 617 call    Screen_Apply_Color          ; apply color to string area
-7A9B 11 31 68    10 618 ld      de, STR_HELP2_CYAN          ; DE points to "up and" string address
-7A9E 2E B9       10 619 ld      l, $B9                      ; HL points to string screen address
-7AA0 CD 22 6F    10 620 call    Print_String                ; print "up and"
-7AA3 DD 2E DB    10 621 ld      ixl, $DB                    ; IX points to "down" string attributes address
-7AA6 06 04       10 622 ld      b, 4                        ; string length (loop counter)
-7AA8 CD 41 78    10 623 call    Screen_Apply_Color_Loop     ; apply color to string area
-7AAB 11 3E 68    10 624 ld      de, STR_HELP3_CYAN          ; DE points to "down" string address
-7AAE 2E DB       10 625 ld      l, $DB                      ; HL points to string screen address
-7AB0 CD 22 6F    10 626 call    Print_String                ; print "down"
-7AB3 DD 2E F8    10 627 ld      ixl, $F8                    ; IX points to "borders" string attributes address
-7AB6 06 07       10 628 ld      b, 7                        ; string length (loop counter)
-7AB8 CD 41 78    10 629 call    Screen_Apply_Color_Loop     ; apply color to string area
-7ABB 13          10 630 inc     de                          ; move DE to "borders" string address
-7ABC 2E F8       10 631 ld      l, $F8                      ; HL points to string screen address
-7ABE CD 22 6F    10 632 call    Print_String                ; print "borders"
-7AC1 DD 21 19 59 10 633 ld      ix, $5919                   ; IX points to "to win" string attributes address
-7AC5 CD 3F 78    10 634 call    Screen_Apply_Color          ; apply color to string area
-7AC8 13          10 635 inc     de                          ; move DE to "to win" string address
-7AC9 21 19 48    10 636 ld      hl, $4819                   ; HL points to string screen address
-7ACC CD 22 6F    10 637 call    Print_String                ; print "to win"
-7ACF DD 21 7A 58 10 638 ld      ix, $587A                   ; IX points to "CYAN" string attributes address
-7AD3 01 45 04    10 639 ld      bc, $0445                   ; B = string length (loop counter)
-7AD6             10 640 ; C = color attributes (cyan+bright)
-7AD6 CD 41 78    10 641 call    Screen_Apply_Color_Loop     ; apply color to string area
-7AD9 11 1B 68    10 642 ld      de, STR_CYAN                ; DE points to "CYAN" string address
-7ADC 21 7A 40    10 643 ld      hl, $407A                   ; HL points to string screen address
-7ADF CD 22 6F    10 644 call    Print_String                ; print "CYAN"
-7AE2             10 646 ; draw CYAN sample board
-7AE2 FD 21 5E 67 10 648 ld      iy, SAMPLE_BOARD_CYAN       ; IY points to sample board (cyan) screen addresses
-7AE6 11 3E 66    10 649 ld      de, HEXAGON_TOKEN           ; DE points to token sprite address
-7AE9 06 07       10 650 ld      b, 7                        ; number of cyan+bright tokens (loop counter)
-7AEB 3E 45       10 651 ld      a, CYAN_COLOR+BRIGHT        ; set token color
-7AED 32 9E 61    10 652 ld      (TOKEN_COLOR), a            ; save token color
-7AF0 CD 46 7C    10 653 call    Screen_Hexagons_Loop        ; draw tokens
-7AF3 06 02       10 654 ld      b, 2                        ; number of cyan tokens (loop counter)
-7AF5 3E 05       10 655 ld      a, CYAN_COLOR               ; set token color
-7AF7 32 9E 61    10 656 ld      (TOKEN_COLOR), a            ; save token color
-7AFA CD 46 7C    10 657 call    Screen_Hexagons_Loop        ; draw tokens
-7AFD 06 08       10 658 ld      b, 8                        ; number of red tokens (loop counter)
-7AFF 3E 02       10 659 ld      a, RED_COLOR                ; set token color
-7B01 32 9E 61    10 660 ld      (TOKEN_COLOR), a            ; save token color
-7B04 CD 46 7C    10 661 call    Screen_Hexagons_Loop        ; draw tokens
-7B07             10 663 ; wait for "Next" or "Back" options pressed
-7B07 DD 21 C2 5A 10 665 ld      ix, $5AC2                   ; IX points to "Back" string attributes address (+1)
-7B0B DD 36 FF 78 10 666 ld      (ix-1), WHITE_PAPER+BRIGHT  ; set color of first letter
-7B0F 01 47 03    10 667 ld      bc, 3*256+WHITE_FLASH0      ; B = string length (-1), C = color attributes
-7B12 CD 41 78    10 668 call    Screen_Apply_Color_Loop     ; apply color to string area
-7B15             10 669 Screen_How2PlayCYAN_End
-7B15 CD 89 6E    10 670 call    Input_Key_Scan              ; wait for a key pressed
-7B18 FE 62       10 671 cp      'b'                         ; is it 'b'?
-7B1A CA BE 79    10 672 jp      z, Screen_How2Play_RED      ; yes, show RED page
-7B1D FE 6E       10 673 cp      'n'                         ; is it 'n'?
-7B1F 20 F4       10 674 jr      nz, Screen_How2PlayCYAN_End ; no, repeat until key pressed = 'n' or 'b'
-7B21             10 676 Screen_How2Play_LevelUp
-7B21 21 5E 58    10 677 ld      hl, $5876-24                ; HL points to cyan text area attributes address (-24)
-7B24 CD 5B 7C    10 678 call    Screen_Clear_Text           ; clear text area attributes
-7B27             10 680 ; text for Level Up
-7B27 DD 21 21 5A 10 682 ld      ix, $5A21                   ; IX points to "Win three" string attributes address
-7B2B 01 07 09    10 683 ld      bc, 9*256+WHITE             ; B = string length (loop counter), C = color attributes
-7B2E CD 41 78    10 684 call    Screen_Apply_Color_Loop     ; apply color to string area
-7B31 11 52 68    10 685 ld      de, STR_HELP                ; DE points to "Win three" string address
-7B34 21 21 50    10 686 ld      hl, $5021                   ; HL points to string screen address
-7B37 CD 22 6F    10 687 call    Print_String                ; print "Win three"
-7B3A DD 2E 41    10 688 ld      ixl, $41                    ; IX points to "times in" string attributes address
-7B3D 06 08       10 689 ld      b, 8                        ; string length (loop counter)
-7B3F CD 41 78    10 690 call    Screen_Apply_Color_Loop     ; apply color to string area
-7B42 13          10 691 inc     de                          ; move DE to "times in" string address
-7B43 2E 41       10 692 ld      l, $41                      ; HL points to string screen address
-7B45 CD 22 6F    10 693 call    Print_String                ; print "times in"
-7B48 DD 2E 61    10 694 ld      ixl, $61                    ; IX points to "a row to" string attributes address
-7B4B 06 08       10 695 ld      b, 8                        ; string length (loop counter)
-7B4D CD 41 78    10 696 call    Screen_Apply_Color_Loop     ; apply color to string area
-7B50 13          10 697 inc     de                          ; move DE to "a row to" string address
-7B51 2E 61       10 698 ld      l, $61                      ; HL points to string screen address
-7B53 CD 22 6F    10 699 call    Print_String                ; print "a row to"
-7B56 DD 2E 81    10 700 ld      ixl, $81                    ; IX points to "level up" string attributes address
-7B59 06 08       10 701 ld      b, 8                        ; string length (loop counter)
-7B5B CD 41 78    10 702 call    Screen_Apply_Color_Loop     ; apply color to string area
-7B5E 13          10 703 inc     de                          ; move DE to "level up" string address
-7B5F 2E 81       10 704 ld      l, $81                      ; HL points to string screen address
-7B61 CD 22 6F    10 705 call    Print_String                ; print "level up"
-7B64             10 707 ; reset bright of cyan tokens
-7B64 FD 21 5E 67 10 709 ld      iy, SAMPLE_BOARD_CYAN       ; IY points to sample board (cyan) screen addresses
-7B68 11 3E 66    10 710 ld      de, HEXAGON_TOKEN           ; DE points to token sprite address
-7B6B 06 07       10 711 ld      b, 7                        ; number of cyan+bright tokens (loop counter)
-7B6D 3E 05       10 712 ld      a, CYAN_COLOR               ; set new token color
-7B6F 32 9E 61    10 713 ld      (TOKEN_COLOR), a            ; save color
-7B72 CD 46 7C    10 714 call    Screen_Hexagons_Loop        ; draw tokens
-7B75             10 716 ; set flash attribute of level number and three-in-a-row marks
-7B75 21 0F 58    10 718 ld      hl, $580F                   ; HL points to level number attribute address
-7B78 CB FE       10 719 set     7, (hl)                     ; set flash attribute
-7B7A 21 0F 40    10 720 ld      hl, $400F                   ; HL points to level number screen address
-7B7D 3E 32       10 721 ld      a, '2'                      ; set new level
-7B7F CD 2F 6F    10 722 call    Print_Char                  ; print new level
-7B82 DD 21 F2 5A 10 723 ld      ix, $5AF2                   ; IX points to three-in-a-row attribute address
-7B86 DD 36 00 B8 10 724 ld      (ix+0), WHITE_PAPER+FLASH   ; set flash attributes
-7B8A DD 36 01 B8 10 725 ld      (ix+1), WHITE_PAPER+FLASH
-7B8E DD 36 02 B8 10 726 ld      (ix+2), WHITE_PAPER+FLASH
-7B92             10 728 ; wait for "Next" or "Back" options pressed
-7B92             10 730 Screen_How2Play_End
-7B92 CD 89 6E    10 731 call    Input_Key_Scan              ; wait for a key pressed
-7B95 FE 62       10 732 cp      'b'                         ; is it 'b'?
-7B97 CA 6A 7A    10 733 jp      z, Screen_How2Play_CYAN     ; yes, show CYAN page
-7B9A FE 6E       10 734 cp      'n'                         ; is it 'n'?
-7B9C 20 F4       10 735 jr      nz, Screen_How2Play_End     ; no, repeat until key pressed = 'b' or 'n'
-7B9E 21 9D 61    10 737 ld      hl, GAME_LEVEL              ; HL points to game level address
-7BA1 35          10 738 dec     (hl)                        ; decrement game level (GAME_LEVEL = 0)
-7BA2 C3 48 79    10 739 jp      Screen_Menu                 ; return to main menu
-7BA5             10 741 ; ----------------------------------------------------------------------------------------------------------------------
-7BA5             10 742 ; Show credits
-7BA5             10 743 ; ----------------------------------------------------------------------------------------------------------------------
-7BA5             10 744 Screen_Menu_Credits
-7BA5 3E 47       10 745 ld      a, WHITE_FLASH0             ; set attribute color
-7BA7 CD 14 7C    10 746 call    Screen_Credits_ATTR         ; apply color to credits area
-7BAA 11 A3 67    10 748 ld      de, STR_DESIGN              ; DE points to "Design..." string address
-7BAD 21 84 48    10 749 ld      hl, $4884                   ; HL points to string screen address
-7BB0 CD 22 6F    10 750 call    Print_String                ; print "Design..."
-7BB3 11 F1 67    10 751 ld      de, STR_ANTONIO             ; move DE to "Antonio Luque" string 
-7BB6 CD 22 6F    10 752 call    Print_String                ; print "Antonio Luque"
-7BB9 11 B0 67    10 753 ld      de, STR_CODE                ; move DE to "Code..." string address
-7BBC 2E C4       10 754 ld      l, $C4                      ; HL points to string screen address
-7BBE CD 22 6F    10 755 call    Print_String                ; print "Code..."
-7BC1 11 F1 67    10 756 ld      de, STR_ANTONIO             ; move DE to "Antonio Luque" string 
-7BC4 CD 22 6F    10 757 call    Print_String                ; print "Antonio Luque"
-7BC7 11 E4 67    10 758 ld      de, STR_EMPTY12             ; move DE to Empty12 string
-7BCA 2E E4       10 759 ld      l, $E4                      ; HL points to string screen address
-7BCC CD 22 6F    10 760 call    Print_String                ; print Empty12 string
-7BCF 11 D7 67    10 761 ld      de, STR_EINAR               ; move DE to "Einar Saukas" string address
-7BD2 CD 22 6F    10 762 call    Print_String                ; print "Einar Saukas"
-7BD5 11 BD 67    10 763 ld      de, STR_FONT                ; move DE to "Font..." string address
-7BD8 21 24 50    10 764 ld      hl, $5024                   ; HL points to string screen address
-7BDB CD 22 6F    10 765 call    Print_String                ; print "Font..."
-7BDE 11 D7 67    10 766 ld      de, STR_EINAR               ; move DE to "Einar Saukas" string address
-7BE1 CD 22 6F    10 767 call    Print_String                ; print "Einar Saukas"
-7BE4 11 CA 67    10 768 ld      de, STR_GRAPHICS            ; move DE to "Graphics..." string address
-7BE7 2E 64       10 769 ld      l, $64                      ; HL points to string screen address
-7BE9 CD 22 6F    10 770 call    Print_String                ; print "Graphics..."
-7BEC 13          10 771 inc     de                          ; move DE to "Einar Saukas" string address
-7BED CD 22 6F    10 772 call    Print_String                ; print "Einar Saukas"
-7BF0 13          10 773 inc     de                          ; move DE to Empty12 string
-7BF1 2E 84       10 774 ld      l, $84                      ; HL points to string screen address
-7BF3 CD 22 6F    10 775 call    Print_String                ; print Empty12 string
-7BF6 13          10 776 inc     de                          ; move DE to "Antonio Luque" string 
-7BF7 CD 22 6F    10 777 call    Print_String                ; print "Antonio Luque"
-7BFA DD 21 E9 5A 10 778 ld      ix, $5AE9                   ; IX points to "Press any key" string attributes address
-7BFE 01 38 0D    10 779 ld      bc, 13*256+WHITE_PAPER      ; B = string length (loop counter), C = color attributes
-7C01 CD 41 78    10 780 call    Screen_Apply_Color_Loop     ; apply color to string area
-7C04 13          10 781 inc     de                          ; move DE to "Press any key" string address
-7C05 2E E9       10 782 ld      l, $E9                      ; HL points to string screen address
-7C07 CD 22 6F    10 783 call    Print_String                ; print "Press any key"
-7C0A CD 89 6E    10 784 call    Input_Key_Scan              ; wait for a key pressed
-7C0D AF          10 786 xor     a                           ; set attribute color (black)
-7C0E CD 14 7C    10 787 call    Screen_Credits_ATTR         ; apply color to credits area
-7C11 C3 4E 79    10 788 jp      Screen_Menu_Strings         ; return to main menu
-7C14             10 790 ; ----------------------------------------------------------------------------------------------------------------------
-7C14             10 791 ; Screen_Credits_ATTR: apply an attribute color to credits area
-7C14             10 792 ;
-7C14             10 793 ; Input:    A = attribute color to apply
-7C14             10 794 ;
-7C14             10 795 ; Output:   -
-7C14             10 796 ;
-7C14             10 797 ; Destroys: BC, DE, HL
-7C14             10 798 ; ----------------------------------------------------------------------------------------------------------------------
-7C14             10 799 Screen_Credits_ATTR:
-7C14 21 80 59    10 800 ld      hl, $5980                   ; HL points to start of credits area attributes address
-7C17 11 81 59    10 801 ld      de, $5981                   ; DE points to next byte of credits area attributes address
-7C1A 77          10 802 ld      (hl), a                     ; set first byte of attribute color
-7C1B 01 7F 01    10 803 ld      bc, 32*12-1                 ; length of attributes area (-1 already set)
-7C1E ED B0       10 804 ldir                                ; fill the rest of attributes color of credits area
-7C20 C9          10 805 ret
-7C21             10 807 ; ----------------------------------------------------------------------------------------------------------------------
-7C21             10 808 ; Screen_Menu_Hexagons: draw menu hexagons on screen
-7C21             10 809 ;
-7C21             10 810 ; Input:    -
-7C21             10 811 ;
-7C21             10 812 ; Output:   -
-7C21             10 813 ;
-7C21             10 814 ; Uses:     TOKEN_COLOR (current token color)
-7C21             10 815 ;
-7C21             10 816 ; Destroys: A, BC, DE, HL, IX, IY
-7C21             10 817 ; ----------------------------------------------------------------------------------------------------------------------
-7C21             10 818 Screen_Hexagons:
-7C21 FD 21 EA 66 10 819 ld      iy, MENU_HEXAGONS           ; IY points to menu hexagons screen addresses
-7C25 3E 07       10 820 ld      a, WHITE                    ; set hexagon color
-7C27 32 9E 61    10 821 ld      (TOKEN_COLOR), a            ; save hexagon color
-7C2A 11 7E 65    10 822 ld      de, HEXAGON_EMPTY           ; DE points to empty hexagon sprite address
-7C2D 06 1C       10 823 ld      b, 28                       ; number of empty hexagons (loop counter)
-7C2F CD 46 7C    10 824 call    Screen_Hexagons_Loop        ; draw empty hexagons
-7C32 3E 05       10 825 ld      a, CYAN_COLOR               ; set token color
-7C34 32 9E 61    10 826 ld      (TOKEN_COLOR), a            ; save hexagon color
-7C37 11 3E 66    10 827 ld      de, HEXAGON_TOKEN           ; DE points to token sprite address
-7C3A 06 06       10 828 ld      b, 6                        ; number of cyan tokens (loop counter)
-7C3C CD 46 7C    10 829 call    Screen_Hexagons_Loop        ; draw cyan tokens
-7C3F 3E 02       10 830 ld      a, RED_COLOR                ; set token color
-7C41 32 9E 61    10 831 ld      (TOKEN_COLOR), a            ; save hexagon color
-7C44 06 06       10 832 ld      b, 6                        ; number of red tokens (loop counter)
-7C46             10 833 Screen_Hexagons_Loop:
-7C46 FD 6E 00    10 834 ld      l, (iy+0)                   ; HL points to hexagon/token screen address
-7C49 FD 66 01    10 835 ld      h, (iy+1)
-7C4C CD D3 6D    10 836 call    Draw_Hexagon_Color          ; apply color to hexagon/token area
-7C4F D5          10 837 push    de                          ; store hexagon/token sprite address
-7C50 CD A5 6D    10 838 call    Draw_Sprite_Hexagon         ; draw hexagon sprite
-7C53 D1          10 839 pop     de                          ; restore hexagon/token sprite address
-7C54 FD 23       10 840 inc     iy                          ; move IY to next hexagon/token screen address
-7C56 FD 23       10 841 inc     iy
-7C58 10 EC       10 842 djnz    Screen_Hexagons_Loop        ; repeat for each hexagon/token
-7C5A C9          10 843 ret
-7C5B             10 845 ; ----------------------------------------------------------------------------------------------------------------------
-7C5B             10 846 ; Screen_Clear_Text: clean a text attributes area
-7C5B             10 847 ;
-7C5B             10 848 ; Input:    HL = text area attributes address
-7C5B             10 849 ;
-7C5B             10 850 ; Output:   -
-7C5B             10 851 ;
-7C5B             10 852 ; Destroys: BC, DE, HL
-7C5B             10 853 ; ----------------------------------------------------------------------------------------------------------------------
-7C5B             10 854 Screen_Clear_Text:
-7C5B 01 30 00    10 855 ld      bc, 8*6                     ; length of attributes area: width x height (in bytes)
-7C5E             10 856 Screen_ClearText_Loop
-7C5E 11 18 00    10 857 ld      de, 24                      ; displacement for each text row
-7C61 19          10 858 add     hl, de                      ; add displacement to text area attributes address
-7C62 54          10 859 ld      d, h                        ; DE points to text area attributes address
-7C63 5D          10 860 ld      e, l
-7C64 36 00       10 861 ld      (hl), 0                     ; set attributes color (black) for 1st byte of current row
-7C66 13          10 862 inc     de                          ; move DE to next byte attribute address
-7C67 ED A0       10 863 ldi                                 ; set attributes color for the rest of bytes of current row
-7C69 ED A0       10 864 ldi
-7C6B ED A0       10 865 ldi
-7C6D ED A0       10 866 ldi
-7C6F ED A0       10 867 ldi
-7C71 ED A0       10 868 ldi
-7C73 ED A0       10 869 ldi
-7C75 ED A0       10 870 ldi
-7C77 EA 5E 7C    10 871 jp      pe, Screen_ClearText_Loop   ; repeat for each row
-7C7A C9          10 872 ret
+7841             10 250 ; ----------------------------------------------------------------------------------------------------------------------
+7841             10 251 ; Screen_Apply_Color: apply color to a screen area
+7841             10 252 ;
+7841             10 253 ; Input:    B  = area length
+7841             10 254 ;           C  = color attribute to apply
+7841             10 255 ;           IX = attribute's area address
+7841             10 256 ;
+7841             10 257 ; Output:   -
+7841             10 258 ;
+7841             10 259 ; Destroys: B, IX
+7841             10 260 ; ----------------------------------------------------------------------------------------------------------------------
+7841             10 261 Screen_Apply_Color:
+7841 DD 71 00    10 262 ld      (ix+0), c                   ; apply color
+7844 DD 2C       10 263 inc     ixl                         ; move IX to the next attribute address
+7846 10 F9       10 264 djnz    Screen_Apply_Color          ; repeat for each byte
+7848 C9          10 265 ret
+7849             10 267 ; ----------------------------------------------------------------------------------------------------------------------
+7849             10 268 ; Screen_Last_Level: show last level screen and input game level
+7849             10 269 ;
+7849             10 270 ; Input:    -
+7849             10 271 ;
+7849             10 272 ; Output:   -
+7849             10 273 ;
+7849             10 274 ; Uses:     GAME_LEVEL (current game level)
+7849             10 275 ;
+7849             10 276 ; Destroys: A, BC, DE, HL, IX, IY
+7849             10 277 ; ----------------------------------------------------------------------------------------------------------------------
+7849             10 278 Screen_Last_Level:
+7849 11 FF 67    10 279 ld      de, STR_PRESSKEY            ; DE points to "Press any key" string address
+784C 21 AD 50    10 280 ld      hl, $50AD                   ; HL points to string screen address
+784F CD 22 6F    10 281 call    Print_String                ; print "Press any key"
+7852 DD 21 AD 5A 10 282 ld      ix, $5AAD                   ; IX points to string attributes address
+7856 01 38 0D    10 283 ld      bc, 13*256+WHITE_PAPER      ; B = string length (loop counter), C = color attributes
+7859 CD 41 78    10 284 call    Screen_Apply_Color          ; apply color to string area
+785C CD 89 6E    10 285 call    Input_Key_Scan              ; wait for a key pressed
+785F CD DD 76    10 287 call    Screen_Clear                ; fill in black the whole screen area and attributes area
+7862 CD 21 7C    10 288 call    Screen_Hexagons             ; draw menu hexagons ("HEX 2")
+7865 DD 21 C7 59 10 289 ld      ix, $59C7                   ; IX points to "CONGRATULATIONS" string attributes address
+7869 01 C7 11    10 290 ld      bc, 17*256+WHITE_FLASH1     ; B = string length (loop counter), C = color attributes
+786C CD 41 78    10 291 call    Screen_Apply_Color          ; apply color to string area
+786F 11 77 68    10 292 ld      de, STR_CONGRATS            ; DE points to string address
+7872 21 C7 48    10 293 ld      hl, $48C7                   ; HL points to string screen address
+7875 CD 22 6F    10 294 call    Print_String                ; print "CONGRATULATIONS"
+7878 DD 21 EF 64 10 295 ld      ix, WINNER_FX               ; IX points to winner tone parameters address
+787C CD 9B 76    10 296 call    Sound_FX                    ; play sound fx
+787F F3          10 298 di                                  ; disable interrupts
+7880 DD 21 42 5A 10 299 ld      ix, $5A42                   ; IX points to "Well done!..." string attributes address
+7884 01 07 1C    10 300 ld      bc, 28*256+WHITE            ; B = string length (loop counter), C = color attributes
+7887 CD 41 78    10 301 call    Screen_Apply_Color          ; apply color to string area
+788A 11 89 68    10 302 ld      de, STR_LAST_LEVEL          ; DE points to string address
+788D 21 42 50    10 303 ld      hl, $5042                   ; HL points to string screen address
+7890 CD 22 6F    10 304 call    Print_String                ; print "Well done!..."
+7893 DD 2E 82    10 305 ld      ixl, $82                    ; IX points to "Choose..." string attributes address
+7896 06 18       10 306 ld      b, 24                       ; string length-4 (loop counter)
+7898 CD 41 78    10 307 call    Screen_Apply_Color          ; apply color to string area
+789B DD 36 01 78 10 308 ld      (ix+1), WHITE_PAPER+BRIGHT  ; set color for last characters ("1-4")
+789F DD 36 02 78 10 309 ld      (ix+2), WHITE_PAPER+BRIGHT
+78A3 DD 36 03 78 10 310 ld      (ix+3), WHITE_PAPER+BRIGHT
+78A7 13          10 311 inc     de                          ; move DE to next string address
+78A8 2E 82       10 312 ld      l, $82                      ; HL points to string screen address
+78AA CD 22 6F    10 313 call    Print_String                ; print "Choose..."
+78AD             10 314 Screen_Choose_Level
+78AD CD 89 6E    10 315 call    Input_Key_Scan              ; wait for a key pressed
+78B0 FE 31       10 316 cp      '1'                         ; is it < '1' ?
+78B2 38 F9       10 317 jr      c, Screen_Choose_Level      ; yes, wait for a key pressed
+78B4 FE 35       10 318 cp      '5'                         ; is it >= '5' ?
+78B6 30 F5       10 319 jr      nc, Screen_Choose_Level     ; yes, wait for a key pressed
+78B8 D6 31       10 320 sub     $31                         ; convert ASCII into level number (-1)
+78BA 21 9D 61    10 321 ld      hl, GAME_LEVEL              ; HL points to game level address
+78BD 77          10 322 ld      (hl), a                     ; save chosen game level (-1)
+78BE C9          10 323 ret
+78BF             10 325 ; ----------------------------------------------------------------------------------------------------------------------
+78BF             10 326 ; Screen_ThreeRow: color the three-in-a-row marks according to the current three row counter
+78BF             10 327 ;
+78BF             10 328 ; Input:    HL = three-in-a-row counter address
+78BF             10 329 ;
+78BF             10 330 ; Output:   -
+78BF             10 331 ;
+78BF             10 332 ; Uses:     LEVEL_COLOR (current level color for frame border)
+78BF             10 333 ;
+78BF             10 334 ; Destroys: A, C, IX
+78BF             10 335 ; ----------------------------------------------------------------------------------------------------------------------
+78BF             10 336 Screen_ThreeRow:
+78BF CD DB 78    10 337 call    Screen_Clear_ThreeRow       ; clear all three-in-a-row marks
+78C2 7E          10 338 ld      a, (hl)                     ; A = three-in-a-row counter
+78C3 B7          10 339 or      a                           ; is it 0?
+78C4 C8          10 340 ret     z                           ; yes, return
+78C5 E5          10 342 push    hl                          ; store three-in-a-row counter address
+78C6 21 9C 61    10 344 ld      hl, LEVEL_COLOR             ; HL points to level color address
+78C9 4E          10 345 ld      c, (hl)                     ; save level color in C
+78CA 3D          10 346 dec     a                           ; is it 1?
+78CB 28 09       10 347 jr      z, Screen_ThreeRow_1        ; yes, color first mark
+78CD 3D          10 348 dec     a                           ; is it 2?
+78CE 28 03       10 349 jr      z, Screen_ThreeRow_2        ; yes color 2nd and 1st marks
+78D0 DD 71 00    10 350 ld      (ix+0), c                   ; color 3rd mark
+78D3             10 351 Screen_ThreeRow_2
+78D3 DD 71 01    10 352 ld      (ix+1), c                   ; color 2nd mark
+78D6             10 353 Screen_ThreeRow_1
+78D6 DD 71 02    10 354 ld      (ix+2), c                   ; color 1st mark
+78D9 E1          10 356 pop     hl
+78DA C9          10 357 ret
+78DB             10 359 ; ----------------------------------------------------------------------------------------------------------------------
+78DB             10 360 ; Screen_Clear_ThreeRow: clear all three-in-a-row marks
+78DB             10 361 ;
+78DB             10 362 ; Input:    -
+78DB             10 363 ;
+78DB             10 364 ; Output:   IX = three-in-a-row marks attribute address
+78DB             10 365 ;
+78DB             10 366 ; Destroys: -
+78DB             10 367 ; ----------------------------------------------------------------------------------------------------------------------
+78DB             10 368 Screen_Clear_ThreeRow:
+78DB DD 21 F2 5A 10 369 ld      ix, $5AF2                   ; IX points to attribute address of three-in-a-row marks
+78DF DD 36 00 01 10 370 ld      (ix+0), BLUE_INK            ; clear all three-in-a-row marks
+78E3 DD 36 01 01 10 371 ld      (ix+1), BLUE_INK
+78E7 DD 36 02 01 10 372 ld      (ix+2), BLUE_INK
+78EB C9          10 373 ret
+78EC             10 375 ; ----------------------------------------------------------------------------------------------------------------------
+78EC             10 376 ; Screen_Frame_Color: set up frame color and print level number depending on current level
+78EC             10 377 ;
+78EC             10 378 ; Input:    HL = game level address
+78EC             10 379 ;
+78EC             10 380 ; Output:   -
+78EC             10 381 ;
+78EC             10 382 ; Uses:     LEVEL_COLOR (current level color for frame border)
+78EC             10 383 ;
+78EC             10 384 ; Destroys: A, BC, DE, HL
+78EC             10 385 ; ----------------------------------------------------------------------------------------------------------------------
+78EC             10 386 Screen_Frame_Color:
+78EC 06 00       10 387 ld      b, 0                        ; set game level in BC
+78EE 4E          10 388 ld      c, (hl)
+78EF 3E 30       10 389 ld      a, $30                      ; convert game level number to game level character
+78F1 81          10 390 add     a, c
+78F2 21 0F 40    10 391 ld      hl, $400F                   ; HL points to screen address of game level
+78F5 CD 2F 6F    10 392 call    Print_Char                  ; print game level
+78F8 21 0E 62    10 393 ld      hl, ROW_COLOR_MAP-1         ; HL points to color map address (adjusted for index 0)
+78FB 09          10 394 add     hl, bc                      ; use BC as index for color map address
+78FC 7E          10 395 ld      a, (hl)                     ; A = level color
+78FD CD 12 79    10 396 call    Screen_Tiles_Color          ; color the frame according to the current level
+7900 E6 07       10 397 and     %00000111                   ; mask color
+7902 32 9C 61    10 398 ld      (LEVEL_COLOR), a            ; save masked color
+7905 17          10 399 rla                                 ; rotate to text level color
+7906 17          10 400 rla
+7907 17          10 401 rla
+7908 21 08 58    10 402 ld      hl, $5808                   ; HL points to attribute address of level text
+790B 06 09       10 403 ld      b, 9                        ; length of level text (loop counter)
+790D             10 404 Screen_Level_Loop
+790D 77          10 405 ld      (hl), a                     ; apply color to level text
+790E 2C          10 406 inc     l                           ; HL points to attr address of next character of level text
+790F 10 FC       10 407 djnz    Screen_Level_Loop           ; repeat for each character of level text
+7911 C9          10 408 ret
+7912             10 410 ; ----------------------------------------------------------------------------------------------------------------------
+7912             10 411 ; Screen_Tiles_Color: apply color to the frame tiles
+7912             10 412 ;
+7912             10 413 ; Input:    A = color to apply
+7912             10 414 ;
+7912             10 415 ; Output:   -
+7912             10 416 ;
+7912             10 417 ; Destroys: BC, DE, HL
+7912             10 418 ; ----------------------------------------------------------------------------------------------------------------------
+7912             10 419 Screen_Tiles_Color:
+7912             10 420 ; color up row
+7912 21 01 58    10 422 ld      hl, $5801                   ; HL points to attribute address of the the frame tile 
+7915 06 06       10 423 ld      b, 6                        ; number of tiles (loop counter)
+7917             10 424 Screen_Tiles_URow1
+7917 77          10 425 ld      (hl), a                     ; apply color
+7918 2C          10 426 inc     l                           ; move HL to the next attribute address
+7919 10 FC       10 427 djnz    Screen_Tiles_URow1          ; repeat for each tile
+791B 2E 12       10 428 ld      l, $12                      ; move HL to the next attribute address
+791D 06 0D       10 429 ld      b, 13                       ; number of tiles (loop counter)
+791F             10 430 Screen_Tiles_URow2
+791F 77          10 431 ld      (hl), a                     ; apply color
+7920 2C          10 432 inc     l                           ; move HL to the next attribute address
+7921 10 FC       10 433 djnz    Screen_Tiles_URow2          ; repeat for each tile
+7923             10 435 ; color vertical bars
+7923 2E 00       10 437 ld      l, 0                        ; move HL to the next attribute address
+7925 11 1F 00    10 438 ld      de, 31                      ; attribute address displacement (for each bar)
+7928 0E 03       10 439 ld      c, 3                        ; number of screen thirds (outer loop counter)
+792A             10 440 Screen_Tiles_VBar1
+792A 06 08       10 441 ld      b, 8                        ; number of tiles (inner loop counter)
+792C             10 442 Screen_Tiles_VBar2
+792C 77          10 443 ld      (hl), a                     ; apply color
+792D 19          10 444 add     hl, de                      ; move HL to the right column
+792E 77          10 445 ld      (hl), a                     ; apply color
+792F 2C          10 446 inc     l                           ; move HL to the next attribute address
+7930 10 FA       10 447 djnz    Screen_Tiles_VBar2          ; repeat for each tile
+7932 24          10 448 inc     h                           ; move HL to the next screen third
+7933 0D          10 449 dec     c                           ; decrement number of thirds
+7934 20 F4       10 450 jr      nz, Screen_Tiles_VBar1      ; repeat for each third
+7936             10 452 ; color bottom row
+7936 21 E1 5A    10 454 ld      hl, $5AE1                   ; HL points to attribute address of the the frame tile
+7939 06 10       10 455 ld      b, 16                       ; number of tiles (loop counter)
+793B             10 456 Screen_Tiles_BRow1
+793B 77          10 457 ld      (hl), a                     ; apply color
+793C 2C          10 458 inc     l                           ; move HL to the next attribute address
+793D 10 FC       10 459 djnz    Screen_Tiles_BRow1          ; repeat for each tile
+793F 2E F6       10 460 ld      l, $F6                      ; move HL to the next attribute address
+7941 06 09       10 461 ld      b, 9                        ; number of tiles (loop counter)
+7943             10 462 Screen_Tiles_BRow2
+7943 77          10 463 ld      (hl), a                     ; apply color
+7944 2C          10 464 inc     l                           ; move HL to the next attribute address
+7945 10 FC       10 465 djnz    Screen_Tiles_BRow2          ; repeat for each tile
+7947 C9          10 466 ret
+7948             10 468 ; ----------------------------------------------------------------------------------------------------------------------
+7948             10 469 ; Screen_Menu: show main menu and wait for an option
+7948             10 470 ;
+7948             10 471 ; Input:    -
+7948             10 472 ;
+7948             10 473 ; Output:   -
+7948             10 474 ;
+7948             10 475 ; Uses:     GAME_LEVEL (current game level)
+7948             10 476 ;
+7948             10 477 ; Destroys: A, BC, DE, HL, IX, IY
+7948             10 478 ; ----------------------------------------------------------------------------------------------------------------------
+7948             10 479 Screen_Menu:
+7948 CD DD 76    10 480 call    Screen_Clear                ; fill in black the whole screen area and attributes area
+794B CD 21 7C    10 481 call    Screen_Hexagons             ; draw menu hexagons ("HEX 2")
+794E             10 482 Screen_Menu_Strings
+794E DD 21 CA 59 10 483 ld      ix, $59CA                   ; IX points to "Start new game" string attr. address (+1)
+7952 DD 36 FF 78 10 484 ld      (ix-1), WHITE_PAPER+BRIGHT  ; set color of first letter
+7956 01 47 0D    10 485 ld      bc, 13*256+WHITE_FLASH0     ; B = string length-1 (loop counter), C = color attributes
+7959 CD 41 78    10 486 call    Screen_Apply_Color          ; apply color to string area
+795C 11 80 67    10 487 ld      de, STR_OPTIONS             ; DE points to string address
+795F 21 C9 48    10 488 ld      hl, $48C9                   ; HL points to string screen address
+7962 CD 22 6F    10 489 call    Print_String                ; print "Start new game"
+7965 DD 21 2A 5A 10 490 ld      ix, $5A2A                   ; IX points to "How to play" string attributes address (+1)
+7969 DD 36 FF 78 10 491 ld      (ix-1), WHITE_PAPER+BRIGHT  ; set color of first letter
+796D 06 0A       10 492 ld      b, 10                       ; string length-1 (loop counter)
+796F CD 41 78    10 493 call    Screen_Apply_Color          ; apply color to string area
+7972 13          10 494 inc     de                          ; move DE to "How to play" string address
+7973 21 29 50    10 495 ld      hl, $5029                   ; HL points to string screen address
+7976 CD 22 6F    10 496 call    Print_String                ; print "How to play"
+7979 DD 2E 8A    10 497 ld      ixl, $8A                    ; IX points to "Credits" string attributes address (+1)
+797C DD 36 FF 78 10 498 ld      (ix-1), WHITE_PAPER+BRIGHT  ; set color of first letter
+7980 CD 3F 78    10 499 call    Screen_Apply_Color_6        ; apply color to string area
+7983 13          10 500 inc     de                          ; move DE to "Credits" string address
+7984 2E 89       10 501 ld      l, $89                      ; HL points to string screen address
+7986 CD 22 6F    10 502 call    Print_String                ; print "Credits"
+7989             10 503 Screen_Menu_Options
+7989 CD 89 6E    10 504 call    Input_Key_Scan              ; wait for a key pressed
+798C FE 73       10 505 cp      's'                         ; is it 's'?
+798E C8          10 506 ret     z                           ; yes, return
+798F FE 63       10 507 cp      'c'                         ; is it 'c'?
+7991 CA A5 7B    10 508 jp      z, Screen_Menu_Credits      ; yes, show credits
+7994 FE 68       10 509 cp      'h'                         ; is it 'h'?
+7996 20 F1       10 510 jr      nz, Screen_Menu_Options     ; no, repeat until key pressed = 's' or 'c' or 'h'
+7998             10 512 ; ----------------------------------------------------------------------------------------------------------------------
+7998             10 513 ; Show "How to play" pages
+7998             10 514 ; ----------------------------------------------------------------------------------------------------------------------
+7998             10 515 Screen_Menu_How2Play
+7998 CD DD 76    10 516 call    Screen_Clear                ; fill in black the whole screen area and attributes area
+799B CD EA 76    10 517 call    Screen_Letters              ; draw the two rows of letters on the screen (a..g)
+799E CD 16 77    10 518 call    Screen_Numbers              ; draw the two columns of numbers on the screen (1..7)
+79A1 CD 55 77    10 519 call    Screen_Frame                ; draw the screen frame
+79A4 21 9D 61    10 521 ld      hl, GAME_LEVEL              ; HL points to game level address (needed for color frame)
+79A7 34          10 522 inc     (hl)                        ; increment game level (GAME_LEVEL = 1)
+79A8 CD EC 78    10 523 call    Screen_Frame_Color          ; set up frame color depending on current level
+79AB CD DB 78    10 524 call    Screen_Clear_ThreeRow       ; clear all three-in-a-row marks
+79AE 11 0D 68    10 526 ld      de, STR_BUTTONS             ; DE points to "Next" string address
+79B1 21 DB 50    10 527 ld      hl, $50DB                   ; HL points to string screen address
+79B4 CD 22 6F    10 528 call    Print_String                ; print "Next"
+79B7 13          10 529 inc     de                          ; move DE to "Back" string address
+79B8 21 C1 50    10 530 ld      hl, $50C1                   ; HL points to string screen address
+79BB CD 22 6F    10 531 call    Print_String                ; print "Back"
+79BE             10 533 Screen_How2Play_RED
+79BE 21 5E 58    10 534 ld      hl, $5876-24                ; HL points to cyan text area attributes address (-24)
+79C1 CD 5B 7C    10 535 call    Screen_Clear_Text           ; clear text area attributes
+79C4 CD 65 6D    10 536 call    Draw_Board                  ; draw an empty hexagons board
+79C7             10 538 ; text for RED
+79C7 DD 21 01 5A 10 540 ld      ix, $5A01                   ; IX points to "Connect" string attributes address
+79CB 01 07 07    10 541 ld      bc, 7*256+WHITE             ; B = string length (loop counter), C = color attributes
+79CE CD 41 78    10 542 call    Screen_Apply_Color          ; apply color to string area
+79D1 11 20 68    10 543 ld      de, STR_HELP1               ; DE points to string address
+79D4 21 01 50    10 544 ld      hl, $5001                   ; HL points to string screen address
+79D7 CD 22 6F    10 545 call    Print_String                ; print "Connect"
+79DA DD 2E 21    10 546 ld      ixl, $21                    ; IX points to "left and" string attributes address
+79DD 06 08       10 547 ld      b, 8                        ; string length (loop counter)
+79DF CD 41 78    10 548 call    Screen_Apply_Color          ; apply color to string area
+79E2 13          10 549 inc     de                          ; move DE to "left and" string address
+79E3 2E 21       10 550 ld      l, $21                      ; HL points to string screen address
+79E5 CD 22 6F    10 551 call    Print_String                ; print "left and"
+79E8 DD 2E 41    10 552 ld      ixl, $41                    ; IX points to "right" string attributes address
+79EB 06 05       10 553 ld      b, 5                        ; set string length (loop counter)
+79ED CD 41 78    10 554 call    Screen_Apply_Color          ; apply color to string area
+79F0 11 38 68    10 555 ld      de, STR_HELP3_RED           ; DE points to "right" string address
+79F3 2E 41       10 556 ld      l, $41                      ; HL points to string screen address
+79F5 CD 22 6F    10 557 call    Print_String                ; print "right"
+79F8 DD 2E 61    10 558 ld      ixl, $61                    ; IX points to "borders" string attributes address
+79FB 06 07       10 559 ld      b, 7                        ; set string length (loop counter)
+79FD CD 41 78    10 560 call    Screen_Apply_Color          ; apply color to string area
+7A00 11 43 68    10 561 ld      de, STR_HELP4               ; DE points to "borders" string address
+7A03 2E 61       10 562 ld      l, $61                      ; HL points to string screen address
+7A05 CD 22 6F    10 563 call    Print_String                ; print "borders"
+7A08 DD 2E 81    10 564 ld      ixl, $81                    ; IX points to "to win" string attributes address
+7A0B CD 3F 78    10 565 call    Screen_Apply_Color_6        ; apply color to string area
+7A0E 13          10 566 inc     de                          ; move DE to "to win" string address
+7A0F 2E 81       10 567 ld      l, $81                      ; HL points to string screen address
+7A11 CD 22 6F    10 568 call    Print_String                ; print "to win"
+7A14 DD 21 E3 59 10 569 ld      ix, $59E3                   ; IX points to "RED" string attributes address
+7A18 01 42 03    10 570 ld      bc, 3*256+RED_COLOR+BRIGHT  ; B = string length (loop counter), C = color attributes
+7A1B CD 41 78    10 571 call    Screen_Apply_Color          ; apply color to string area
+7A1E 11 17 68    10 572 ld      de, STR_RED                 ; DE points to "RED" string address
+7A21 21 E3 48    10 573 ld      hl, $48E3                   ; HL points to string screen address
+7A24 CD 22 6F    10 574 call    Print_String                ; print "RED"
+7A27             10 576 ; draw RED sample board
+7A27 FD 21 3A 67 10 578 ld      iy, SAMPLE_BOARD_RED        ; IY points to sample board (red) screen addresses
+7A2B 11 3E 66    10 579 ld      de, HEXAGON_TOKEN           ; DE points to token sprite address
+7A2E 06 07       10 580 ld      b, 7                        ; number of red+bright tokens (loop counter)
+7A30 3E 42       10 581 ld      a, RED_COLOR+BRIGHT         ; set token color
+7A32 32 9E 61    10 582 ld      (TOKEN_COLOR), a            ; save token color
+7A35 CD 46 7C    10 583 call    Screen_Hexagons_Loop        ; draw tokens
+7A38 06 02       10 584 ld      b, 2                        ; number of red tokens (loop counter)
+7A3A 3E 02       10 585 ld      a, RED_COLOR                ; set token color
+7A3C 32 9E 61    10 586 ld      (TOKEN_COLOR), a            ; save token color
+7A3F CD 46 7C    10 587 call    Screen_Hexagons_Loop        ; draw tokens
+7A42 06 09       10 588 ld      b, 9                        ; number of cyan tokens (loop counter)
+7A44 3E 05       10 589 ld      a, CYAN_COLOR               ; set token color
+7A46 32 9E 61    10 590 ld      (TOKEN_COLOR), a            ; save token color
+7A49 CD 46 7C    10 591 call    Screen_Hexagons_Loop        ; draw tokens
+7A4C             10 593 ; wait for "Next" option pressed
+7A4C DD 21 C1 5A 10 595 ld      ix, $5AC1                   ; IX points to "Back" string attribute address
+7A50 01 00 04    10 596 ld      bc, $0400                   ; B = string length (loop counter), C = attributes (black)
+7A53 CD 41 78    10 597 call    Screen_Apply_Color          ; hide "Back" string
+7A56 DD 2E DC    10 598 ld      ixl, $DC                    ; IX points to "Next" string attribute address (+1)
+7A59 DD 36 FF 78 10 599 ld      (ix-1), WHITE_PAPER+BRIGHT  ; set color of first letter
+7A5D 01 47 03    10 600 ld      bc, 3*256+WHITE_FLASH0      ; B = string length-1 (loop counter), C = color attributes
+7A60 CD 41 78    10 601 call    Screen_Apply_Color          ; apply color to string area
+7A63             10 602 Screen_How2PlayRED_End
+7A63 CD 89 6E    10 603 call    Input_Key_Scan              ; wait for a key pressed
+7A66 FE 6E       10 604 cp      'n'                         ; is it 'n'?
+7A68 20 F9       10 605 jr      nz, Screen_How2PlayRED_End  ; no, repeat until key pressed = 'n'
+7A6A             10 607 Screen_How2Play_CYAN
+7A6A 21 0F 58    10 608 ld      hl, $580F                   ; HL points to level number attribute address
+7A6D CB BE       10 609 res     7, (hl)                     ; reset flash attribute
+7A6F 26 40       10 610 ld      h, $40                      ; HL points to level number screen address
+7A71 3E 31       10 611 ld      a, '1'                      ; set level number (char)
+7A73 CD 2F 6F    10 612 call    Print_Char                  ; print '1'
+7A76 CD DB 78    10 613 call    Screen_Clear_ThreeRow       ; clear all three-in-a-row marks
+7A79 21 C9 59    10 615 ld      hl, $59E1-24                ; HL points to red text area attributes address (-24)
+7A7C CD 5B 7C    10 616 call    Screen_Clear_Text           ; clear text area attributes
+7A7F CD 65 6D    10 617 call    Draw_Board                  ; draw an empty hexagons board
+7A82             10 619 ; text for CYAN
+7A82 DD 21 98 58 10 621 ld      ix, $5898                   ; IX points to "Connect" string attributes address
+7A86 01 07 07    10 622 ld      bc, 7*256+WHITE             ; B = string length (loop counter), C = color attributes
+7A89 CD 41 78    10 623 call    Screen_Apply_Color          ; apply color to string area
+7A8C 11 20 68    10 624 ld      de, STR_HELP1               ; DE points to "Connect" string address
+7A8F 21 98 40    10 625 ld      hl, $4098                   ; HL points to string screen address
+7A92 CD 22 6F    10 626 call    Print_String                ; print "Connect"
+7A95 DD 2E B9    10 627 ld      ixl, $B9                    ; IX points to "up and" string attributes address
+7A98 CD 3F 78    10 628 call    Screen_Apply_Color_6        ; apply color to string area
+7A9B 11 31 68    10 629 ld      de, STR_HELP2_CYAN          ; DE points to "up and" string address
+7A9E 2E B9       10 630 ld      l, $B9                      ; HL points to string screen address
+7AA0 CD 22 6F    10 631 call    Print_String                ; print "up and"
+7AA3 DD 2E DB    10 632 ld      ixl, $DB                    ; IX points to "down" string attributes address
+7AA6 06 04       10 633 ld      b, 4                        ; string length (loop counter)
+7AA8 CD 41 78    10 634 call    Screen_Apply_Color          ; apply color to string area
+7AAB 11 3E 68    10 635 ld      de, STR_HELP3_CYAN          ; DE points to "down" string address
+7AAE 2E DB       10 636 ld      l, $DB                      ; HL points to string screen address
+7AB0 CD 22 6F    10 637 call    Print_String                ; print "down"
+7AB3 DD 2E F8    10 638 ld      ixl, $F8                    ; IX points to "borders" string attributes address
+7AB6 06 07       10 639 ld      b, 7                        ; string length (loop counter)
+7AB8 CD 41 78    10 640 call    Screen_Apply_Color          ; apply color to string area
+7ABB 13          10 641 inc     de                          ; move DE to "borders" string address
+7ABC 2E F8       10 642 ld      l, $F8                      ; HL points to string screen address
+7ABE CD 22 6F    10 643 call    Print_String                ; print "borders"
+7AC1 DD 21 19 59 10 644 ld      ix, $5919                   ; IX points to "to win" string attributes address
+7AC5 CD 3F 78    10 645 call    Screen_Apply_Color_6        ; apply color to string area
+7AC8 13          10 646 inc     de                          ; move DE to "to win" string address
+7AC9 21 19 48    10 647 ld      hl, $4819                   ; HL points to string screen address
+7ACC CD 22 6F    10 648 call    Print_String                ; print "to win"
+7ACF DD 21 7A 58 10 649 ld      ix, $587A                   ; IX points to "CYAN" string attributes address
+7AD3 01 45 04    10 650 ld      bc, $0445                   ; B = string length (loop counter)
+7AD6             10 651 ; C = color attributes (cyan+bright)
+7AD6 CD 41 78    10 652 call    Screen_Apply_Color          ; apply color to string area
+7AD9 11 1B 68    10 653 ld      de, STR_CYAN                ; DE points to "CYAN" string address
+7ADC 21 7A 40    10 654 ld      hl, $407A                   ; HL points to string screen address
+7ADF CD 22 6F    10 655 call    Print_String                ; print "CYAN"
+7AE2             10 657 ; draw CYAN sample board
+7AE2 FD 21 5E 67 10 659 ld      iy, SAMPLE_BOARD_CYAN       ; IY points to sample board (cyan) screen addresses
+7AE6 11 3E 66    10 660 ld      de, HEXAGON_TOKEN           ; DE points to token sprite address
+7AE9 06 07       10 661 ld      b, 7                        ; number of cyan+bright tokens (loop counter)
+7AEB 3E 45       10 662 ld      a, CYAN_COLOR+BRIGHT        ; set token color
+7AED 32 9E 61    10 663 ld      (TOKEN_COLOR), a            ; save token color
+7AF0 CD 46 7C    10 664 call    Screen_Hexagons_Loop        ; draw tokens
+7AF3 06 02       10 665 ld      b, 2                        ; number of cyan tokens (loop counter)
+7AF5 3E 05       10 666 ld      a, CYAN_COLOR               ; set token color
+7AF7 32 9E 61    10 667 ld      (TOKEN_COLOR), a            ; save token color
+7AFA CD 46 7C    10 668 call    Screen_Hexagons_Loop        ; draw tokens
+7AFD 06 08       10 669 ld      b, 8                        ; number of red tokens (loop counter)
+7AFF 3E 02       10 670 ld      a, RED_COLOR                ; set token color
+7B01 32 9E 61    10 671 ld      (TOKEN_COLOR), a            ; save token color
+7B04 CD 46 7C    10 672 call    Screen_Hexagons_Loop        ; draw tokens
+7B07             10 674 ; wait for "Next" or "Back" options pressed
+7B07 DD 21 C2 5A 10 676 ld      ix, $5AC2                   ; IX points to "Back" string attributes address (+1)
+7B0B DD 36 FF 78 10 677 ld      (ix-1), WHITE_PAPER+BRIGHT  ; set color of first letter
+7B0F 01 47 03    10 678 ld      bc, 3*256+WHITE_FLASH0      ; B = string length (-1), C = color attributes
+7B12 CD 41 78    10 679 call    Screen_Apply_Color          ; apply color to string area
+7B15             10 680 Screen_How2PlayCYAN_End
+7B15 CD 89 6E    10 681 call    Input_Key_Scan              ; wait for a key pressed
+7B18 FE 62       10 682 cp      'b'                         ; is it 'b'?
+7B1A CA BE 79    10 683 jp      z, Screen_How2Play_RED      ; yes, show RED page
+7B1D FE 6E       10 684 cp      'n'                         ; is it 'n'?
+7B1F 20 F4       10 685 jr      nz, Screen_How2PlayCYAN_End ; no, repeat until key pressed = 'n' or 'b'
+7B21             10 687 Screen_How2Play_LevelUp
+7B21 21 5E 58    10 688 ld      hl, $5876-24                ; HL points to cyan text area attributes address (-24)
+7B24 CD 5B 7C    10 689 call    Screen_Clear_Text           ; clear text area attributes
+7B27             10 691 ; text for Level Up
+7B27 DD 21 21 5A 10 693 ld      ix, $5A21                   ; IX points to "Win three" string attributes address
+7B2B 01 07 09    10 694 ld      bc, 9*256+WHITE             ; B = string length (loop counter), C = color attributes
+7B2E CD 41 78    10 695 call    Screen_Apply_Color          ; apply color to string area
+7B31 11 52 68    10 696 ld      de, STR_HELP                ; DE points to "Win three" string address
+7B34 21 21 50    10 697 ld      hl, $5021                   ; HL points to string screen address
+7B37 CD 22 6F    10 698 call    Print_String                ; print "Win three"
+7B3A DD 2E 41    10 699 ld      ixl, $41                    ; IX points to "times in" string attributes address
+7B3D 06 08       10 700 ld      b, 8                        ; string length (loop counter)
+7B3F CD 41 78    10 701 call    Screen_Apply_Color          ; apply color to string area
+7B42 13          10 702 inc     de                          ; move DE to "times in" string address
+7B43 2E 41       10 703 ld      l, $41                      ; HL points to string screen address
+7B45 CD 22 6F    10 704 call    Print_String                ; print "times in"
+7B48 DD 2E 61    10 705 ld      ixl, $61                    ; IX points to "a row to" string attributes address
+7B4B 06 08       10 706 ld      b, 8                        ; string length (loop counter)
+7B4D CD 41 78    10 707 call    Screen_Apply_Color          ; apply color to string area
+7B50 13          10 708 inc     de                          ; move DE to "a row to" string address
+7B51 2E 61       10 709 ld      l, $61                      ; HL points to string screen address
+7B53 CD 22 6F    10 710 call    Print_String                ; print "a row to"
+7B56 DD 2E 81    10 711 ld      ixl, $81                    ; IX points to "level up" string attributes address
+7B59 06 08       10 712 ld      b, 8                        ; string length (loop counter)
+7B5B CD 41 78    10 713 call    Screen_Apply_Color          ; apply color to string area
+7B5E 13          10 714 inc     de                          ; move DE to "level up" string address
+7B5F 2E 81       10 715 ld      l, $81                      ; HL points to string screen address
+7B61 CD 22 6F    10 716 call    Print_String                ; print "level up"
+7B64             10 718 ; reset bright of cyan tokens
+7B64 FD 21 5E 67 10 720 ld      iy, SAMPLE_BOARD_CYAN       ; IY points to sample board (cyan) screen addresses
+7B68 11 3E 66    10 721 ld      de, HEXAGON_TOKEN           ; DE points to token sprite address
+7B6B 06 07       10 722 ld      b, 7                        ; number of cyan+bright tokens (loop counter)
+7B6D 3E 05       10 723 ld      a, CYAN_COLOR               ; set new token color
+7B6F 32 9E 61    10 724 ld      (TOKEN_COLOR), a            ; save color
+7B72 CD 46 7C    10 725 call    Screen_Hexagons_Loop        ; draw tokens
+7B75             10 727 ; set flash attribute of level number and three-in-a-row marks
+7B75 21 0F 58    10 729 ld      hl, $580F                   ; HL points to level number attribute address
+7B78 CB FE       10 730 set     7, (hl)                     ; set flash attribute
+7B7A 21 0F 40    10 731 ld      hl, $400F                   ; HL points to level number screen address
+7B7D 3E 32       10 732 ld      a, '2'                      ; set new level
+7B7F CD 2F 6F    10 733 call    Print_Char                  ; print new level
+7B82 DD 21 F2 5A 10 734 ld      ix, $5AF2                   ; IX points to three-in-a-row attribute address
+7B86 DD 36 00 B8 10 735 ld      (ix+0), WHITE_PAPER+FLASH   ; set flash attributes
+7B8A DD 36 01 B8 10 736 ld      (ix+1), WHITE_PAPER+FLASH
+7B8E DD 36 02 B8 10 737 ld      (ix+2), WHITE_PAPER+FLASH
+7B92             10 739 ; wait for "Next" or "Back" options pressed
+7B92             10 741 Screen_How2Play_End
+7B92 CD 89 6E    10 742 call    Input_Key_Scan              ; wait for a key pressed
+7B95 FE 62       10 743 cp      'b'                         ; is it 'b'?
+7B97 CA 6A 7A    10 744 jp      z, Screen_How2Play_CYAN     ; yes, show CYAN page
+7B9A FE 6E       10 745 cp      'n'                         ; is it 'n'?
+7B9C 20 F4       10 746 jr      nz, Screen_How2Play_End     ; no, repeat until key pressed = 'b' or 'n'
+7B9E 21 9D 61    10 748 ld      hl, GAME_LEVEL              ; HL points to game level address
+7BA1 35          10 749 dec     (hl)                        ; decrement game level (GAME_LEVEL = 0)
+7BA2 C3 48 79    10 750 jp      Screen_Menu                 ; return to main menu
+7BA5             10 752 ; ----------------------------------------------------------------------------------------------------------------------
+7BA5             10 753 ; Show credits
+7BA5             10 754 ; ----------------------------------------------------------------------------------------------------------------------
+7BA5             10 755 Screen_Menu_Credits
+7BA5 3E 47       10 756 ld      a, WHITE_FLASH0             ; set attribute color
+7BA7 CD 14 7C    10 757 call    Screen_Credits_ATTR         ; apply color to credits area
+7BAA 11 A3 67    10 759 ld      de, STR_DESIGN              ; DE points to "Design..." string address
+7BAD 21 84 48    10 760 ld      hl, $4884                   ; HL points to string screen address
+7BB0 CD 22 6F    10 761 call    Print_String                ; print "Design..."
+7BB3 11 F1 67    10 762 ld      de, STR_ANTONIO             ; move DE to "Antonio Luque" string 
+7BB6 CD 22 6F    10 763 call    Print_String                ; print "Antonio Luque"
+7BB9 11 B0 67    10 764 ld      de, STR_CODE                ; move DE to "Code..." string address
+7BBC 2E C4       10 765 ld      l, $C4                      ; HL points to string screen address
+7BBE CD 22 6F    10 766 call    Print_String                ; print "Code..."
+7BC1 11 F1 67    10 767 ld      de, STR_ANTONIO             ; move DE to "Antonio Luque" string 
+7BC4 CD 22 6F    10 768 call    Print_String                ; print "Antonio Luque"
+7BC7 11 E4 67    10 769 ld      de, STR_EMPTY12             ; move DE to Empty12 string
+7BCA 2E E4       10 770 ld      l, $E4                      ; HL points to string screen address
+7BCC CD 22 6F    10 771 call    Print_String                ; print Empty12 string
+7BCF 11 D7 67    10 772 ld      de, STR_EINAR               ; move DE to "Einar Saukas" string address
+7BD2 CD 22 6F    10 773 call    Print_String                ; print "Einar Saukas"
+7BD5 11 BD 67    10 774 ld      de, STR_FONT                ; move DE to "Font..." string address
+7BD8 21 24 50    10 775 ld      hl, $5024                   ; HL points to string screen address
+7BDB CD 22 6F    10 776 call    Print_String                ; print "Font..."
+7BDE 11 D7 67    10 777 ld      de, STR_EINAR               ; move DE to "Einar Saukas" string address
+7BE1 CD 22 6F    10 778 call    Print_String                ; print "Einar Saukas"
+7BE4 11 CA 67    10 779 ld      de, STR_GRAPHICS            ; move DE to "Graphics..." string address
+7BE7 2E 64       10 780 ld      l, $64                      ; HL points to string screen address
+7BE9 CD 22 6F    10 781 call    Print_String                ; print "Graphics..."
+7BEC 13          10 782 inc     de                          ; move DE to "Einar Saukas" string address
+7BED CD 22 6F    10 783 call    Print_String                ; print "Einar Saukas"
+7BF0 13          10 784 inc     de                          ; move DE to Empty12 string
+7BF1 2E 84       10 785 ld      l, $84                      ; HL points to string screen address
+7BF3 CD 22 6F    10 786 call    Print_String                ; print Empty12 string
+7BF6 13          10 787 inc     de                          ; move DE to "Antonio Luque" string 
+7BF7 CD 22 6F    10 788 call    Print_String                ; print "Antonio Luque"
+7BFA DD 21 E9 5A 10 789 ld      ix, $5AE9                   ; IX points to "Press any key" string attributes address
+7BFE 01 38 0D    10 790 ld      bc, 13*256+WHITE_PAPER      ; B = string length (loop counter), C = color attributes
+7C01 CD 41 78    10 791 call    Screen_Apply_Color          ; apply color to string area
+7C04 13          10 792 inc     de                          ; move DE to "Press any key" string address
+7C05 2E E9       10 793 ld      l, $E9                      ; HL points to string screen address
+7C07 CD 22 6F    10 794 call    Print_String                ; print "Press any key"
+7C0A CD 89 6E    10 795 call    Input_Key_Scan              ; wait for a key pressed
+7C0D AF          10 797 xor     a                           ; set attribute color (black)
+7C0E CD 14 7C    10 798 call    Screen_Credits_ATTR         ; apply color to credits area
+7C11 C3 4E 79    10 799 jp      Screen_Menu_Strings         ; return to main menu
+7C14             10 801 ; ----------------------------------------------------------------------------------------------------------------------
+7C14             10 802 ; Screen_Credits_ATTR: apply an attribute color to credits area
+7C14             10 803 ;
+7C14             10 804 ; Input:    A = attribute color to apply
+7C14             10 805 ;
+7C14             10 806 ; Output:   -
+7C14             10 807 ;
+7C14             10 808 ; Destroys: BC, DE, HL
+7C14             10 809 ; ----------------------------------------------------------------------------------------------------------------------
+7C14             10 810 Screen_Credits_ATTR:
+7C14 21 80 59    10 811 ld      hl, $5980                   ; HL points to start of credits area attributes address
+7C17 11 81 59    10 812 ld      de, $5981                   ; DE points to next byte of credits area attributes address
+7C1A 77          10 813 ld      (hl), a                     ; set first byte of attribute color
+7C1B 01 7F 01    10 814 ld      bc, 32*12-1                 ; length of attributes area (-1 already set)
+7C1E ED B0       10 815 ldir                                ; fill the rest of attributes color of credits area
+7C20 C9          10 816 ret
+7C21             10 818 ; ----------------------------------------------------------------------------------------------------------------------
+7C21             10 819 ; Screen_Menu_Hexagons: draw menu hexagons on screen
+7C21             10 820 ;
+7C21             10 821 ; Input:    -
+7C21             10 822 ;
+7C21             10 823 ; Output:   -
+7C21             10 824 ;
+7C21             10 825 ; Uses:     TOKEN_COLOR (current token color)
+7C21             10 826 ;
+7C21             10 827 ; Destroys: A, BC, DE, HL, IX, IY
+7C21             10 828 ; ----------------------------------------------------------------------------------------------------------------------
+7C21             10 829 Screen_Hexagons:
+7C21 FD 21 EA 66 10 830 ld      iy, MENU_HEXAGONS           ; IY points to menu hexagons screen addresses
+7C25 3E 07       10 831 ld      a, WHITE                    ; set hexagon color
+7C27 32 9E 61    10 832 ld      (TOKEN_COLOR), a            ; save hexagon color
+7C2A 11 7E 65    10 833 ld      de, HEXAGON_EMPTY           ; DE points to empty hexagon sprite address
+7C2D 06 1C       10 834 ld      b, 28                       ; number of empty hexagons (loop counter)
+7C2F CD 46 7C    10 835 call    Screen_Hexagons_Loop        ; draw empty hexagons
+7C32 3E 05       10 836 ld      a, CYAN_COLOR               ; set token color
+7C34 32 9E 61    10 837 ld      (TOKEN_COLOR), a            ; save hexagon color
+7C37 11 3E 66    10 838 ld      de, HEXAGON_TOKEN           ; DE points to token sprite address
+7C3A 06 06       10 839 ld      b, 6                        ; number of cyan tokens (loop counter)
+7C3C CD 46 7C    10 840 call    Screen_Hexagons_Loop        ; draw cyan tokens
+7C3F 3E 02       10 841 ld      a, RED_COLOR                ; set token color
+7C41 32 9E 61    10 842 ld      (TOKEN_COLOR), a            ; save hexagon color
+7C44 06 06       10 843 ld      b, 6                        ; number of red tokens (loop counter)
+7C46             10 844 Screen_Hexagons_Loop:
+7C46 FD 6E 00    10 845 ld      l, (iy+0)                   ; HL points to hexagon/token screen address
+7C49 FD 66 01    10 846 ld      h, (iy+1)
+7C4C CD D3 6D    10 847 call    Draw_Hexagon_Color          ; apply color to hexagon/token area
+7C4F D5          10 848 push    de                          ; store hexagon/token sprite address
+7C50 CD A5 6D    10 849 call    Draw_Sprite_Hexagon         ; draw hexagon sprite
+7C53 D1          10 850 pop     de                          ; restore hexagon/token sprite address
+7C54 FD 23       10 851 inc     iy                          ; move IY to next hexagon/token screen address
+7C56 FD 23       10 852 inc     iy
+7C58 10 EC       10 853 djnz    Screen_Hexagons_Loop        ; repeat for each hexagon/token
+7C5A C9          10 854 ret
+7C5B             10 856 ; ----------------------------------------------------------------------------------------------------------------------
+7C5B             10 857 ; Screen_Clear_Text: clean a text attributes area
+7C5B             10 858 ;
+7C5B             10 859 ; Input:    HL = text area attributes address
+7C5B             10 860 ;
+7C5B             10 861 ; Output:   -
+7C5B             10 862 ;
+7C5B             10 863 ; Destroys: BC, DE, HL
+7C5B             10 864 ; ----------------------------------------------------------------------------------------------------------------------
+7C5B             10 865 Screen_Clear_Text:
+7C5B 01 30 00    10 866 ld      bc, 8*6                     ; length of attributes area: width x height (in bytes)
+7C5E             10 867 Screen_ClearText_Loop
+7C5E 11 18 00    10 868 ld      de, 24                      ; displacement for each text row
+7C61 19          10 869 add     hl, de                      ; add displacement to text area attributes address
+7C62 54          10 870 ld      d, h                        ; DE points to text area attributes address
+7C63 5D          10 871 ld      e, l
+7C64 36 00       10 872 ld      (hl), 0                     ; set attributes color (black) for 1st byte of current row
+7C66 13          10 873 inc     de                          ; move DE to next byte attribute address
+7C67 ED A0       10 874 ldi                                 ; set attributes color for the rest of bytes of current row
+7C69 ED A0       10 875 ldi
+7C6B ED A0       10 876 ldi
+7C6D ED A0       10 877 ldi
+7C6F ED A0       10 878 ldi
+7C71 ED A0       10 879 ldi
+7C73 ED A0       10 880 ldi
+7C75 ED A0       10 881 ldi
+7C77 EA 5E 7C    10 882 jp      pe, Screen_ClearText_Loop   ; repeat for each row
+7C7A C9          10 883 ret
 
 ; File #0: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Hex2.z80asm
 

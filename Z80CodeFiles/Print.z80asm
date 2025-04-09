@@ -115,7 +115,7 @@ Print_Move_XY
                         ld      ix, $5918                   ; IX points to cyan move attribute address
                         ld      hl, $4819                   ; HL points to cyan move screen address
 Print_String_Color
-                        call    Screen_Apply_Color          ; apply color to string area
+                        call    Screen_Apply_Color_6        ; apply color to string area
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Print_String: print a string on the screen
 ; Based on assembler course by sromero: https://wiki.speccy.org/cursos/ensamblador/gfx4_fuentes
