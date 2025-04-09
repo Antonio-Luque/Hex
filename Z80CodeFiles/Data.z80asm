@@ -10,7 +10,7 @@ STACK                   ORG     $6000
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Circular queue
 ; ----------------------------------------------------------------------------------------------------------------------
-CYAN_QUEUE_AREA         DEFS    256                         ; 256-aligned block reserved for circular queue
+CYAN_QUEUE_AREA         DEFS    256
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; CYAN BOARDS: these boards must be located immediately after cyan queue area!
@@ -347,13 +347,13 @@ STR_OPTIONS:
                         DEFM    "Start new game\0"
                         DEFM    "How to play\0"
                         DEFM    "Credits\0"
-STR_CREDITS:
-                        DEFM    "Design:     Antonio Luque\0"
-                        DEFM    "Code:       Antonio Luque\0"
-                        DEFM    "            Einar Saukas\0"
-                        DEFM    "Font:       Einar Saukas\0"
-                        DEFM    "Graphics:   Einar Saukas\0"
-                        DEFM    "            Antonio Luque\0"
+STR_DESIGN              DEFM    "Design:     \0"
+STR_CODE                DEFM    "Code:       \0"
+STR_FONT                DEFM    "Font:       \0"
+STR_GRAPHICS            DEFM    "Graphics:   \0"
+STR_EINAR               DEFM    "Einar Saukas\0"
+STR_EMPTY12             DEFM    "            \0"
+STR_ANTONIO             DEFM    "Antonio Luque\0"
 STR_PRESSKEY            DEFM    "Press any key\0"
 STR_BUTTONS:
                         DEFM    "Next\0"

@@ -469,12 +469,6 @@ Screen_Menu:
                         call    Screen_Clear                ; fill in black the whole screen area and attributes area
                         call    Screen_Hexagons             ; draw menu hexagons ("HEX 2")
 Screen_Menu_Strings
-                        ld      hl, $5980                   ; HL points to menu text area attributes address
-                        ld      de, $5981                   ; DE points to next byte of menu text area attr. address
-                        ld      (hl), 0                     ; set first attribute text area in black
-                        ld      bc, 32*12-1                 ; length of text area attributes (-1 already set)
-                        ldir                                ; set the rest of text area attributes in black
-
                         ld      ix, $59CA                   ; IX points to "Start new game" string attr. address (+1)
                         ld      (ix-1), WHITE_PAPER+BRIGHT  ; set color of first letter
                         ld      bc, 13*256+WHITE_FLASH0     ; B = string length-1 (loop counter), C = color attributes
@@ -748,50 +742,67 @@ Screen_How2Play_End
 ; Show credits
 ; ----------------------------------------------------------------------------------------------------------------------
 Screen_Menu_Credits
-                        ld      ix, $5984                   ; IX points to "Design..." string attributes address
-                        ld      bc, 25*256+WHITE_FLASH0     ; B = string length (loop counter), C = color attributes
-                        call    Screen_Apply_Color_Loop     ; apply color to string area
-                        ld      de, STR_CREDITS             ; DE points to "Design..." string address
+                        ld      a, WHITE_FLASH0             ; set attribute color
+                        call    Screen_Credits_ATTR         ; apply color to credits area
+
+                        ld      de, STR_DESIGN              ; DE points to "Design..." string address
                         ld      hl, $4884                   ; HL points to string screen address
                         call    Print_String                ; print "Design..."
-                        ld      ixl, $C4                    ; IX points to "Code..." string attributes address
-                        ld      b, 25                       ; string length (loop counter)
-                        call    Screen_Apply_Color_Loop     ; apply color to string area
-                        inc     de                          ; move DE to to "Code..." string address
+                        ld      de, STR_ANTONIO             ; move DE to "Antonio Luque" string 
+                        call    Print_String                ; print "Antonio Luque"
+                        ld      de, STR_CODE                ; move DE to "Code..." string address
                         ld      l, $C4                      ; HL points to string screen address
                         call    Print_String                ; print "Code..."
-                        ld      ixl, $E4                    ; IX points to "Einar Saukas" string attributes address
-                        ld      b, 24                       ; string length (loop counter)
-                        call    Screen_Apply_Color_Loop     ; apply color to string area
-                        inc     de                          ; move DE to "Einar Saukas" string address
+                        ld      de, STR_ANTONIO             ; move DE to "Antonio Luque" string 
+                        call    Print_String                ; print "Antonio Luque"
+                        ld      de, STR_EMPTY12             ; move DE to Empty12 string
                         ld      l, $E4                      ; HL points to string screen address
+                        call    Print_String                ; print Empty12 string
+                        ld      de, STR_EINAR               ; move DE to "Einar Saukas" string address
                         call    Print_String                ; print "Einar Saukas"
-                        ld      ix, $5A24                   ; IX points to "Font..." string attributes address
-                        ld      b, 24                       ; string length (loop counter)
-                        call    Screen_Apply_Color_Loop     ; apply color to string area
-                        inc     de                          ; move DE to "Font..." string address
+                        ld      de, STR_FONT                ; move DE to "Font..." string address
                         ld      hl, $5024                   ; HL points to string screen address
                         call    Print_String                ; print "Font..."
-                        ld      ixl, $64                    ; IX points to "Graphics..." string attributes address
-                        ld      b, 24                       ; string length (loop counter)
-                        call    Screen_Apply_Color_Loop     ; apply color to string area
-                        inc     de                          ; move DE to "Graphics..." string address
+                        ld      de, STR_EINAR               ; move DE to "Einar Saukas" string address
+                        call    Print_String                ; print "Einar Saukas"
+                        ld      de, STR_GRAPHICS            ; move DE to "Graphics..." string address
                         ld      l, $64                      ; HL points to string screen address
                         call    Print_String                ; print "Graphics..."
-                        ld      ixl, $84                    ; IX points to "Antonio Luque" string attributes address
-                        ld      b, 25                       ; string length (loop counter)
-                        call    Screen_Apply_Color_Loop     ; apply color to string area
-                        inc     de                          ; move DE to "Antonio Luque" string address
+                        inc     de                          ; move DE to "Einar Saukas" string address
+                        call    Print_String                ; print "Einar Saukas"
+                        inc     de                          ; move DE to Empty12 string
                         ld      l, $84                      ; HL points to string screen address
+                        call    Print_String                ; print Empty12 string
+                        inc     de                          ; move DE to "Antonio Luque" string 
                         call    Print_String                ; print "Antonio Luque"
-                        ld      ixl, $E9                    ; IX points to "Press any key" string attributes address
+                        ld      ix, $5AE9                   ; IX points to "Press any key" string attributes address
                         ld      bc, 13*256+WHITE_PAPER      ; B = string length (loop counter), C = color attributes
                         call    Screen_Apply_Color_Loop     ; apply color to string area
                         inc     de                          ; move DE to "Press any key" string address
                         ld      l, $E9                      ; HL points to string screen address
                         call    Print_String                ; print "Press any key"
                         call    Input_Key_Scan              ; wait for a key pressed
+
+                        xor     a                           ; set attribute color (black)
+                        call    Screen_Credits_ATTR         ; apply color to credits area
                         jp      Screen_Menu_Strings         ; return to main menu
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Screen_Credits_ATTR: apply an attribute color to credits area
+;
+; Input:    A = attribute color to apply
+;
+; Output:   -
+;
+; Destroys: BC, DE, HL
+; ----------------------------------------------------------------------------------------------------------------------
+Screen_Credits_ATTR:
+                        ld      hl, $5980                   ; HL points to start of credits area attributes address
+                        ld      de, $5981                   ; DE points to next byte of credits area attributes address
+                        ld      (hl), a                     ; set first byte of attribute color
+                        ld      bc, 32*12-1                 ; length of attributes area (-1 already set)
+                        ldir                                ; fill the rest of attributes color of credits area
+                        ret
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Screen_Menu_Hexagons: draw menu hexagons on screen
