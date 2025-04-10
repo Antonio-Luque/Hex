@@ -6,8 +6,10 @@
 MAX_CHARS               EQU     2                           ; maximum of input chars
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; Input_Move: wait for input a move from keyboard
-; Based on assembler course by sromero: https://wiki.speccy.org/cursos/ensamblador/gfx4_fuentes
+; Input_Move: wait for the input of a movement through the keyboard
+;
+; Based on assembler course by sromero:
+; https://wiki.speccy.org/cursos/ensamblador/gfx4_fuentes#lectura-de-texto-desde-teclado
 ;
 ; Input:    -
 ;
@@ -34,25 +36,21 @@ Input_Start
                         call    Print_Char                  ; print cursor
 Input_Loop
                         call    Input_Key_Scan              ; scan for a key pressed
-
-                        cp      $0D                         ; is it ENTER?
+                        cp      13                          ; is it ENTER?
                         jr      z, Input_Enter              ; yes, perform enter pressed
                         cp      '0'                         ; is it "delete"? (char '0' acts as delete, without Shift)
                         jr      z, Input_Delete             ; yes, perform delete char
-                        ex      af, af'                     ; store char in A'
-                        ld      a, c                        ; check number of chars inserted
-                        cp      b                           ; chars limit reached?
-                        jr      z, Input_Loop               ; yes, repeat input loop
+                        bit     1, c                        ; chars limit reached?
+                        jr      nz, Input_Loop              ; yes, repeat input loop
 
-                        or      a                           ; is it the first char?
-                        jr      nz, Input_Numbers           ; no, perform input of 2nd char
+                        bit     0, c                        ; is it the first char?
+                        jr      nz, Input_Numbers           ; no, perform input of second char
 
                         ; restrict first char to 'a'-'g'
 
-                        ex      af, af'                     ; restore char
                         cp      'a'                         ; is it < 'a'?
                         jr      c, Input_Loop               ; yes, repeat input loop (char is not allowed)
-                        cp      'h'                         ; is it >= 'g'?
+                        cp      'g'+1                       ; is it > 'g'?
                         jr      nc, Input_Loop              ; yes, repeat input loop (char is not allowed)
 
                         ; char is valid as column
@@ -64,17 +62,16 @@ Input_Loop
                         inc     l                           ; increment X position of current input screen location
                         inc     ixl                         ; increment X position of current input attr location
                         ld      a, '-'                      ; set dash char
-                        call    Print_Char                  ; print key pressed
+                        call    Print_Char                  ; print dash char
                         inc     l                           ; increment X position of current input screen location
                         inc     ixl                         ; increment X position of current input attr location
                         jr      Input_Start                 ; get next char (do until ENTER is pressed)
 Input_Numbers
                         ; restrict second char to '1'-'7'
 
-                        ex      af, af'                     ; restore char
                         cp      '1'                         ; is it < '1'?
                         jr      c, Input_Loop               ; yes, repeat input loop (char is not allowed)
-                        cp      '8'                         ; is it >= '8'?
+                        cp      '7'+1                       ; is it > '7'?
                         jr      nc, Input_Loop              ; yes, repeat input loop (char is not allowed)
 
                         ; char is valid as row
@@ -116,8 +113,7 @@ Input_Enter
 
                         ld      (ix+0), WHITE_FLASH0        ; restore attributes (no flash)
                         ld      a, ' '                      ; empty char
-                        call    Print_Char                  ; delete cursor
-                        ret
+                        jp      Print_Char                  ; delete cursor and return via Print_Char
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Input_Key_Scan: wait for a key pressed and return its ASCII code
