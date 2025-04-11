@@ -18,7 +18,7 @@ MAX_CHARS               EQU     2                           ; maximum of input c
 ; Uses:     TOKEN_COLOR (current token color)
 ;           STR_MOVE (formatted move string)
 ;
-; Destroys: A, A', BC, DE, HL, IX
+; Destroys: A, BC, DE, HL, IX
 ; ----------------------------------------------------------------------------------------------------------------------
 Input_Move:
                         ld      bc, MAX_CHARS*256           ; B = maximum of input chars, C = chars counter
@@ -40,14 +40,17 @@ Input_Loop
                         jr      z, Input_Enter              ; yes, perform enter pressed
                         cp      '0'                         ; is it "delete"? (char '0' acts as delete, without Shift)
                         jr      z, Input_Delete             ; yes, perform delete char
-                        bit     1, c                        ; chars limit reached?
-                        jr      nz, Input_Loop              ; yes, repeat input loop
+                        ld      d, a                        ; store char in D
+                        ld      a, c                        ; check number of chars inserted
+                        cp      b                           ; chars limit reached?
+                        jr      z, Input_Loop               ; yes, repeat input loop
 
-                        bit     0, c                        ; is it the first char?
+                        or      a                           ; is it the first char?
                         jr      nz, Input_Numbers           ; no, perform input of second char
 
                         ; restrict first char to 'a'-'g'
 
+                        ld      a, d                        ; restore char
                         cp      'a'                         ; is it < 'a'?
                         jr      c, Input_Loop               ; yes, repeat input loop (char is not allowed)
                         cp      'g'+1                       ; is it > 'g'?
@@ -69,6 +72,7 @@ Input_Loop
 Input_Numbers
                         ; restrict second char to '1'-'7'
 
+                        ld      a, d                        ; restore char
                         cp      '1'                         ; is it < '1'?
                         jr      c, Input_Loop               ; yes, repeat input loop (char is not allowed)
                         cp      '7'+1                       ; is it > '7'?
