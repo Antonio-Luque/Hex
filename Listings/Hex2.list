@@ -3810,7 +3810,7 @@
 7858 CD 40 78    10 284 call    Screen_Apply_Color          ; apply color to string area
 785B CD 88 6E    10 285 call    Input_Key_Scan              ; wait for a key pressed
 785E CD DC 76    10 287 call    Screen_Clear                ; fill in black the whole screen area and attributes area
-7861 CD 20 7C    10 288 call    Screen_Hexagons             ; draw menu hexagons ("HEX 2")
+7861 CD 1A 7C    10 288 call    Screen_Hexagons             ; draw menu hexagons ("HEX 2")
 7864 DD 21 C7 59 10 289 ld      ix, $59C7                   ; IX points to "CONGRATULATIONS" string attributes address
 7868 01 C7 11    10 290 ld      bc, 17*256+WHITE_FLASH1     ; B = string length (loop counter), C = color attributes
 786B CD 40 78    10 291 call    Screen_Apply_Color          ; apply color to string area
@@ -3989,7 +3989,7 @@
 7947             10 478 ; ----------------------------------------------------------------------------------------------------------------------
 7947             10 479 Screen_Menu:
 7947 CD DC 76    10 480 call    Screen_Clear                ; fill in black the whole screen area and attributes area
-794A CD 20 7C    10 481 call    Screen_Hexagons             ; draw menu hexagons ("HEX 2")
+794A CD 1A 7C    10 481 call    Screen_Hexagons             ; draw menu hexagons ("HEX 2")
 794D             10 482 Screen_Menu_Strings
 794D DD 21 CA 59 10 483 ld      ix, $59CA                   ; IX points to "Start new game" string attr. address (+1)
 7951 DD 36 FF 78 10 484 ld      (ix-1), WHITE_PAPER+BRIGHT  ; set color of first letter
@@ -4039,7 +4039,7 @@
 79BA CD 21 6F    10 531 call    Print_String                ; print "Back"
 79BD             10 533 Screen_How2Play_RED
 79BD 21 5E 58    10 534 ld      hl, $5876-24                ; HL points to cyan text area attributes address (-24)
-79C0 CD 5A 7C    10 535 call    Screen_Clear_Text           ; clear text area attributes
+79C0 CD 54 7C    10 535 call    Screen_Clear_Text           ; clear text area attributes
 79C3 CD 65 6D    10 536 call    Draw_Board                  ; draw an empty hexagons board
 79C6             10 538 ; text for RED
 79C6 DD 21 01 5A 10 540 ld      ix, $5A01                   ; IX points to "Connect" string attributes address
@@ -4083,15 +4083,15 @@
 7A2D 06 07       10 580 ld      b, 7                        ; number of red+bright tokens (loop counter)
 7A2F 3E 42       10 581 ld      a, RED_COLOR+BRIGHT         ; set token color
 7A31 32 9E 61    10 582 ld      (TOKEN_COLOR), a            ; save token color
-7A34 CD 45 7C    10 583 call    Screen_Hexagons_Loop        ; draw tokens
+7A34 CD 3F 7C    10 583 call    Screen_Hexagons_Loop        ; draw tokens
 7A37 06 02       10 584 ld      b, 2                        ; number of red tokens (loop counter)
 7A39 3E 02       10 585 ld      a, RED_COLOR                ; set token color
 7A3B 32 9E 61    10 586 ld      (TOKEN_COLOR), a            ; save token color
-7A3E CD 45 7C    10 587 call    Screen_Hexagons_Loop        ; draw tokens
+7A3E CD 3F 7C    10 587 call    Screen_Hexagons_Loop        ; draw tokens
 7A41 06 09       10 588 ld      b, 9                        ; number of cyan tokens (loop counter)
 7A43 3E 05       10 589 ld      a, CYAN_COLOR               ; set token color
 7A45 32 9E 61    10 590 ld      (TOKEN_COLOR), a            ; save token color
-7A48 CD 45 7C    10 591 call    Screen_Hexagons_Loop        ; draw tokens
+7A48 CD 3F 7C    10 591 call    Screen_Hexagons_Loop        ; draw tokens
 7A4B             10 593 ; wait for "Next" option pressed
 7A4B DD 21 C1 5A 10 595 ld      ix, $5AC1                   ; IX points to "Back" string attribute address
 7A4F 01 00 04    10 596 ld      bc, $0400                   ; B = string length (loop counter), C = attributes (black)
@@ -4112,7 +4112,7 @@
 7A72 CD 2E 6F    10 612 call    Print_Char                  ; print '1'
 7A75 CD DA 78    10 613 call    Screen_Clear_ThreeRow       ; clear all three-in-a-row marks
 7A78 21 C9 59    10 615 ld      hl, $59E1-24                ; HL points to red text area attributes address (-24)
-7A7B CD 5A 7C    10 616 call    Screen_Clear_Text           ; clear text area attributes
+7A7B CD 54 7C    10 616 call    Screen_Clear_Text           ; clear text area attributes
 7A7E CD 65 6D    10 617 call    Draw_Board                  ; draw an empty hexagons board
 7A81             10 619 ; text for CYAN
 7A81 DD 21 98 58 10 621 ld      ix, $5898                   ; IX points to "Connect" string attributes address
@@ -4156,15 +4156,15 @@
 7AE8 06 07       10 661 ld      b, 7                        ; number of cyan+bright tokens (loop counter)
 7AEA 3E 45       10 662 ld      a, CYAN_COLOR+BRIGHT        ; set token color
 7AEC 32 9E 61    10 663 ld      (TOKEN_COLOR), a            ; save token color
-7AEF CD 45 7C    10 664 call    Screen_Hexagons_Loop        ; draw tokens
+7AEF CD 3F 7C    10 664 call    Screen_Hexagons_Loop        ; draw tokens
 7AF2 06 02       10 665 ld      b, 2                        ; number of cyan tokens (loop counter)
 7AF4 3E 05       10 666 ld      a, CYAN_COLOR               ; set token color
 7AF6 32 9E 61    10 667 ld      (TOKEN_COLOR), a            ; save token color
-7AF9 CD 45 7C    10 668 call    Screen_Hexagons_Loop        ; draw tokens
+7AF9 CD 3F 7C    10 668 call    Screen_Hexagons_Loop        ; draw tokens
 7AFC 06 08       10 669 ld      b, 8                        ; number of red tokens (loop counter)
 7AFE 3E 02       10 670 ld      a, RED_COLOR                ; set token color
 7B00 32 9E 61    10 671 ld      (TOKEN_COLOR), a            ; save token color
-7B03 CD 45 7C    10 672 call    Screen_Hexagons_Loop        ; draw tokens
+7B03 CD 3F 7C    10 672 call    Screen_Hexagons_Loop        ; draw tokens
 7B06             10 674 ; wait for "Next" or "Back" options pressed
 7B06 DD 21 C2 5A 10 676 ld      ix, $5AC2                   ; IX points to "Back" string attributes address (+1)
 7B0A DD 36 FF 78 10 677 ld      (ix-1), WHITE_PAPER+BRIGHT  ; set color of first letter
@@ -4178,7 +4178,7 @@
 7B1E 20 F4       10 685 jr      nz, Screen_How2PlayCYAN_End ; no, repeat until key pressed = 'n' or 'b'
 7B20             10 687 Screen_How2Play_LevelUp
 7B20 21 5E 58    10 688 ld      hl, $5876-24                ; HL points to cyan text area attributes address (-24)
-7B23 CD 5A 7C    10 689 call    Screen_Clear_Text           ; clear text area attributes
+7B23 CD 54 7C    10 689 call    Screen_Clear_Text           ; clear text area attributes
 7B26             10 691 ; text for Level Up
 7B26 DD 21 21 5A 10 693 ld      ix, $5A21                   ; IX points to "Win three" string attributes address
 7B2A 01 07 09    10 694 ld      bc, 9*256+WHITE             ; B = string length (loop counter), C = color attributes
@@ -4210,7 +4210,7 @@
 7B6A 06 07       10 722 ld      b, 7                        ; number of cyan+bright tokens (loop counter)
 7B6C 3E 05       10 723 ld      a, CYAN_COLOR               ; set new token color
 7B6E 32 9E 61    10 724 ld      (TOKEN_COLOR), a            ; save color
-7B71 CD 45 7C    10 725 call    Screen_Hexagons_Loop        ; draw tokens
+7B71 CD 3F 7C    10 725 call    Screen_Hexagons_Loop        ; draw tokens
 7B74             10 727 ; set flash attribute of level number and three-in-a-row marks
 7B74 21 0F 58    10 729 ld      hl, $580F                   ; HL points to level number attribute address
 7B77 CB FE       10 730 set     7, (hl)                     ; set flash attribute
@@ -4236,7 +4236,7 @@
 7BA4             10 754 ; ----------------------------------------------------------------------------------------------------------------------
 7BA4             10 755 Screen_Menu_Credits
 7BA4 3E 47       10 756 ld      a, WHITE_FLASH0             ; set attribute color
-7BA6 CD 13 7C    10 757 call    Screen_Credits_ATTR         ; apply color to credits area
+7BA6 CD 0D 7C    10 757 call    Screen_Credits_ATTR         ; apply color to credits area
 7BA9 11 A3 67    10 759 ld      de, STR_DESIGN              ; DE points to "Design..." string address
 7BAC 21 84 48    10 760 ld      hl, $4884                   ; HL points to string screen address
 7BAF CD 21 6F    10 761 call    Print_String                ; print "Design..."
@@ -4247,131 +4247,129 @@
 7BBD CD 21 6F    10 766 call    Print_String                ; print "Code..."
 7BC0 11 F1 67    10 767 ld      de, STR_ANTONIO             ; move DE to "Antonio Luque" string 
 7BC3 CD 21 6F    10 768 call    Print_String                ; print "Antonio Luque"
-7BC6 11 E4 67    10 769 ld      de, STR_EMPTY12             ; move DE to Empty12 string
-7BC9 2E E4       10 770 ld      l, $E4                      ; HL points to string screen address
-7BCB CD 21 6F    10 771 call    Print_String                ; print Empty12 string
-7BCE 11 D7 67    10 772 ld      de, STR_EINAR               ; move DE to "Einar Saukas" string address
-7BD1 CD 21 6F    10 773 call    Print_String                ; print "Einar Saukas"
-7BD4 11 BD 67    10 774 ld      de, STR_FONT                ; move DE to "Font..." string address
-7BD7 21 24 50    10 775 ld      hl, $5024                   ; HL points to string screen address
-7BDA CD 21 6F    10 776 call    Print_String                ; print "Font..."
-7BDD 11 D7 67    10 777 ld      de, STR_EINAR               ; move DE to "Einar Saukas" string address
-7BE0 CD 21 6F    10 778 call    Print_String                ; print "Einar Saukas"
-7BE3 11 CA 67    10 779 ld      de, STR_GRAPHICS            ; move DE to "Graphics..." string address
-7BE6 2E 64       10 780 ld      l, $64                      ; HL points to string screen address
-7BE8 CD 21 6F    10 781 call    Print_String                ; print "Graphics..."
-7BEB 13          10 782 inc     de                          ; move DE to "Einar Saukas" string address
-7BEC CD 21 6F    10 783 call    Print_String                ; print "Einar Saukas"
-7BEF 13          10 784 inc     de                          ; move DE to Empty12 string
-7BF0 2E 84       10 785 ld      l, $84                      ; HL points to string screen address
-7BF2 CD 21 6F    10 786 call    Print_String                ; print Empty12 string
-7BF5 13          10 787 inc     de                          ; move DE to "Antonio Luque" string 
-7BF6 CD 21 6F    10 788 call    Print_String                ; print "Antonio Luque"
-7BF9 DD 21 E9 5A 10 789 ld      ix, $5AE9                   ; IX points to "Press any key" string attributes address
-7BFD 01 38 0D    10 790 ld      bc, 13*256+WHITE_PAPER      ; B = string length (loop counter), C = color attributes
-7C00 CD 40 78    10 791 call    Screen_Apply_Color          ; apply color to string area
-7C03 13          10 792 inc     de                          ; move DE to "Press any key" string address
-7C04 2E E9       10 793 ld      l, $E9                      ; HL points to string screen address
-7C06 CD 21 6F    10 794 call    Print_String                ; print "Press any key"
-7C09 CD 88 6E    10 795 call    Input_Key_Scan              ; wait for a key pressed
-7C0C AF          10 797 xor     a                           ; set attribute color (black)
-7C0D CD 13 7C    10 798 call    Screen_Credits_ATTR         ; apply color to credits area
-7C10 C3 4D 79    10 799 jp      Screen_Menu_Strings         ; return to main menu
-7C13             10 801 ; ----------------------------------------------------------------------------------------------------------------------
-7C13             10 802 ; Screen_Credits_ATTR: apply an attribute color to credits area
-7C13             10 803 ;
-7C13             10 804 ; Input:    A = attribute color to apply
-7C13             10 805 ;
-7C13             10 806 ; Output:   -
-7C13             10 807 ;
-7C13             10 808 ; Destroys: BC, DE, HL
-7C13             10 809 ; ----------------------------------------------------------------------------------------------------------------------
-7C13             10 810 Screen_Credits_ATTR:
-7C13 21 80 59    10 811 ld      hl, $5980                   ; HL points to start of credits area attributes address
-7C16 11 81 59    10 812 ld      de, $5981                   ; DE points to next byte of credits area attributes address
-7C19 77          10 813 ld      (hl), a                     ; set first byte of attribute color
-7C1A 01 7F 01    10 814 ld      bc, 32*12-1                 ; length of attributes area (-1 already set)
-7C1D ED B0       10 815 ldir                                ; fill the rest of attributes color of credits area
-7C1F C9          10 816 ret
-7C20             10 818 ; ----------------------------------------------------------------------------------------------------------------------
-7C20             10 819 ; Screen_Menu_Hexagons: draw menu hexagons on screen
-7C20             10 820 ;
-7C20             10 821 ; Input:    -
-7C20             10 822 ;
-7C20             10 823 ; Output:   -
-7C20             10 824 ;
-7C20             10 825 ; Uses:     TOKEN_COLOR (current token color)
-7C20             10 826 ;
-7C20             10 827 ; Destroys: A, BC, DE, HL, IX, IY
-7C20             10 828 ; ----------------------------------------------------------------------------------------------------------------------
-7C20             10 829 Screen_Hexagons:
-7C20 FD 21 EA 66 10 830 ld      iy, MENU_HEXAGONS           ; IY points to menu hexagons screen addresses
-7C24 3E 07       10 831 ld      a, WHITE                    ; set hexagon color
-7C26 32 9E 61    10 832 ld      (TOKEN_COLOR), a            ; save hexagon color
-7C29 11 7E 65    10 833 ld      de, HEXAGON_EMPTY           ; DE points to empty hexagon sprite address
-7C2C 06 1C       10 834 ld      b, 28                       ; number of empty hexagons (loop counter)
-7C2E CD 45 7C    10 835 call    Screen_Hexagons_Loop        ; draw empty hexagons
-7C31 3E 05       10 836 ld      a, CYAN_COLOR               ; set token color
-7C33 32 9E 61    10 837 ld      (TOKEN_COLOR), a            ; save hexagon color
-7C36 11 3E 66    10 838 ld      de, HEXAGON_TOKEN           ; DE points to token sprite address
-7C39 06 06       10 839 ld      b, 6                        ; number of cyan tokens (loop counter)
-7C3B CD 45 7C    10 840 call    Screen_Hexagons_Loop        ; draw cyan tokens
-7C3E 3E 02       10 841 ld      a, RED_COLOR                ; set token color
-7C40 32 9E 61    10 842 ld      (TOKEN_COLOR), a            ; save hexagon color
-7C43 06 06       10 843 ld      b, 6                        ; number of red tokens (loop counter)
-7C45             10 844 Screen_Hexagons_Loop:
-7C45 FD 6E 00    10 845 ld      l, (iy+0)                   ; HL points to hexagon/token screen address
-7C48 FD 66 01    10 846 ld      h, (iy+1)
-7C4B CD D3 6D    10 847 call    Draw_Hexagon_Color          ; apply color to hexagon/token area
-7C4E D5          10 848 push    de                          ; store hexagon/token sprite address
-7C4F CD A5 6D    10 849 call    Draw_Sprite_Hexagon         ; draw hexagon sprite
-7C52 D1          10 850 pop     de                          ; restore hexagon/token sprite address
-7C53 FD 23       10 851 inc     iy                          ; move IY to next hexagon/token screen address
-7C55 FD 23       10 852 inc     iy
-7C57 10 EC       10 853 djnz    Screen_Hexagons_Loop        ; repeat for each hexagon/token
-7C59 C9          10 854 ret
-7C5A             10 856 ; ----------------------------------------------------------------------------------------------------------------------
-7C5A             10 857 ; Screen_Clear_Text: clean a text attributes area
-7C5A             10 858 ;
-7C5A             10 859 ; Input:    HL = text area attributes address
-7C5A             10 860 ;
-7C5A             10 861 ; Output:   -
-7C5A             10 862 ;
-7C5A             10 863 ; Destroys: BC, DE, HL
-7C5A             10 864 ; ----------------------------------------------------------------------------------------------------------------------
-7C5A             10 865 Screen_Clear_Text:
-7C5A 01 30 00    10 866 ld      bc, 8*6                     ; length of attributes area: width x height (in bytes)
-7C5D             10 867 Screen_ClearText_Loop
-7C5D 11 18 00    10 868 ld      de, 24                      ; displacement for each text row
-7C60 19          10 869 add     hl, de                      ; add displacement to text area attributes address
-7C61 54          10 870 ld      d, h                        ; DE points to text area attributes address
-7C62 5D          10 871 ld      e, l
-7C63 36 00       10 872 ld      (hl), 0                     ; set attributes color (black) for 1st byte of current row
-7C65 13          10 873 inc     de                          ; move DE to next byte attribute address
-7C66 ED A0       10 874 ldi                                 ; set attributes color for the rest of bytes of current row
-7C68 ED A0       10 875 ldi
-7C6A ED A0       10 876 ldi
-7C6C ED A0       10 877 ldi
-7C6E ED A0       10 878 ldi
-7C70 ED A0       10 879 ldi
-7C72 ED A0       10 880 ldi
-7C74 ED A0       10 881 ldi
-7C76 EA 5D 7C    10 882 jp      pe, Screen_ClearText_Loop   ; repeat for each row
-7C79 C9          10 883 ret
+7BC6 2E F0       10 769 ld      l, $F0                      ; HL points to string screen address
+7BC8 11 D7 67    10 770 ld      de, STR_EINAR               ; move DE to "Einar Saukas" string address
+7BCB CD 21 6F    10 771 call    Print_String                ; print "Einar Saukas"
+7BCE 11 BD 67    10 772 ld      de, STR_FONT                ; move DE to "Font..." string address
+7BD1 21 24 50    10 773 ld      hl, $5024                   ; HL points to string screen address
+7BD4 CD 21 6F    10 774 call    Print_String                ; print "Font..."
+7BD7 11 D7 67    10 775 ld      de, STR_EINAR               ; move DE to "Einar Saukas" string address
+7BDA CD 21 6F    10 776 call    Print_String                ; print "Einar Saukas"
+7BDD 11 CA 67    10 777 ld      de, STR_GRAPHICS            ; move DE to "Graphics..." string address
+7BE0 2E 64       10 778 ld      l, $64                      ; HL points to string screen address
+7BE2 CD 21 6F    10 779 call    Print_String                ; print "Graphics..."
+7BE5 13          10 780 inc     de                          ; move DE to "Einar Saukas" string address
+7BE6 CD 21 6F    10 781 call    Print_String                ; print "Einar Saukas"
+7BE9 13          10 782 inc     de                          ; move DE to Empty12 string
+7BEA 2E 84       10 783 ld      l, $84                      ; HL points to string screen address
+7BEC CD 21 6F    10 784 call    Print_String                ; print Empty12 string
+7BEF 13          10 785 inc     de                          ; move DE to "Antonio Luque" string 
+7BF0 CD 21 6F    10 786 call    Print_String                ; print "Antonio Luque"
+7BF3 DD 21 E9 5A 10 787 ld      ix, $5AE9                   ; IX points to "Press any key" string attributes address
+7BF7 01 38 0D    10 788 ld      bc, 13*256+WHITE_PAPER      ; B = string length (loop counter), C = color attributes
+7BFA CD 40 78    10 789 call    Screen_Apply_Color          ; apply color to string area
+7BFD 13          10 790 inc     de                          ; move DE to "Press any key" string address
+7BFE 2E E9       10 791 ld      l, $E9                      ; HL points to string screen address
+7C00 CD 21 6F    10 792 call    Print_String                ; print "Press any key"
+7C03 CD 88 6E    10 793 call    Input_Key_Scan              ; wait for a key pressed
+7C06 AF          10 795 xor     a                           ; set attribute color (black)
+7C07 CD 0D 7C    10 796 call    Screen_Credits_ATTR         ; apply color to credits area
+7C0A C3 4D 79    10 797 jp      Screen_Menu_Strings         ; return to main menu
+7C0D             10 799 ; ----------------------------------------------------------------------------------------------------------------------
+7C0D             10 800 ; Screen_Menu_ATTR: apply an attribute color to credits area
+7C0D             10 801 ;
+7C0D             10 802 ; Input:    A = attribute color to apply
+7C0D             10 803 ;
+7C0D             10 804 ; Output:   -
+7C0D             10 805 ;
+7C0D             10 806 ; Destroys: BC, DE, HL
+7C0D             10 807 ; ----------------------------------------------------------------------------------------------------------------------
+7C0D             10 808 Screen_Credits_ATTR:
+7C0D 21 80 59    10 809 ld      hl, $5980                   ; HL points to start of credits area attributes address
+7C10 11 81 59    10 810 ld      de, $5981                   ; DE points to next byte of credits area attributes address
+7C13 77          10 811 ld      (hl), a                     ; set first byte of attribute color
+7C14 01 7F 01    10 812 ld      bc, 32*12-1                 ; length of attributes area (-1 already set)
+7C17 ED B0       10 813 ldir                                ; fill the rest of attributes color of credits area
+7C19 C9          10 814 ret
+7C1A             10 816 ; ----------------------------------------------------------------------------------------------------------------------
+7C1A             10 817 ; Screen_Menu_Hexagons: draw menu hexagons on screen
+7C1A             10 818 ;
+7C1A             10 819 ; Input:    -
+7C1A             10 820 ;
+7C1A             10 821 ; Output:   -
+7C1A             10 822 ;
+7C1A             10 823 ; Uses:     TOKEN_COLOR (current token color)
+7C1A             10 824 ;
+7C1A             10 825 ; Destroys: A, BC, DE, HL, IX, IY
+7C1A             10 826 ; ----------------------------------------------------------------------------------------------------------------------
+7C1A             10 827 Screen_Hexagons:
+7C1A FD 21 EA 66 10 828 ld      iy, MENU_HEXAGONS           ; IY points to menu hexagons screen addresses
+7C1E 3E 07       10 829 ld      a, WHITE                    ; set hexagon color
+7C20 32 9E 61    10 830 ld      (TOKEN_COLOR), a            ; save hexagon color
+7C23 11 7E 65    10 831 ld      de, HEXAGON_EMPTY           ; DE points to empty hexagon sprite address
+7C26 06 1C       10 832 ld      b, 28                       ; number of empty hexagons (loop counter)
+7C28 CD 3F 7C    10 833 call    Screen_Hexagons_Loop        ; draw empty hexagons
+7C2B 3E 05       10 834 ld      a, CYAN_COLOR               ; set token color
+7C2D 32 9E 61    10 835 ld      (TOKEN_COLOR), a            ; save hexagon color
+7C30 11 3E 66    10 836 ld      de, HEXAGON_TOKEN           ; DE points to token sprite address
+7C33 06 06       10 837 ld      b, 6                        ; number of cyan tokens (loop counter)
+7C35 CD 3F 7C    10 838 call    Screen_Hexagons_Loop        ; draw cyan tokens
+7C38 3E 02       10 839 ld      a, RED_COLOR                ; set token color
+7C3A 32 9E 61    10 840 ld      (TOKEN_COLOR), a            ; save hexagon color
+7C3D 06 06       10 841 ld      b, 6                        ; number of red tokens (loop counter)
+7C3F             10 842 Screen_Hexagons_Loop:
+7C3F FD 6E 00    10 843 ld      l, (iy+0)                   ; HL points to hexagon/token screen address
+7C42 FD 66 01    10 844 ld      h, (iy+1)
+7C45 CD D3 6D    10 845 call    Draw_Hexagon_Color          ; apply color to hexagon/token area
+7C48 D5          10 846 push    de                          ; store hexagon/token sprite address
+7C49 CD A5 6D    10 847 call    Draw_Sprite_Hexagon         ; draw hexagon sprite
+7C4C D1          10 848 pop     de                          ; restore hexagon/token sprite address
+7C4D FD 23       10 849 inc     iy                          ; move IY to next hexagon/token screen address
+7C4F FD 23       10 850 inc     iy
+7C51 10 EC       10 851 djnz    Screen_Hexagons_Loop        ; repeat for each hexagon/token
+7C53 C9          10 852 ret
+7C54             10 854 ; ----------------------------------------------------------------------------------------------------------------------
+7C54             10 855 ; Screen_Clear_Text: clean a text attributes area
+7C54             10 856 ;
+7C54             10 857 ; Input:    HL = text area attributes address
+7C54             10 858 ;
+7C54             10 859 ; Output:   -
+7C54             10 860 ;
+7C54             10 861 ; Destroys: BC, DE, HL
+7C54             10 862 ; ----------------------------------------------------------------------------------------------------------------------
+7C54             10 863 Screen_Clear_Text:
+7C54 01 30 00    10 864 ld      bc, 8*6                     ; length of attributes area: width x height (in bytes)
+7C57             10 865 Screen_ClearText_Loop
+7C57 11 18 00    10 866 ld      de, 24                      ; displacement for each text row
+7C5A 19          10 867 add     hl, de                      ; add displacement to text area attributes address
+7C5B 54          10 868 ld      d, h                        ; DE points to text area attributes address
+7C5C 5D          10 869 ld      e, l
+7C5D 36 00       10 870 ld      (hl), 0                     ; set attributes color (black) for 1st byte of current row
+7C5F 13          10 871 inc     de                          ; move DE to next byte attribute address
+7C60 ED A0       10 872 ldi                                 ; set attributes color for the rest of bytes of current row
+7C62 ED A0       10 873 ldi
+7C64 ED A0       10 874 ldi
+7C66 ED A0       10 875 ldi
+7C68 ED A0       10 876 ldi
+7C6A ED A0       10 877 ldi
+7C6C ED A0       10 878 ldi
+7C6E ED A0       10 879 ldi
+7C70 EA 57 7C    10 880 jp      pe, Screen_ClearText_Loop   ; repeat for each row
+7C73 C9          10 881 ret
 
 ; File #0: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Hex2.z80asm
 
-7C7A             0 19 ; ----------------------------------------------------------------------------------------------------------------------
-7C7A             0 20 ; Credits and acknowledgements:
-7C7A             0 21 ;
-7C7A             0 22 ; - Einar Saukas and his amazing BRAINIAC: https://spectrumcomputing.co.uk/entry/31171/ZX-Spectrum/BRAINIAC,
-7C7A             0 23 ;   PATHFINDER adaptation: https://spectrumcomputing.co.uk/entry/28178/ZX-Spectrum/PATHFINDER, loading screen,
-7C7A             0 24 ;   "King+" font and TOKEN graphics.
-7C7A             0 25 ; - Greg Surma article: https://gsurma.medium.com/hex-creating-intelligent-opponents-with-minimax-driven-ai-part-1-%CE%B
-7C7A             0 26 ;   1-%CE%B2-pruning-cc1df850e5bd
-7C7A             0 27 ; - Jack van Rijswijck's thesis: https://webdocs.cs.ualberta.ca/~hayward/theses/jackmsc.pdf
-7C7A             0 28 ; - ChibiAkumas lessons: https://www.chibiakumas.com/z80/simplesamples.php#LessonS2
-7C7A             0 29 ; - Santiago Romero assembler course: https://wiki.speccy.org/cursos/ensamblador/indice
-7C7A             0 30 ;
-7C7A             0 31 ; - Special thanks to my wife Sonia.
-7C7A             0 32 ; ----------------------------------------------------------------------------------------------------------------------
+7C74             0 19 ; ----------------------------------------------------------------------------------------------------------------------
+7C74             0 20 ; Credits and acknowledgements:
+7C74             0 21 ;
+7C74             0 22 ; - Einar Saukas and his amazing BRAINIAC: https://spectrumcomputing.co.uk/entry/31171/ZX-Spectrum/BRAINIAC,
+7C74             0 23 ;   PATHFINDER adaptation: https://spectrumcomputing.co.uk/entry/28178/ZX-Spectrum/PATHFINDER, loading screen,
+7C74             0 24 ;   "King+" font and TOKEN graphics.
+7C74             0 25 ; - Greg Surma article: https://gsurma.medium.com/hex-creating-intelligent-opponents-with-minimax-driven-ai-part-1-%CE%B
+7C74             0 26 ;   1-%CE%B2-pruning-cc1df850e5bd
+7C74             0 27 ; - Jack van Rijswijck's thesis: https://webdocs.cs.ualberta.ca/~hayward/theses/jackmsc.pdf
+7C74             0 28 ; - ChibiAkumas lessons: https://www.chibiakumas.com/z80/simplesamples.php#LessonS2
+7C74             0 29 ; - Santiago Romero assembler course: https://wiki.speccy.org/cursos/ensamblador/indice
+7C74             0 30 ;
+7C74             0 31 ; - Special thanks to my wife Sonia.
+7C74             0 32 ; ----------------------------------------------------------------------------------------------------------------------
