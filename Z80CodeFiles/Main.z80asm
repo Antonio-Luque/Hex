@@ -77,8 +77,9 @@ Main_Increment_Level
 Main_Start_Match
                         ; set up timers and clear last messages
 
-                        call    Timer_Reset                 ; reset timers
-                        call    Timer_Display_All           ; display timers
+                        call    Timer_Reset                 ; reset and display timers
+                        xor     a                           ; stop timers
+                        ld      (TIMER_FLAG), a
                         call    Print_Clear_Alert           ; clear last alert
                         ld      a, RED_COLOR                ; set red color in A
                         ld      (TOKEN_COLOR), a            ; save token color

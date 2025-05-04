@@ -5,6 +5,9 @@
 ; Based on disassembly of "Chess" (c) 1982 Psion
 ; ----------------------------------------------------------------------------------------------------------------------
 
+CYAN_TIMER_ON           EQU     1                           ; cyan timer flag on
+RED_TIMER_ON            EQU     2                           ; red timer flag on
+
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Timer_Interrupt: interrupt routine to manage players' timers
 ;
@@ -54,6 +57,40 @@ Timer_Exit
 
                         ei                                  ; enable interrupts
                         ret
+
+; ----------------------------------------------------------------------------------------------------------------------
+; Timer_Reset: initialize and display cyan and red timers
+;
+; Input:    -
+;
+; Output:   -
+;
+; Uses:     TIMER_FLAG (0 = timer stopped, 1 = cyan timer on, 2 = red timer on)
+;
+; Destroys: A, BC, DE, HL
+; ----------------------------------------------------------------------------------------------------------------------
+Timer_Reset:
+                        ld      hl, RED_TIMER+2             ; HL points to red's minutes counter address
+                        xor     a                           ; reset minutes counter
+                        ld      (hl), a
+                        dec     hl                          ; move HL to red's seconds counter address
+                        ld      (hl), a                     ; reset seconds counter
+                        dec     hl                          ; move HL to red's interrupt counter
+                        ld      (hl), 50                    ; set interrupt counter (1/50 seconds)
+
+                        dec     hl                          ; move HL to cyan's minutes counter address
+                        ld      (hl), a                     ; reset minutes counter
+                        dec     hl                          ; move HL to cyan's seconds counter address
+                        ld      (hl), a                     ; reset seconds counter
+                        dec     hl                          ; move HL to cyan's interrupt counter
+                        ld      (hl), 50                    ; set interrupt counter (1/50 seconds)
+
+                        dec     hl                          ; move HL to timer flag address
+                        ld      (hl), CYAN_TIMER_ON         ; set cyan timer on
+                        call    Timer_Display               ; display cyan timer
+
+                        ld      a, RED_TIMER_ON             ; set red timer on
+                        ld      (TIMER_FLAG), a
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Timer_Display: display a timer on the screen
@@ -130,54 +167,4 @@ Timer_Display_Digit:
 
                         pop     de                          ; restore digit screen address
                         inc     e                           ; move screen address to next column
-                        ret
-
-; ----------------------------------------------------------------------------------------------------------------------
-; Timer_Display_All: display cyan and red timers
-;
-; Input:    -
-;
-; Output:   -
-;
-; Uses:     TIMER_FLAG (0 = timer stopped, 1 = cyan timer on, 2 = red timer on)
-;
-; Destroys: BC, DE, HL
-; ----------------------------------------------------------------------------------------------------------------------
-Timer_Display_All:
-                        ld      a, 1                        ; set cyan timer on
-                        ld      (TIMER_FLAG), a
-                        call    Timer_Display               ; display cyan timer
-
-                        ld      a, 2                        ; set red timer on
-                        ld      (TIMER_FLAG), a
-                        call    Timer_Display               ; display red timer
-
-                        xor     a                           ; stop timers
-                        ld      (TIMER_FLAG), a
-                        ret
-
-; ----------------------------------------------------------------------------------------------------------------------
-; Timer_Reset: initialize cyan and red timers
-;
-; Input:    -
-;
-; Output:   -
-;
-; Destroys: HL
-; ----------------------------------------------------------------------------------------------------------------------
-Timer_Reset:
-                        ld      hl, CYAN_TIMER              ; HL points to cyan timer address
-
-                        ld      (hl), 50                    ; set interrupt counter (1/50 seconds)
-                        inc     hl                          ; move HL to cyan's seconds counter address
-                        ld      (hl), 0                     ; reset seconds counter
-                        inc     hl                          ; move HL to cyan's minutes counter address
-                        ld      (hl), 0                     ; reset minutes counter
-                        inc     hl                          ; move HL to red's interrupt counter
-
-                        ld      (hl), 50                    ; set interrupt counter (1/50 seconds)
-                        inc     hl                          ; move HL to red's seconds counter address
-                        ld      (hl), 0                     ; reset seconds counter
-                        inc     hl                          ; move HL to red's minutes counter address
-                        ld      (hl), 0                     ; reset minutes counter
                         ret
