@@ -107,16 +107,21 @@ Main_Start_Match
                         ld      (@Token_Delay+1), a
                         ld      a, 1                        ; initialize move number
                         ld      (MOVE_NUMBER), a
+                        ld      hl, TOKEN_COLOR             ; HL points to current token color address
                         ld      a, CYAN_COLOR               ; first player token color
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Process players moves - Match loop
 ; ----------------------------------------------------------------------------------------------------------------------
 Main_Match_Loop
+                        ld      (hl), a                     ; save current token color
+                        and     %00000011                   ; set timer flag based on current token color
+                        ld      (TIMER_FLAG), a             ; start timer
+
                         ; check player turn
 
-                        ld      (TOKEN_COLOR), a            ; save current token color
-                        ld      hl, PLAYER_COLOR            ; HL points to player color address
+                        ld      a, (hl)                     ; get current token color
+                        inc     hl                          ; HL points to player color address
                         cp      (hl)                        ; check player color
                         call    z, Main_GetPlayer_Move      ; if player color = current token color, get player move
                         call    nz, Main_GetSpeccy_Move     ; else, get speccy move (previous call always set Z flag)
@@ -140,21 +145,20 @@ Main_Match_Loop
                         inc     a                           ; is there a victory path?
                         jr      nz, Main_Match_End          ; yes, match ends
 
+                        ; increment move number and swap players' token color
+
                         ld      hl, MOVE_NUMBER             ; HL points to move number address
                         inc     (hl)                        ; increment move number
-
-                        ; swap players' token color
-
-                        ld      a, (TOKEN_COLOR)            ; get current token color
-                        xor     %00000111                   ; swap token color
-                        jp      Main_Match_Loop             ; repeat match loop
+                        inc     hl                          ; HL points to current token color address
+                        ld      a, %00000111                ; swap token color
+                        xor     (hl)
+                        jr      Main_Match_Loop             ; repeat match loop
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Current player wins the match
 ; ----------------------------------------------------------------------------------------------------------------------
 Main_Match_End
                         call    PathFinder_BrightPath       ; animate and highlight the winner path
-
                         ld      de, STR_WINNER              ; DE points to "WINS" string address
                         call    Print_Alert                 ; print string
                         ld      ix, WINNER_FX               ; IX points to winner tone parameters address
@@ -181,7 +185,7 @@ Main_ThreeRow_Show
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Main_GetSpeccy_Move: get the speccy move
 ;
-; Input:     A = current token color
+; Input:    -
 ;
 ; Output:   BC = hexagon board indexes (B:column, C:row)
 ;           HL = CYAN_POSITIONS move address
@@ -194,9 +198,6 @@ Main_ThreeRow_Show
 ; Destroys: A, DE, IX, IY
 ; ----------------------------------------------------------------------------------------------------------------------
 Main_GetSpeccy_Move:
-                        and     %00000011                   ; calculate speccy's timer flag based on current token color
-                        ld      (TIMER_FLAG), a             ; (re)start speccy timer
-
                         call    Print_Wait                  ; print "WAIT" message
                         ld      a, (MOVE_NUMBER)            ; get move number
                         dec     a                           ; is it cyan first move?
@@ -233,12 +234,12 @@ Main_GetSpeccy_Book
                         ld      e, a
                         add     hl, de                      ; HL points to move index address
                         ld      l, (hl)                     ; get move from opening book
-                        jp      Main_GetSpeccy_Positions    ; get speccy move positions
+                        jr      Main_GetSpeccy_Positions    ; get speccy move positions
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Main_GetPlayer_Move: get a legal (empty hexagon) move from player
 ;
-; Input:     A = current token color
+; Input:    -
 ;
 ; Output:   BC = hexagon board indexes (B:column, C:row)
 ;           HL = CYAN_POSITIONS move address
@@ -249,9 +250,6 @@ Main_GetSpeccy_Book
 ; Destroys: A, DE, IX
 ; ----------------------------------------------------------------------------------------------------------------------
 Main_GetPlayer_Move:
-                        and     %00000011                   ; calculate player's timer flag based on current token color
-                        ld      (TIMER_FLAG), a             ; (re)start player timer
-Main_GetPlayer_Input
                         call    Print_Clear_Move            ; clear player last move
                         call    Input_Move                  ; wait for input player move
                         call    Print_Move                  ; print player move
@@ -266,8 +264,8 @@ Main_GetPlayer_Input
                         call    Main_Search_Table           ; search board position in board coordinates
                         ld      l, (hl)                     ; set board position of player move
                         ld      h, CYAN_POSITIONS/256       ; HL points to CYAN_POSITIONS move address
-                        ld      a, EMPTY                    ; check position
-                        cp      (hl)                        ; is position empty?
+                        ld      a, (hl)                     ; check position
+                        or      a                           ; is position empty?
                         ret     z                           ; yes, return with Z flag set
 
                         ; illegal player move (position not empty)
@@ -279,7 +277,7 @@ Main_GetPlayer_Input
                         ld      a, 80                       ; set delay counter
                         call    Main_Delay                  ; execute delay
                         call    Print_Clear_Alert           ; clear alert message
-                        jp      Main_GetPlayer_Input        ; repeat player input until move is legal
+                        jr      Main_GetPlayer_Move         ; repeat player input until move is legal
 
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Main_Search_Table: search an element in a 8x8 bytes table

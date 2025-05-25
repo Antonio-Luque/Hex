@@ -795,7 +795,7 @@ PathFinder_Score:
 ;           A =  0, if there a chain of connected red tokens between the two edges or if cyan can't reach his edge
 ;           A = red heuristic evaluation, otherwise
 ;
-; Uses:     POTENTIALS (board potential and attack mobility)
+; Uses:     POTENTIALS (speccy board potential and attack mobility)
 ;
 ; Destroys: A', BC, DE, HL, IY
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -837,7 +837,7 @@ PathFinder_RedScore
 ;           A =  0, if there a chain of connected cyan tokens between the two edges or if red can't reach his edge
 ;           A = cyan heuristic evaluation, otherwise
 ;
-; Uses:     POTENTIALS (board potential and attack mobility)
+; Uses:     POTENTIALS (speccy board potential and attack mobility)
 ;
 ; Destroys: A', BC, DE, HL
 ; ----------------------------------------------------------------------------------------------------------------------
@@ -863,7 +863,7 @@ PathFinder_CyanScore
                         ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
                         ld      de, CYAN_BOARD_DOWN_UP+1    ; DE points to cyan board down-up address (1st position)
                         call    PathFinder_Potentials       ; calculate cyan potentials
-                        ld      (POTENTIALS), bc            ; save cyan potentials
+                        ld      (POTENTIALS), bc            ; store cyan potentials
 
                         ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st position)
                         ld      de, RED_BOARD_RIGHT_LEFT+1  ; DE points to red board right-left address (1st position)
@@ -882,20 +882,22 @@ PathFinder_CyanScore
 ;
 ; This adaptation uses an "invert" result to better fit BRAINIAC process.
 ;
-; Input:    B = opponent attack mobility
-;           C = opponent board potential
+; Input:    B = player attack mobility
+;           C = player board potential
 ;
 ; Output:   A = heuristic evaluation
+;
+; Uses:     POTENTIALS (speccy's board potential and attack mobility)
 ;
 ; Destroys: E, HL
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_Evaluation:
-                        ld      hl, POTENTIALS+1            ; HL points to color attack mobility address
-                        ld      a, b                        ; get opponent's attack mobility
+                        ld      hl, POTENTIALS+1            ; HL points to speccy attack mobility address
+                        ld      a, b                        ; get player attack mobility
                         sub     (hl)                        ; subtract attack mobilities -> (aC - aR)
                         ld      e, a                        ; save the result in E
-                        dec     l                           ; move HL to player's board potential address
-                        ld      a, c                        ; get opponent's board potential
+                        dec     l                           ; move HL to speccy board potential address
+                        ld      a, c                        ; get player board potential
                         sub     (hl)                        ; subtract potentials -> (pC - pR)
                         add     a, a                        ; multiply by 8 -> M (pC - pR)
                         add     a, a
@@ -961,7 +963,9 @@ Potentials_Infinite
 ; ----------------------------------------------------------------------------------------------------------------------
 ; PathFinder_Candidates: search candidates based on score result and boards potentials
 ;
-; Input:    A  = -1, 0 or heuristic result
+; Input :    A = -1, if speccy can't reach his opposite edge
+;            A =  0, if speccy has a chain of connected tokens between the two edges or if player cant reach his edge
+;            A = speccy heuristic evaluation, otherwise
 ;           IX = candidates area address
 ;
 ; Output:   IX = first candidate address
@@ -1032,7 +1036,7 @@ Candidates_Best_Loop
 Candidates_Winner
                         ld      a, (AI_PLAYER)              ; check speccy side
                         or      a                           ; is it FRIEND?
-                        jp      po, Candidates_Winner_Cyan  ; yes, fill candidates from cyan potentials
+                        jp      po, Candidates_Cyan         ; yes, fill candidates from cyan potentials
 
                         ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st pos.)
                         ld      de, RED_BOARD_RIGHT_LEFT+1  ; DE points to red board right-left address (1st position)
@@ -1046,13 +1050,13 @@ Candidates_Winner
 Candidates_Defeat
                         ld      a, (AI_PLAYER)              ; check speccy side
                         or      a                           ; is it FRIEND?
-                        jp      po, Candidates_Defeat_Red   ; yes, fill candidates from red potentials
+                        jp      po, Candidates_Red          ; yes, fill candidates from red potentials
 
                         ; if RED is defeated, candidates are chosen from cyan board potentials
 
                         call    PathFinder_Cyan_UpDown      ; calculate cyan two-distance from UP to DOWN edge
                         call    PathFinder_Cyan_DownUp      ; calculate cyan two-distance from DOWN to UP edge
-Candidates_Winner_Cyan
+Candidates_Cyan
                         ld      hl, CYAN_BOARD_UP_DOWN+9    ; HL points to cyan board up-down address (1st position)
                         ld      de, CYAN_BOARD_DOWN_UP+1    ; DE points to cyan board down-up address (1st position)
                         call    PathFinder_Potentials       ; calculate cyan potentials
@@ -1060,7 +1064,7 @@ Candidates_Winner_Cyan
                         jp      Candidates_Best             ; fill only the best candidates
 
                         ; if CYAN is defeated, candidates are chosen from red board potentials
-Candidates_Defeat_Red
+Candidates_Red
                         call    PathFinder_Red_LeftRight    ; calculate red two-distance from LEFT to RIGHT edge
                         call    PathFinder_Red_RightLeft    ; calculate red two-distance from RIGHT to LEFT edge
                         ld      hl, RED_BOARD_LEFT_RIGHT+9  ; HL points to red board left-right address (1st pos.)
@@ -1150,12 +1154,11 @@ PathFinder_BrightPath:
                         ld      b, VICTORY                  ; set victory length in B
 
                         ld      a, (TOKEN_COLOR)            ; get current token color
-                        add     a, $40                      ; switch on bright attribute
+                        add     a, BRIGHT                   ; switch on bright attribute
                         ld      (TOKEN_COLOR), a
                         ld      a, 4                        ; set delay duration for animate hexagons
                         ld      (@Token_Delay+1), a
-
-                        jp      BrightPath_Position         ; animate and highlight the hexagon position
+                        jr      BrightPath_Position         ; animate and highlight the hexagon position
 BrightPath_Neighbor
                         inc     l                           ; move HL to left neighbor address
                         cp      (hl)                        ; is it the same as current victory path length?
