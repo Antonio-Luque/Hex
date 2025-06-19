@@ -66,6 +66,10 @@ Main_New_Level
                         jr      Main_Start                  ; start a new game
 Main_Increment_Level
                         inc     (hl)                        ; increment game level
+                        ld      b, 0                        ; set game level in BC
+                        ld      c, (hl)
+                        inc     hl                          ; HL points to recursion depth level
+                        ld      (hl), c                     ; save recursion depth level
                         call    Screen_Frame_Color          ; set up frame color depending on current level
                         call    Screen_Clear_ThreeRow       ; clear all three-in-a-row marks
                         xor     a                           ; initialize three-in-a-row counter
@@ -204,9 +208,7 @@ Main_GetSpeccy_Move:
                         jr      z, Main_GetSpeccy_Book      ; yes, get move from opening book
 
                         ld      ix, CANDIDATES              ; IX points to candidates list address
-                        ld      a, (GAME_LEVEL)             ; get game level
-                        ld      (AI_DEPTH), a               ; save recursion depth level
-                        call    PathFinder_Friend           ; get speccy side
+                        call    PathFinder_Friend           ; get speccy side (FRIEND or ENEMY)
                         call    BRAINIAC_best_move          ; get speccy best move
                         ld      l, e                        ; set node index in L
 Main_GetSpeccy_Positions

@@ -49,10 +49,10 @@ CYAN_BOARD_DOWN_UP:
 POTENTIALS:                                                 ; (must be in a 256-byte boundary)
                         DEFB    0                           ; speccy board potential
                         DEFB    0                           ; speccy attack mobility
-AI_PLAYER               DEFB    0                           ; speccy side (FRIEND or ENEMY)
-AI_DEPTH                DEFB    0                           ; recursion depth level (1-4)
-LEVEL_COLOR             DEFB    0                           ; current level color for frame border
 GAME_LEVEL              DEFB    0                           ; current game level (1-4)
+AI_DEPTH                DEFB    0                           ; recursion depth level (1-4)
+AI_PLAYER               DEFB    0                           ; speccy side (FRIEND or ENEMY)
+LEVEL_COLOR             DEFB    0                           ; current level color for frame border
 MOVE_NUMBER             DEFB    0                           ; current move number
 TOKEN_COLOR             DEFB    0                           ; current token color
 PLAYER_COLOR            DEFB    5                           ; current player color

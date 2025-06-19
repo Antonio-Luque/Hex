@@ -375,7 +375,7 @@ Screen_Clear_ThreeRow:
 ; ----------------------------------------------------------------------------------------------------------------------
 ; Screen_Frame_Color: set up frame color and print level number depending on current level
 ;
-; Input:    HL = game level address
+; Input:    BC = game level
 ;
 ; Output:   -
 ;
@@ -384,8 +384,6 @@ Screen_Clear_ThreeRow:
 ; Destroys: A, BC, DE, HL
 ; ----------------------------------------------------------------------------------------------------------------------
 Screen_Frame_Color:
-                        ld      b, 0                        ; set game level in BC
-                        ld      c, (hl)
                         ld      a, $30                      ; convert game level number to game level character
                         add     a, c
                         ld      hl, $400F                   ; HL points to screen address of game level
@@ -520,6 +518,8 @@ Screen_Menu_How2Play
 
                         ld      hl, GAME_LEVEL              ; HL points to game level address (needed for color frame)
                         inc     (hl)                        ; increment game level (GAME_LEVEL = 1)
+                        ld      b, 0                        ; set game level in BC
+                        ld      c, (hl)
                         call    Screen_Frame_Color          ; set up frame color depending on current level
                         call    Screen_Clear_ThreeRow       ; clear all three-in-a-row marks
 
