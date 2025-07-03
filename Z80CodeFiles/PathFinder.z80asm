@@ -1103,13 +1103,14 @@ PathFinder_VictoryPath_Cyan
                         jp      PathFinder_Cyan_CheckPath   ; calculate CYAN victory path
 
 ; ----------------------------------------------------------------------------------------------------------------------
-; PathFinder_PrepareBoard: update '[color]_BOARD_XX_YY', changing VICTORY+$40 to 1, everything else to ENEMY.
-; Immediately after 'Path_Finder_[color]' returned VICTORY, you can execute this routine, then execute 'Path_Finder_
-; [color]' again to find a victory path.
+; PathFinder_PrepareBoard: update '[color]_BOARD_XX_YY', changing VICTORY+$40 to SKIPPED, everything else to ENEMY.
+;
+; Immediately after executing 'PathFinder_[color]_xxxx', you can execute this routine, then execute 'PathFinder_[color]
+; _CheckPath' to find a victory path.
 ;
 ; Coded by Einar Saukas
 ;
-; Input:    HL = pointer to last position of [color]_BOARD
+; Input:    HL = pointer to last position of [color]_BOARD_XX_YY
 ;
 ; Output:   -
 ;
@@ -1122,9 +1123,9 @@ PrepareBoard_Row
                         ld      b, 7                        ; 7 columns
 PrepareBoard_Column
                         cp      (hl)                        ; check win condition
-                        ld      (hl), 1                     ; save 1 by default
-                        jr      z, PrepareBoard_Next        ; if win condition, skip to position
-                        ld      (hl), ENEMY                 ; else, save ENEMY
+                        ld      (hl), ENEMY                 ; save ENEMY by default
+                        jp      nz, PrepareBoard_Next       ; if not win condition, skip to position
+                        ld      (hl), SKIPPED               ; else, save SKIPPED
 PrepareBoard_Next
                         dec     l                           ; HL points to next board position
                         djnz    PrepareBoard_Column         ; repeat for each column
