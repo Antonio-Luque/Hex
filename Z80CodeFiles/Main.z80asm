@@ -195,8 +195,6 @@ Main_ThreeRow_Show
 ;           HL = CYAN_POSITIONS move address
 ;
 ; Uses:     MOVE_NUMBER (current move number)
-;           GAME_LEVEL (current game level)
-;           AI_DEPTH (recursion depth level)
 ;           STR_MOVE (formatted move string)
 ;
 ; Destroys: A, DE, IX, IY

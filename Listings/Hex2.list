@@ -1142,157 +1142,155 @@
 6CB4             2 195 ;           HL = CYAN_POSITIONS move address
 6CB4             2 196 ;
 6CB4             2 197 ; Uses:     MOVE_NUMBER (current move number)
-6CB4             2 198 ;           GAME_LEVEL (current game level)
-6CB4             2 199 ;           AI_DEPTH (recursion depth level)
-6CB4             2 200 ;           STR_MOVE (formatted move string)
-6CB4             2 201 ;
-6CB4             2 202 ; Destroys: A, DE, IX, IY
-6CB4             2 203 ; ----------------------------------------------------------------------------------------------------------------------
-6CB4             2 204 Main_GetSpeccy_Move:
-6CB4 CD E7 6E    2 205 call    Print_Wait                  ; print "WAIT" message
-6CB7 3A 9D 61    2 206 ld      a, (MOVE_NUMBER)            ; get move number
-6CBA 3D          2 207 dec     a                           ; is it cyan first move?
-6CBB 28 24       2 208 jr      z, Main_GetSpeccy_Book      ; yes, get move from opening book
-6CBD DD 21 00 7F 2 210 ld      ix, CANDIDATES              ; IX points to candidates list address
-6CC1 CD AC 70    2 211 call    PathFinder_Friend           ; get speccy side (FRIEND or ENEMY)
-6CC4 CD 38 6F    2 212 call    BRAINIAC_best_move          ; get speccy best move
-6CC7 6B          2 213 ld      l, e                        ; set node index in L
-6CC8             2 214 Main_GetSpeccy_Positions
-6CC8 26 7D       2 215 ld      h, CYAN_POSITIONS/256       ; HL points to CYAN_POSITIONS move address
-6CCA E5          2 216 push    hl                          ; store CYAN_POSITIONS move address
-6CCB CD 39 6D    2 217 call    Main_Board2Indexes          ; convert board position to indexes
-6CCE 78          2 218 ld      a, b                        ; get 1..7 column
-6CCF C6 60       2 219 add     a, $60                      ; adjust to charset ('a'..'g')
-6CD1 32 15 62    2 220 ld      (STR_MOVE+0), a             ; put it on formatted move string
-6CD4 79          2 221 ld      a, c                        ; get 1..7 row
-6CD5 C6 30       2 222 add     a, $30                      ; adjust to charset ('1'..'7')
-6CD7 32 18 62    2 223 ld      (STR_MOVE+3), a             ; put it on formatted move string
-6CDA C5          2 224 push    bc                          ; store hexagon board indexes
-6CDB CD F5 6E    2 225 call    Print_Move                  ; print Speccy move
-6CDE C1          2 226 pop     bc                          ; restore hexagon board indexes
-6CDF E1          2 227 pop     hl                          ; restore CYAN_POSITIONS move address
-6CE0 C9          2 228 ret
-6CE1             2 229 Main_GetSpeccy_Book
-6CE1 ED 5F       2 230 ld      a, r                        ; get a pseudo-random number (0..127)
-6CE3 E6 1F       2 231 and     %00011111                   ; number is in range (0..31)
-6CE5 FE 1B       2 232 cp      27                          ; is it >= 27?
-6CE7 30 F8       2 233 jr      nc, Main_GetSpeccy_Book     ; yes, repeat until range is (0..26)
-6CE9 21 CD 62    2 234 ld      hl, OPENINGS                ; HL points to opening book address
-6CEC 16 00       2 235 ld      d, 0                        ; set index in DE
-6CEE 5F          2 236 ld      e, a
-6CEF 19          2 237 add     hl, de                      ; HL points to move index address
-6CF0 6E          2 238 ld      l, (hl)                     ; get move from opening book
-6CF1 18 D5       2 239 jr      Main_GetSpeccy_Positions    ; get speccy move positions
-6CF3             2 241 ; ----------------------------------------------------------------------------------------------------------------------
-6CF3             2 242 ; Main_GetPlayer_Move: get a legal (empty hexagon) move from player
+6CB4             2 198 ;           STR_MOVE (formatted move string)
+6CB4             2 199 ;
+6CB4             2 200 ; Destroys: A, DE, IX, IY
+6CB4             2 201 ; ----------------------------------------------------------------------------------------------------------------------
+6CB4             2 202 Main_GetSpeccy_Move:
+6CB4 CD E7 6E    2 203 call    Print_Wait                  ; print "WAIT" message
+6CB7 3A 9D 61    2 204 ld      a, (MOVE_NUMBER)            ; get move number
+6CBA 3D          2 205 dec     a                           ; is it cyan first move?
+6CBB 28 24       2 206 jr      z, Main_GetSpeccy_Book      ; yes, get move from opening book
+6CBD DD 21 00 7F 2 208 ld      ix, CANDIDATES              ; IX points to candidates list address
+6CC1 CD AC 70    2 209 call    PathFinder_Friend           ; get speccy side (FRIEND or ENEMY)
+6CC4 CD 38 6F    2 210 call    BRAINIAC_best_move          ; get speccy best move
+6CC7 6B          2 211 ld      l, e                        ; set node index in L
+6CC8             2 212 Main_GetSpeccy_Positions
+6CC8 26 7D       2 213 ld      h, CYAN_POSITIONS/256       ; HL points to CYAN_POSITIONS move address
+6CCA E5          2 214 push    hl                          ; store CYAN_POSITIONS move address
+6CCB CD 39 6D    2 215 call    Main_Board2Indexes          ; convert board position to indexes
+6CCE 78          2 216 ld      a, b                        ; get 1..7 column
+6CCF C6 60       2 217 add     a, $60                      ; adjust to charset ('a'..'g')
+6CD1 32 15 62    2 218 ld      (STR_MOVE+0), a             ; put it on formatted move string
+6CD4 79          2 219 ld      a, c                        ; get 1..7 row
+6CD5 C6 30       2 220 add     a, $30                      ; adjust to charset ('1'..'7')
+6CD7 32 18 62    2 221 ld      (STR_MOVE+3), a             ; put it on formatted move string
+6CDA C5          2 222 push    bc                          ; store hexagon board indexes
+6CDB CD F5 6E    2 223 call    Print_Move                  ; print Speccy move
+6CDE C1          2 224 pop     bc                          ; restore hexagon board indexes
+6CDF E1          2 225 pop     hl                          ; restore CYAN_POSITIONS move address
+6CE0 C9          2 226 ret
+6CE1             2 227 Main_GetSpeccy_Book
+6CE1 ED 5F       2 228 ld      a, r                        ; get a pseudo-random number (0..127)
+6CE3 E6 1F       2 229 and     %00011111                   ; number is in range (0..31)
+6CE5 FE 1B       2 230 cp      27                          ; is it >= 27?
+6CE7 30 F8       2 231 jr      nc, Main_GetSpeccy_Book     ; yes, repeat until range is (0..26)
+6CE9 21 CD 62    2 232 ld      hl, OPENINGS                ; HL points to opening book address
+6CEC 16 00       2 233 ld      d, 0                        ; set index in DE
+6CEE 5F          2 234 ld      e, a
+6CEF 19          2 235 add     hl, de                      ; HL points to move index address
+6CF0 6E          2 236 ld      l, (hl)                     ; get move from opening book
+6CF1 18 D5       2 237 jr      Main_GetSpeccy_Positions    ; get speccy move positions
+6CF3             2 239 ; ----------------------------------------------------------------------------------------------------------------------
+6CF3             2 240 ; Main_GetPlayer_Move: get a legal (empty hexagon) move from player
+6CF3             2 241 ;
+6CF3             2 242 ; Input:    -
 6CF3             2 243 ;
-6CF3             2 244 ; Input:    -
-6CF3             2 245 ;
-6CF3             2 246 ; Output:   BC = hexagon board indexes (B:column, C:row)
-6CF3             2 247 ;           HL = CYAN_POSITIONS move address
-6CF3             2 248 ;           Z  = flag set
+6CF3             2 244 ; Output:   BC = hexagon board indexes (B:column, C:row)
+6CF3             2 245 ;           HL = CYAN_POSITIONS move address
+6CF3             2 246 ;           Z  = flag set
+6CF3             2 247 ;
+6CF3             2 248 ; Uses:     STR_MOVE (formatted move string)
 6CF3             2 249 ;
-6CF3             2 250 ; Uses:     STR_MOVE (formatted move string)
-6CF3             2 251 ;
-6CF3             2 252 ; Destroys: A, DE, IX
-6CF3             2 253 ; ----------------------------------------------------------------------------------------------------------------------
-6CF3             2 254 Main_GetPlayer_Move:
-6CF3 CD EE 6E    2 255 call    Print_Clear_Move            ; clear player last move
-6CF6 CD E5 6D    2 256 call    Input_Move                  ; wait for input player move
-6CF9 CD F5 6E    2 257 call    Print_Move                  ; print player move
-6CFC 3A 15 62    2 259 ld      a, (STR_MOVE+0)             ; get column ('a'..'g')
-6CFF D6 60       2 260 sub     $60                         ; convert to number (1..7)
-6D01 47          2 261 ld      b, a                        ; set column index in B
-6D02 3A 18 62    2 262 ld      a, (STR_MOVE+3)             ; get row ('1'..'7')
-6D05 D6 30       2 263 sub     $30                         ; convert to number (1..7)
-6D07 4F          2 264 ld      c, a                        ; set row index in C
-6D08 11 4D 62    2 265 ld      de, BOARD_COORDINATES       ; DE points to board coordinates address
-6D0B CD 2B 6D    2 266 call    Main_Search_Table           ; search board position in board coordinates
-6D0E 6E          2 267 ld      l, (hl)                     ; set board position of player move
-6D0F 26 7D       2 268 ld      h, CYAN_POSITIONS/256       ; HL points to CYAN_POSITIONS move address
-6D11 7E          2 269 ld      a, (hl)                     ; check position
-6D12 B7          2 270 or      a                           ; is position empty?
-6D13 C8          2 271 ret     z                           ; yes, return with Z flag set
-6D14             2 273 ; illegal player move (position not empty)
-6D14 11 2E 62    2 275 ld      de, STR_FILLED              ; DE points to "FILLED" string address
-6D17 CD CE 6E    2 276 call    Print_Alert                 ; print string
-6D1A DD 21 F7 64 2 277 ld      ix, FILLED_FX               ; IX points to filled tone parameters address
-6D1E CD 7C 76    2 278 call    Sound_FX                    ; play sound fx
-6D21 3E 50       2 279 ld      a, 80                       ; set delay counter
-6D23 CD 4B 6D    2 280 call    Main_Delay                  ; execute delay
-6D26 CD C7 6E    2 281 call    Print_Clear_Alert           ; clear alert message
-6D29 18 C8       2 282 jr      Main_GetPlayer_Move         ; repeat player input until move is legal
-6D2B             2 284 ; ----------------------------------------------------------------------------------------------------------------------
-6D2B             2 285 ; Main_Search_Table: search an element in a 8x8 bytes table
-6D2B             2 286 ;
-6D2B             2 287 ; Input:    BC = element indexes (B = column, C = row)
-6D2B             2 288 ;           DE = table address in which to search for the element
-6D2B             2 289 ;
-6D2B             2 290 ; Output:   DE = address of first element in the C row of the table
-6D2B             2 291 ;           HL = address of the element in the BC indexes of the table
-6D2B             2 292 ;
-6D2B             2 293 ; Destroys: A
-6D2B             2 294 ; ----------------------------------------------------------------------------------------------------------------------
-6D2B             2 295 Main_Search_Table:
-6D2B 79          2 296 ld      a, c                        ; first, get the C row in table
-6D2C 87          2 297 add     a, a                        ; a row is 8 bytes long
-6D2D 87          2 298 add     a, a
-6D2E 87          2 299 add     a, a
-6D2F 6F          2 300 ld      l, a                        ; set index in HL
-6D30 26 00       2 301 ld      h, 0
-6D32 19          2 302 add     hl, de                      ; HL points to the address of C row 
-6D33 EB          2 303 ex      de, hl                      ; put it on DE
-6D34 68          2 304 ld      l, b                        ; set B index in HL
-6D35 26 00       2 305 ld      h, 0
-6D37 19          2 306 add     hl, de                      ; HL points to the address of BC indexes
-6D38 C9          2 307 ret
-6D39             2 309 ; ----------------------------------------------------------------------------------------------------------------------
-6D39             2 310 ; Main_Board2Indexes: convert a board position into a board indexes
+6CF3             2 250 ; Destroys: A, DE, IX
+6CF3             2 251 ; ----------------------------------------------------------------------------------------------------------------------
+6CF3             2 252 Main_GetPlayer_Move:
+6CF3 CD EE 6E    2 253 call    Print_Clear_Move            ; clear player last move
+6CF6 CD E5 6D    2 254 call    Input_Move                  ; wait for input player move
+6CF9 CD F5 6E    2 255 call    Print_Move                  ; print player move
+6CFC 3A 15 62    2 257 ld      a, (STR_MOVE+0)             ; get column ('a'..'g')
+6CFF D6 60       2 258 sub     $60                         ; convert to number (1..7)
+6D01 47          2 259 ld      b, a                        ; set column index in B
+6D02 3A 18 62    2 260 ld      a, (STR_MOVE+3)             ; get row ('1'..'7')
+6D05 D6 30       2 261 sub     $30                         ; convert to number (1..7)
+6D07 4F          2 262 ld      c, a                        ; set row index in C
+6D08 11 4D 62    2 263 ld      de, BOARD_COORDINATES       ; DE points to board coordinates address
+6D0B CD 2B 6D    2 264 call    Main_Search_Table           ; search board position in board coordinates
+6D0E 6E          2 265 ld      l, (hl)                     ; set board position of player move
+6D0F 26 7D       2 266 ld      h, CYAN_POSITIONS/256       ; HL points to CYAN_POSITIONS move address
+6D11 7E          2 267 ld      a, (hl)                     ; check position
+6D12 B7          2 268 or      a                           ; is position empty?
+6D13 C8          2 269 ret     z                           ; yes, return with Z flag set
+6D14             2 271 ; illegal player move (position not empty)
+6D14 11 2E 62    2 273 ld      de, STR_FILLED              ; DE points to "FILLED" string address
+6D17 CD CE 6E    2 274 call    Print_Alert                 ; print string
+6D1A DD 21 F7 64 2 275 ld      ix, FILLED_FX               ; IX points to filled tone parameters address
+6D1E CD 7C 76    2 276 call    Sound_FX                    ; play sound fx
+6D21 3E 50       2 277 ld      a, 80                       ; set delay counter
+6D23 CD 4B 6D    2 278 call    Main_Delay                  ; execute delay
+6D26 CD C7 6E    2 279 call    Print_Clear_Alert           ; clear alert message
+6D29 18 C8       2 280 jr      Main_GetPlayer_Move         ; repeat player input until move is legal
+6D2B             2 282 ; ----------------------------------------------------------------------------------------------------------------------
+6D2B             2 283 ; Main_Search_Table: search an element in a 8x8 bytes table
+6D2B             2 284 ;
+6D2B             2 285 ; Input:    BC = element indexes (B = column, C = row)
+6D2B             2 286 ;           DE = table address in which to search for the element
+6D2B             2 287 ;
+6D2B             2 288 ; Output:   DE = address of first element in the C row of the table
+6D2B             2 289 ;           HL = address of the element in the BC indexes of the table
+6D2B             2 290 ;
+6D2B             2 291 ; Destroys: A
+6D2B             2 292 ; ----------------------------------------------------------------------------------------------------------------------
+6D2B             2 293 Main_Search_Table:
+6D2B 79          2 294 ld      a, c                        ; first, get the C row in table
+6D2C 87          2 295 add     a, a                        ; a row is 8 bytes long
+6D2D 87          2 296 add     a, a
+6D2E 87          2 297 add     a, a
+6D2F 6F          2 298 ld      l, a                        ; set index in HL
+6D30 26 00       2 299 ld      h, 0
+6D32 19          2 300 add     hl, de                      ; HL points to the address of C row 
+6D33 EB          2 301 ex      de, hl                      ; put it on DE
+6D34 68          2 302 ld      l, b                        ; set B index in HL
+6D35 26 00       2 303 ld      h, 0
+6D37 19          2 304 add     hl, de                      ; HL points to the address of BC indexes
+6D38 C9          2 305 ret
+6D39             2 307 ; ----------------------------------------------------------------------------------------------------------------------
+6D39             2 308 ; Main_Board2Indexes: convert a board position into a board indexes
+6D39             2 309 ;
+6D39             2 310 ; Input:    L  = board position
 6D39             2 311 ;
-6D39             2 312 ; Input:    L  = board position
+6D39             2 312 ; Output:   BC = board indexes (B = column, C = row)
 6D39             2 313 ;
-6D39             2 314 ; Output:   BC = board indexes (B = column, C = row)
-6D39             2 315 ;
-6D39             2 316 ; Destroys: HL
-6D39             2 317 ; ----------------------------------------------------------------------------------------------------------------------
-6D39             2 318 Main_Board2Indexes:
-6D39 7D          2 319 ld      a, l                        ; set board position in A to compare later
-6D3A 21 8D 62    2 321 ld      hl, BOARD_COORDINATES+64    ; HL points to last board position address (+1)
-6D3D 0E 07       2 322 ld      c, 7                        ; 7 rows
-6D3F             2 323 Main_Board2Indexes_Row
-6D3F 06 07       2 324 ld      b, 7                        ; 7 columns
-6D41             2 325 Main_Board2Indexes_Col
-6D41 2B          2 326 dec     hl                          ; move HL to next board position address
-6D42 BE          2 327 cp      (hl)                        ; is A the position?
-6D43 C8          2 328 ret     z                           ; yes, return board indexes
-6D44 10 FB       2 329 djnz    Main_Board2Indexes_Col      ; repeat for each column
-6D46 2B          2 330 dec     hl                          ; skip borders
-6D47 0D          2 331 dec     c                           ; decrement row
-6D48 C3 3F 6D    2 332 jp      Main_Board2Indexes_Row      ; loop until find position
-6D4B             2 334 ; ----------------------------------------------------------------------------------------------------------------------
-6D4B             2 335 ; Main_Delay: execute a delay
+6D39             2 314 ; Destroys: HL
+6D39             2 315 ; ----------------------------------------------------------------------------------------------------------------------
+6D39             2 316 Main_Board2Indexes:
+6D39 7D          2 317 ld      a, l                        ; set board position in A to compare later
+6D3A 21 8D 62    2 319 ld      hl, BOARD_COORDINATES+64    ; HL points to last board position address (+1)
+6D3D 0E 07       2 320 ld      c, 7                        ; 7 rows
+6D3F             2 321 Main_Board2Indexes_Row
+6D3F 06 07       2 322 ld      b, 7                        ; 7 columns
+6D41             2 323 Main_Board2Indexes_Col
+6D41 2B          2 324 dec     hl                          ; move HL to next board position address
+6D42 BE          2 325 cp      (hl)                        ; is A the position?
+6D43 C8          2 326 ret     z                           ; yes, return board indexes
+6D44 10 FB       2 327 djnz    Main_Board2Indexes_Col      ; repeat for each column
+6D46 2B          2 328 dec     hl                          ; skip borders
+6D47 0D          2 329 dec     c                           ; decrement row
+6D48 C3 3F 6D    2 330 jp      Main_Board2Indexes_Row      ; loop until find position
+6D4B             2 332 ; ----------------------------------------------------------------------------------------------------------------------
+6D4B             2 333 ; Main_Delay: execute a delay
+6D4B             2 334 ;
+6D4B             2 335 ; Input:    A = delay counter
 6D4B             2 336 ;
-6D4B             2 337 ; Input:    A = delay counter
+6D4B             2 337 ; Output:   -
 6D4B             2 338 ;
-6D4B             2 339 ; Output:   -
-6D4B             2 340 ;
-6D4B             2 341 ; Destroys: A
-6D4B             2 342 ; ----------------------------------------------------------------------------------------------------------------------
-6D4B             2 343 Main_Delay:
-6D4B C5          2 344 push    bc                          ; store BC register
-6D4C             2 345 Main_Delay_Outer
-6D4C F5          2 346 push    af                          ; store delay counter (outer loop)
-6D4D 01 B0 04    2 347 ld      bc, 1200                    ; set inner loop counter in BC
-6D50             2 348 Main_Delay_Inner
-6D50 0B          2 349 dec     bc                          ; decrement inner loop counter
-6D51 78          2 350 ld      a, b                        ; check inner loop counter
-6D52 B1          2 351 or      c
-6D53 20 FB       2 352 jr      nz, Main_Delay_Inner        ; repeat until inner loop counter = 0
-6D55 F1          2 353 pop     af                          ; restore delay counter
-6D56 3D          2 354 dec     a                           ; decrement delay counter
-6D57 20 F3       2 355 jr      nz, Main_Delay_Outer        ; repeat until delay counter = 0
-6D59 C1          2 356 pop     bc                          ; restore BC register
-6D5A C9          2 357 ret
+6D4B             2 339 ; Destroys: A
+6D4B             2 340 ; ----------------------------------------------------------------------------------------------------------------------
+6D4B             2 341 Main_Delay:
+6D4B C5          2 342 push    bc                          ; store BC register
+6D4C             2 343 Main_Delay_Outer
+6D4C F5          2 344 push    af                          ; store delay counter (outer loop)
+6D4D 01 B0 04    2 345 ld      bc, 1200                    ; set inner loop counter in BC
+6D50             2 346 Main_Delay_Inner
+6D50 0B          2 347 dec     bc                          ; decrement inner loop counter
+6D51 78          2 348 ld      a, b                        ; check inner loop counter
+6D52 B1          2 349 or      c
+6D53 20 FB       2 350 jr      nz, Main_Delay_Inner        ; repeat until inner loop counter = 0
+6D55 F1          2 351 pop     af                          ; restore delay counter
+6D56 3D          2 352 dec     a                           ; decrement delay counter
+6D57 20 F3       2 353 jr      nz, Main_Delay_Outer        ; repeat until delay counter = 0
+6D59 C1          2 354 pop     bc                          ; restore BC register
+6D5A C9          2 355 ret
 
 ; File #3: C:\Users\Antonio\source\repos\Hex\Z80CodeFiles\Draw.z80asm
 
