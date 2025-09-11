@@ -168,20 +168,24 @@ Main_Match_End
                         ld      ix, WINNER_FX               ; IX points to winner tone parameters address
                         call    Sound_FX                    ; play sound fx
 
-                        ld      a, (TOKEN_COLOR)            ; get current token color
-                        ld      hl, PLAYER_COLOR            ; get player color
+                        ld      hl, TOKEN_COLOR             ; HL points to current token color address
+                        ld      a, (hl)                     ; get current token color
+                        inc     hl                          ; HL points to player color address
                         cp      (hl)                        ; check player color
                         ld      hl, THREE_ROW               ; HL points to three-in-a-row counter
                         jr      z, Main_ThreeRow_Increment  ; if player color = current token color, increment counter
                         dec     (hl)                        ; decrement three-in-a-row counter
-                        jp      p, Main_ThreeRow_Show       ; if not negative (-1), show marks
+                        jp      p, Main_ThreeRow_Clear      ; if not negative (-1), skip increment
 Main_ThreeRow_Increment
                         inc     (hl)                        ; increment three-in-a-row counter
-Main_ThreeRow_Show
-                        call    Screen_ThreeRow             ; show three-in-a-row marks
+Main_ThreeRow_Clear
+                        call    Screen_Clear_ThreeRow       ; clear all three-in-a-row marks
+                        call    nz, Screen_ThreeRow         ; if counter is not zero, color the three-in-a-row marks
+
                         ld      a, 255                      ; set delay duration
                         call    Main_Delay                  ; execute delay
-                        ld      a, 3                        ; check three row counter
+
+                        ld      a, 3                        ; check three-in-a-row counter
                         cp      (hl)                        ; is it 3?
                         jp      z, Main_New_Level           ; yes, start a new level
                         jp      Main_Start_Match            ; start a new match

@@ -472,23 +472,23 @@ PathFinder_Abort
 ; ----------------------------------------------------------------------------------------------------------------------
 PathFinder_RED_Edge_0
                         ex      de, hl                      ; restore pointer to current position address
-                        ld      de, 9*2                     ; calculate distance to adjacent #2
+                        ld      de, (WIDTH+1)*2             ; calculate distance to adjacent #2
                         add     hl, de                      ; move HL to adjacent #2 address
                         cp      (hl)                        ; check adjacent #2 distance
                         call    nc, PathFinder_Update       ; if FRIEND >= adjacent #2 distance, update distance
-                        ld      de, 9                       ; calculate distance to adjacent #3
+                        ld      de, WIDTH+1                 ; calculate distance to adjacent #3
                         add     hl, de                      ; move HL to adjacent #3 address
                         cp      (hl)                        ; check adjacent #3 distance
                         call    nc, PathFinder_Update       ; (repeat for each adjacent)
-                        ld      de, 9
+                        ld      de, WIDTH+1
                         add     hl, de
                         cp      (hl)                        ; check adjacent #4 distance
                         call    nc, PathFinder_Update
-                        ld      de, 9
+                        ld      de, WIDTH+1
                         add     hl, de
                         cp      (hl)                        ; check adjacent #5 distance
                         call    nc, PathFinder_Update
-                        ld      de, 9
+                        ld      de, WIDTH+1
                         add     hl, de
                         cp      (hl)                        ; check adjacent #6 distance
                         call    nc, PathFinder_Update
@@ -497,19 +497,19 @@ PathFinder_RED_Edge_0
 
 PathFinder_RED_Edge_1
                         ex      de, hl                      ; restore pointer to current position address
-                        ld      de, 9*2
+                        ld      de, (WIDTH+1)*2
                         add     hl, de
                         cp      (hl)                        ; check adjacent #3 distance
                         call    nc, PathFinder_Update
-                        ld      de, 9
+                        ld      de, WIDTH+1
                         add     hl, de
                         cp      (hl)                        ; check adjacent #4 distance
                         call    nc, PathFinder_Update
-                        ld      de, 9
+                        ld      de, WIDTH+1
                         add     hl, de
                         cp      (hl)                        ; check adjacent #5 distance
                         call    nc, PathFinder_Update
-                        ld      de, 9
+                        ld      de, WIDTH+1
                         add     hl, de
                         cp      (hl)                        ; check adjacent #6 distance
                         call    nc, PathFinder_Update
@@ -518,19 +518,19 @@ PathFinder_RED_Edge_1
 
 PathFinder_RED_Edge_2
                         ex      de, hl                      ; restore pointer to current position address
-                        ld      de, 9*2
+                        ld      de, (WIDTH+1)*2
                         add     hl, de
                         cp      (hl)                        ; check adjacent #4 distance
                         call    nc, PathFinder_Update
-                        ld      de, 9
+                        ld      de, WIDTH+1
                         add     hl, de
                         cp      (hl)                        ; check adjacent #5 distance
                         call    nc, PathFinder_Update
-                        ld      de, 9
+                        ld      de, WIDTH+1
                         add     hl, de
                         cp      (hl)                        ; check adjacent #6 distance
                         call    nc, PathFinder_Update                     
-                        ld      de, -9*6
+                        ld      de, -(WIDTH+1)*6
                         add     hl, de
                         cp      (hl)                        ; check adjacent #0 distance
                         call    nc, PathFinder_Update
@@ -539,19 +539,19 @@ PathFinder_RED_Edge_2
 
 PathFinder_RED_Edge_3
                         ex      de, hl                      ; restore pointer to current position address
-                        ld      de, -9*3
+                        ld      de, -(WIDTH+1)*3
                         add     hl, de
                         cp      (hl)                        ; check adjacent #0 distance
                         call    nc, PathFinder_Update
-                        ld      de, 9
+                        ld      de, WIDTH+1
                         add     hl, de
                         cp      (hl)                        ; check adjacent #1 distance
                         call    nc, PathFinder_Update
-                        ld      de, 9*4
+                        ld      de, (WIDTH+1)*4
                         add     hl, de
                         cp      (hl)                        ; check adjacent #5 distance
                         call    nc, PathFinder_Update
-                        ld      de, 9
+                        ld      de, WIDTH+1
                         add     hl, de
                         cp      (hl)                        ; check adjacent #6 distance
                         call    nc, PathFinder_Update
@@ -560,19 +560,19 @@ PathFinder_RED_Edge_3
 
 PathFinder_RED_Edge_4
                         ex      de, hl                      ; restore pointer to current position address
-                        ld      de, 9*2
+                        ld      de, (WIDTH+1)*2
                         add     hl, de
                         cp      (hl)                        ; check adjacent #6 distance
                         call    nc, PathFinder_Update
-                        ld      de, -9*6
+                        ld      de, -(WIDTH+1)*6
                         add     hl, de
                         cp      (hl)                        ; check adjacent #0 distance
                         call    nc, PathFinder_Update
-                        ld      de, 9
+                        ld      de, WIDTH+1
                         add     hl, de
                         cp      (hl)                        ; check adjacent #1 distance
                         call    nc, PathFinder_Update
-                        ld      de, 9
+                        ld      de, WIDTH+1
                         add     hl, de
                         cp      (hl)                        ; check adjacent #2 distance
                         call    nc, PathFinder_Update
@@ -581,19 +581,19 @@ PathFinder_RED_Edge_4
 
 PathFinder_RED_Edge_5
                         ex      de, hl                      ; restore pointer to current position address
-                        ld      de, -9*5
+                        ld      de, -(WIDTH+1)*5
                         add     hl, de
                         cp      (hl)                        ; check adjacent #0 distance
                         call    nc, PathFinder_Update 
-                        ld      de, 9
+                        ld      de, WIDTH+1
                         add     hl, de
                         cp      (hl)                        ; check adjacent #1 distance
                         call    nc, PathFinder_Update
-                        ld      de, 9
+                        ld      de, WIDTH+1
                         add     hl, de
                         cp      (hl)                        ; check adjacent #2 distance
                         call    nc, PathFinder_Update 
-                        ld      de, 9
+                        ld      de, WIDTH+1
                         add     hl, de
                         cp      (hl)                        ; check adjacent #3 distance
                         call    nc, PathFinder_Update
@@ -602,23 +602,23 @@ PathFinder_RED_Edge_5
 
 PathFinder_RED_Edge_6
                         ex      de, hl                      ; restore pointer to current position address
-                        ld      de, -9*6
+                        ld      de, -(WIDTH+1)*6
                         add     hl, de
                         cp      (hl)                        ; check adjacent #0 distance
                         call    nc, PathFinder_Update
-                        ld      de, 9
+                        ld      de, WIDTH+1
                         add     hl, de
                         cp      (hl)                        ; check adjacent #1 distance
                         call    nc, PathFinder_Update
-                        ld      de, 9
+                        ld      de, WIDTH+1
                         add     hl, de
                         cp      (hl)                        ; check adjacent #2 distance
                         call    nc, PathFinder_Update 
-                        ld      de, 9
+                        ld      de, WIDTH+1
                         add     hl, de
                         cp      (hl)                        ; check adjacent #3 distance
                         call    nc, PathFinder_Update   
-                        ld      de, 9
+                        ld      de, WIDTH+1
                         add     hl, de
                         cp      (hl)                        ; check adjacent #4 distance
                         call    nc, PathFinder_Update

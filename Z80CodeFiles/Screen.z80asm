@@ -326,20 +326,17 @@ Screen_Choose_Level
 ; Screen_ThreeRow: color the three-in-a-row marks according to the current three row counter
 ;
 ; Input:    HL = three-in-a-row counter address
+;           IX = three-in-a-row marks attribute address
 ;
 ; Output:   -
 ;
 ; Uses:     LEVEL_COLOR (current level color for frame border)
 ;
-; Destroys: A, C, IX
+; Destroys: A, C
 ; ----------------------------------------------------------------------------------------------------------------------
 Screen_ThreeRow:
-                        call    Screen_Clear_ThreeRow       ; clear all three-in-a-row marks
-                        ld      a, (hl)                     ; A = three-in-a-row counter
-                        or      a                           ; is it 0?
-                        ret     z                           ; yes, return
-
                         push    hl                          ; store three-in-a-row counter address
+                        ld      a, (hl)                     ; set three-in-a-row counter in A
 
                         ld      hl, LEVEL_COLOR             ; HL points to level color address
                         ld      c, (hl)                     ; save level color in C
@@ -353,7 +350,7 @@ Screen_ThreeRow_2
 Screen_ThreeRow_1
                         ld      (ix+2), c                   ; color 1st mark
 
-                        pop     hl
+                        pop     hl                          ; restore three-in-a-row counter address
                         ret
 
 ; ----------------------------------------------------------------------------------------------------------------------

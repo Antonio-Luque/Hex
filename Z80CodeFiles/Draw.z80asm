@@ -180,11 +180,12 @@ Draw_Down_PixelLine:
 ;
 ; Input:    HL = screen address of the hexagon
 ;
-; Output:   IX = attribute address of the hexagon
+; Output:   A  = TOKEN_COLOR (current token color)
+;           IX = attribute address of the hexagon
 ;
 ; Uses:     TOKEN_COLOR (current token color)
 ;
-; Destroys: A
+; Destroys: -
 ; ----------------------------------------------------------------------------------------------------------------------
 Draw_Hexagon_Color:
                         ld      a, h                        ; get high byte of screen address
